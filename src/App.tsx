@@ -37,7 +37,7 @@ function App() {
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="flex-1 w-full px-6 py-8">
           {renderActiveTab()}
-        </div>
+      </div>
       </main>
 
       <footer className="bg-dlsu-green text-white text-center py-3 text-sm">
@@ -59,7 +59,7 @@ function App() {
           setShowLoginModal(false)
         }}
       />
-    </div>
+      </div>
   )
 }
 

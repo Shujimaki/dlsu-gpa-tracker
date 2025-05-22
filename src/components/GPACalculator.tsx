@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, InfoIcon } from 'lucide-react';
 import type { Course } from '../types';
+import { logGpaCalculation, logDeansListEligibility, logUserAction } from '../config/analytics';
 
 // Helper to ensure loaded courses have 'nas' property
 function ensureCoursesWithNAS(courses: unknown[]): Course[] {
@@ -31,6 +32,7 @@ const GPACalculator = () => {
   const [maxTerm, setMaxTerm] = useState(12);
   const [showDeansListModal, setShowDeansListModal] = useState(false);
   const [showGPAModal, setShowGPAModal] = useState(false);
+  const [isFlowchartExempt, setIsFlowchartExempt] = useState(false);
 
   // Load saved data when term changes
   useEffect(() => {
@@ -49,34 +51,6 @@ const GPACalculator = () => {
     }
   }, [selectedTerm]);
 
-  // Save data when courses change
-  useEffect(() => {
-    localStorage.setItem(`term_${selectedTerm}`, JSON.stringify(courses));
-  }, [courses, selectedTerm]);
-
-  const addCourse = () => {
-    setCourses([...courses, {
-      id: crypto.randomUUID(),
-      code: '',
-      name: '',
-      units: 3,
-      grade: 0,
-      nas: false,
-    }]);
-  };
-
-  const removeCourse = (id: string) => {
-    if (courses.length > 1) {
-      setCourses(courses.filter((course: Course) => course.id !== id));
-    }
-  };
-
-  const updateCourse = (id: string, field: keyof Course, value: string | number | boolean) => {
-    setCourses(courses.map((course: Course) =>
-      course.id === id ? { ...course, [field]: value } : course
-    ));
-  };
-
   const calculateGPA = () => {
     let totalUnits = 0;
     let totalGradePoints = 0;
@@ -87,6 +61,51 @@ const GPACalculator = () => {
       }
     });
     return totalUnits === 0 ? 0 : Number((totalGradePoints / totalUnits).toFixed(3));
+  };
+
+  const totalAcademicUnits = courses.filter((c: Course) => !c.nas).reduce((sum: number, c: Course) => sum + (c.units || 0), 0);
+  const totalNASUnits = courses.filter((c: Course) => c.nas).reduce((sum: number, c: Course) => sum + (c.units || 0), 0);
+  const gpa = calculateGPA();
+  const hasGradeBelow2 = courses.some(course => !course.nas && course.grade < 2.0 && course.grade >= 0);
+  const hasFailingGrade = courses.some(course => course.grade === 0);
+  const isDeansLister = (isFlowchartExempt || totalAcademicUnits >= 12) && gpa >= 3.0 && !hasGradeBelow2 && !hasFailingGrade;
+  const isFirstHonors = (isFlowchartExempt || totalAcademicUnits >= 12) && gpa >= 3.4 && !hasGradeBelow2 && !hasFailingGrade;
+
+  // Save data when courses change
+  useEffect(() => {
+    localStorage.setItem(`term_${selectedTerm}`, JSON.stringify(courses));
+  }, [courses, selectedTerm]);
+
+  // Log analytics when relevant values change
+  useEffect(() => {
+    logGpaCalculation(gpa, selectedTerm);
+    logDeansListEligibility(isDeansLister, isFirstHonors);
+  }, [gpa, selectedTerm, isDeansLister, isFirstHonors]);
+
+  const addCourse = () => {
+    setCourses([...courses, {
+      id: crypto.randomUUID(),
+      code: '',
+      name: '',
+      units: 3,
+      grade: 0,
+      nas: false,
+    }]);
+    logUserAction('add_course');
+  };
+
+  const removeCourse = (id: string) => {
+    if (courses.length > 1) {
+      setCourses(courses.filter((course: Course) => course.id !== id));
+      logUserAction('remove_course');
+    }
+  };
+
+  const updateCourse = (id: string, field: keyof Course, value: string | number | boolean) => {
+    setCourses(courses.map((course: Course) =>
+      course.id === id ? { ...course, [field]: value } : course
+    ));
+    logUserAction('update_course', { field, value });
   };
 
   const addNewTerm = () => {
@@ -101,13 +120,6 @@ const GPACalculator = () => {
       nas: false,
     }]);
   };
-
-  const totalAcademicUnits = courses.filter((c: Course) => !c.nas).reduce((sum: number, c: Course) => sum + (c.units || 0), 0);
-  const totalNASUnits = courses.filter((c: Course) => c.nas).reduce((sum: number, c: Course) => sum + (c.units || 0), 0);
-  const gpa = calculateGPA();
-  const hasGradeBelow2 = courses.some(course => !course.nas && course.grade < 2.0 && course.grade >= 0);
-  const isDeansLister = (totalAcademicUnits >= 12) && gpa >= 3.0 && !hasGradeBelow2;
-  const isFirstHonors = (totalAcademicUnits >= 12) && gpa >= 3.4 && !hasGradeBelow2;
 
   return (
     <div>
@@ -162,6 +174,18 @@ const GPACalculator = () => {
               + Add Extra Term
             </option>
           </select>
+        </div>
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="flowchartExempt"
+            checked={isFlowchartExempt}
+            onChange={(e) => setIsFlowchartExempt(e.target.checked)}
+            className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded"
+          />
+          <label htmlFor="flowchartExempt" className="ml-2 block text-sm text-gray-700">
+            Flowchart exempts me from 12-unit requirement
+          </label>
         </div>
       </div>
 
@@ -312,10 +336,15 @@ const GPACalculator = () => {
             <h3 className="text-lg font-bold mb-4">Dean's List Requirements</h3>
             <ul className="list-disc pl-5 space-y-2">
               <li>Must be enrolled in at least 12 academic units</li>
-              <li>No grade below 2.0 in any subject</li>
+              <li>No grade below 2.0 in any academic subject</li>
+              <li>No failing grade (0.0 or F) in any subject, including non-academic subjects</li>
               <li>First Honors: GPA of 3.4 or higher</li>
               <li>Second Honors: GPA of 3.0 to 3.39</li>
+              <li>Must not have been found guilty of academic dishonesty</li>
             </ul>
+            <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+              <strong>Note:</strong> Academic dishonesty includes cheating, plagiarism, and other forms of academic misconduct as defined in the DLSU Student Handbook.
+            </div>
             <button
               onClick={() => setShowDeansListModal(false)}
               className="mt-4 px-4 py-2 bg-dlsu-green text-white rounded hover:bg-dlsu-light-green"

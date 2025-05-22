@@ -1,5 +1,9 @@
 declare module 'firebase/app' {
-  export type FirebaseApp = unknown;
+  export type FirebaseApp = {
+    name: string;
+    options: Record<string, unknown>;
+    automaticDataCollectionEnabled: boolean;
+  };
   export function initializeApp(config: unknown): FirebaseApp;
 }
 
