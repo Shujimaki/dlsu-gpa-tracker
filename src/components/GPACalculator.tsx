@@ -90,7 +90,14 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
           </label>
           <select
             value={selectedTerm}
-            onChange={(e) => setSelectedTerm(Number(e.target.value))}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === 'add') {
+                addNewTerm();
+              } else {
+                setSelectedTerm(Number(value));
+              }
+            }}
             className="w-full md:w-48 p-2 border border-gray-300 rounded"
           >
             {Array.from({ length: maxTerm }, (_, i) => i + 1).map((term) => (
@@ -98,15 +105,11 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
                 Term {term}
               </option>
             ))}
+            <option value="add" className="text-dlsu-green font-medium">
+              + Add Extra Term
+            </option>
           </select>
         </div>
-        <button
-          onClick={addNewTerm}
-          className="mt-6 flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
-        >
-          <PlusIcon size={18} className="mr-1" />
-          Add Extra Term
-        </button>
       </div>
 
       <div className="overflow-x-auto">

@@ -9,7 +9,10 @@ interface HeaderProps {
 const Header = ({ user, onLoginClick, onLogout }: HeaderProps) => {
   return (
     <header className="bg-dlsu-green text-white">
-<div className="container max-w-screen-2xl mx-auto px-4 py-3 flex justify-between items-center">        <h1 className="text-xl font-bold">DLSU GPA Tracker</h1>
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold">DLSU GPA Tracker</h1>
+        </div>
         <div>
           {user ? (
             <div className="flex items-center gap-4">
