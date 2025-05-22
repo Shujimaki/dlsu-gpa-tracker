@@ -34,12 +34,10 @@ function App() {
         onLogout={() => setUser(null)} 
       />
       
-      <main className="flex-1 w-full mx-auto p-2 md:p-6 flex flex-col">
-        <div className="mt-6 bg-white rounded-lg shadow-md p-4 md:p-6 w-full">
-          <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
-          <div className="mt-4">
-            {renderActiveTab()}
-          </div>
+      <main className="flex-1 flex flex-col w-full">
+        <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+        <div className="flex-1 w-full px-6 py-8">
+          {renderActiveTab()}
         </div>
       </main>
 

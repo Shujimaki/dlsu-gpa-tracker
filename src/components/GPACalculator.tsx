@@ -166,14 +166,14 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-dlsu-light-green text-white">
               <th className="px-4 py-2 text-left">Course Code</th>
               <th className="px-4 py-2 text-left">Course Name (Optional)</th>
-              <th className="px-4 py-2 text-center">Units</th>
-              <th className="px-4 py-2 text-center">Grade</th>
+              <th className="px-4 py-2 text-center min-w-[80px]">Units</th>
+              <th className="px-4 py-2 text-center min-w-[80px]">Grade</th>
               <th className="px-4 py-2 text-center">Non-Academic Subject <span title='What is this?'>?</span></th>
               <th className="px-4 py-2 w-10"></th>
             </tr>
@@ -181,12 +181,13 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
           <tbody>
             {courses.map(course => (
               <tr key={course.id} className="border-b border-gray-200 hover:bg-gray-50 md:align-middle bg-white md:bg-transparent">
-                <td className="px-4 py-3 align-middle">
+                <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
                   <input
                     type="text"
                     value={course.code}
                     onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded text-base"
+                    className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0"
+                    maxLength={7}
                     placeholder="e.g., NUMMETS"
                   />
                 </td>
@@ -199,11 +200,11 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
                     placeholder="e.g., Numerical Methods"
                   />
                 </td>
-                <td className="px-4 py-3 align-middle">
+                <td className="px-4 py-3 align-middle min-w-[80px]">
                   <select
                     value={course.units}
                     onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
-                    className="w-full p-2 pr-8 border border-gray-300 rounded text-base"
+                    className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
                   >
                     {course.nas
                       ? [0, 1, 2, 3].map(units => (
@@ -218,12 +219,12 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
                         ))}
                   </select>
                 </td>
-                <td className="px-4 py-3 align-middle">
+                <td className="px-4 py-3 align-middle min-w-[80px]">
                   {course.nas && course.units === 0 ? (
                     <select
                       value={course.grade === 1 ? 'P' : 'F'}
                       onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
-                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base"
+                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
                     >
                       <option value="P">P</option>
                       <option value="F">F</option>
@@ -232,7 +233,7 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
                     <select
                       value={course.grade}
                       onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base"
+                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
                     >
                       {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
                         <option key={grade} value={grade}>
@@ -268,7 +269,7 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
             <tr className="border-t-2 border-gray-300 font-medium">
               <td className="px-4 py-2">Total Units</td>
               <td></td>
-              <td className="px-4 py-2 text-center" colSpan={3}>
+              <td className="px-4 py-2 text-center" colSpan={1}>
                 {totalAcademicUnits}
                 {totalNASUnits > 0 && (
                   <span className="text-gray-500"> ({totalNASUnits})</span>
