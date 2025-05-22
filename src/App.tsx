@@ -42,7 +42,14 @@ function App() {
       </main>
 
       <footer className="bg-dlsu-green text-white text-center py-3 text-sm">
-        <p>© {new Date().getFullYear()} DLSU GPA Tracker</p>
+        <p>© {new Date().getFullYear()} Greendex</p>
+        <p className="mt-1 text-sm text-gray-200">
+          Calculator logic and inspiration based on the original 
+          <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
+          DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
+          </a>.
+          Please visit and support the original work!
+        </p>
       </footer>
 
       <LoginModal 

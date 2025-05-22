@@ -312,7 +312,7 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
           <div className="bg-white p-6 rounded-lg max-w-md">
             <h3 className="text-lg font-bold mb-4">Dean's List Requirements</h3>
             <ul className="list-disc pl-5 space-y-2">
-              <li>Must be enrolled in at least 12 units</li>
+              <li>Must be enrolled in at least 12 academic units</li>
               <li>No grade below 2.0 in any subject</li>
               <li>First Honors: GPA of 3.4 or higher</li>
               <li>Second Honors: GPA of 3.0 to 3.39</li>

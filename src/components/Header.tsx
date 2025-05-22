@@ -11,7 +11,7 @@ const Header = ({ user, onLoginClick, onLogout }: HeaderProps) => {
     <header className="bg-dlsu-green text-white">
       <div className="w-full px-4 py-3 flex justify-between items-center">
         <div className="flex items-center">
-          <h1 className="text-xl font-bold">DLSU GPA Tracker</h1>
+          <h1 className="text-xl font-bold">Greendex</h1>
         </div>
         <div>
           {user ? (
