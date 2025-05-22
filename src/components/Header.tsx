@@ -24,7 +24,7 @@ const Header = ({ user, onLoginClick, onLogout }: HeaderProps) => {
       <div className="w-full px-6 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold">DLSU GPA Tracker</h1>
+            <h1 className="text-xl font-bold">Greendex</h1>
           </div>
           
           <div className="flex items-center gap-4">

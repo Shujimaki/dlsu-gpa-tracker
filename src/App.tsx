@@ -3,15 +3,33 @@ import Header from './components/Header'
 import GPACalculator from './components/GPACalculator'
 import LoginModal from './components/LoginModal'
 import TabNavigation from './components/TabNavigation'
+import UpdateModal from './components/UpdateModal'
 import type { User as FirebaseUser } from 'firebase/auth'
 import { auth } from './config/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
 
 function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const [showUpdateModal, setShowUpdateModal] = useState(true)
   const [activeTab, setActiveTab] = useState('gpa')
   const [authInitialized, setAuthInitialized] = useState(false);
+
+  // Initialize auth with session persistence (instead of local)
+  useEffect(() => {
+    const setupAuth = async () => {
+      try {
+        // Set auth to use session persistence (clears on browser close)
+        // This solves the auto-login after refresh issue
+        await setPersistence(auth, browserSessionPersistence);
+        console.log("Firebase auth persistence set to session");
+      } catch (error) {
+        console.error("Error setting auth persistence:", error);
+      }
+    };
+    
+    setupAuth();
+  }, []);
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -25,10 +43,28 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // Handle user logout
+  const handleLogout = async () => {
+    try {
+      // Clear the session flag for data persistence
+      sessionStorage.removeItem('wasAnonymous');
+      
+      // Sign out of Firebase
+      await signOut(auth);
+      
+      // Clear user state
+      setUser(null);
+      
+      console.log("User logged out successfully");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'gpa':
-        return <GPACalculator user={user} authInitialized={authInitialized} />;
+        return <GPACalculator key={user?.uid || 'anonymous'} user={user} authInitialized={authInitialized} />;
       case 'grade':
         return <div className="p-4">Grade Calculator (Coming Soon)</div>;
       case 'cgpa':
@@ -36,7 +72,7 @@ function App() {
       case 'projections':
         return <div className="p-4">CGPA Projections (Coming Soon)</div>;
       default:
-        return <GPACalculator user={user} authInitialized={authInitialized} />;
+        return <GPACalculator key={user?.uid || 'anonymous'} user={user} authInitialized={authInitialized} />;
     }
   };
 
@@ -45,7 +81,7 @@ function App() {
       <Header 
         user={user} 
         onLoginClick={() => setShowLoginModal(true)} 
-        onLogout={() => setUser(null)} 
+        onLogout={handleLogout} 
       />
       
       <main className="flex-1 flex flex-col w-full">
@@ -73,6 +109,11 @@ function App() {
           setUser(user)
           setShowLoginModal(false)
         }}
+      />
+      
+      <UpdateModal
+        isOpen={showUpdateModal}
+        onClose={() => setShowUpdateModal(false)}
       />
     </div>
   )

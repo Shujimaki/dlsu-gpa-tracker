@@ -92,6 +92,27 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
   
     const isAnonymous = !user;
     const wasAnonymous = sessionStorage.getItem('wasAnonymous') === 'true';
+    const isNewLogin = sessionStorage.getItem('newLogin') === 'true';
+    
+    // If this is a new account login, clear all flags and reset state
+    if (!isAnonymous && isNewLogin) {
+      console.log('New account detected - starting with fresh data');
+      sessionStorage.setItem('newLogin', 'false');
+      sessionStorage.setItem('wasAnonymous', 'false'); // Clear anonymous flag to prevent migration
+      
+      // Reset to default state for fresh accounts
+      setCourses([{
+        id: crypto.randomUUID(),
+        code: '',
+        name: '',
+        units: 3,
+        grade: 0,
+        nas: false,
+      }]);
+      
+      // Skip any other login transition logic
+      return;
+    }
     
     // If user just logged in (transition from anonymous → authenticated)
     if (!isAnonymous && wasAnonymous) {
@@ -347,6 +368,23 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
     }
   };
 
+  // Add a useEffect to reset the calculator when a user logs out
+  useEffect(() => {
+    // If the auth is initialized but there's no user, this means user has logged out
+    if (authInitialized && !user) {
+      // Reset to default state
+      setCourses([{
+        id: crypto.randomUUID(),
+        code: '',
+        name: '',
+        units: 3,
+        grade: 0,
+        nas: false,
+      }]);
+      console.log('User logged out, reset calculator form');
+    }
+  }, [user, authInitialized]);
+
   return (
     <div>
       <div className="mb-6">
@@ -426,7 +464,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
             Flowchart exempts me from 12-unit requirement
           </label>
         </div>
-        <div className="flex items-center ml-auto">
+        <div className="flex items-center ml-auto relative group">
           <input
             type="checkbox"
             id="forceLocalStorage"
@@ -434,9 +472,19 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
             onChange={(e) => setForceLocalStorage(e.target.checked)}
             className="h-4 w-4 text-red-500 focus:ring-red-500 border-gray-300 rounded"
           />
-          <label htmlFor="forceLocalStorage" className="ml-2 block text-sm text-gray-700">
+          <label htmlFor="forceLocalStorage" className="ml-2 block text-sm text-gray-700 flex items-center">
             Use local storage only (offline mode)
+            <span className="cursor-help ml-1">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+              </svg>
+            </span>
           </label>
+          <div className="absolute bottom-full left-0 mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity">
+            Stores your data only on this device and prevents syncing to your account. 
+            Use this if you're experiencing connection issues or want to work offline.
+            <div className="absolute top-full left-4 transform -translate-x-1/2 -translate-y-px border-4 border-transparent border-t-gray-800"></div>
+          </div>
         </div>
       </div>
 
