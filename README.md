@@ -35,12 +35,6 @@ A modern, web-based GPA, Grade, and CGPA calculator for De La Salle University (
    ```
 4. Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-## Deployment (Vercel)
-
-1. **Push your code to GitHub.**
-2. **Sign up at [Vercel](https://vercel.com/)** and import your repo.
-3. **Set build command:** `npm run build` and output directory: `dist` (auto-detected for Vite).
-4. **Deploy!** Your site will be live on a free `.vercel.app` domain.
 
 ## References & Credits
 
