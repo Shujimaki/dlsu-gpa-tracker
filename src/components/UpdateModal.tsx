@@ -9,14 +9,14 @@ interface UpdateModalProps {
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   useEffect(() => {
     const lastUpdateSeen = localStorage.getItem('lastUpdateSeen');
-    if (!lastUpdateSeen || lastUpdateSeen !== '2024-05-25') {
+    if (!lastUpdateSeen || lastUpdateSeen !== '2024-05-22') {
       // Show modal automatically if update hasn't been seen
       onClose();
     }
   }, []);
 
   const handleClose = () => {
-    localStorage.setItem('lastUpdateSeen', '2024-05-25');
+    localStorage.setItem('lastUpdateSeen', '2024-05-22');
     onClose();
   };
 

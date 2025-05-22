@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore, type FirestoreError } from 'firebase/firestore';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAnalytics, type Analytics } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -28,7 +28,7 @@ export const analytics: Analytics = getAnalytics(app);
 // and replacing the import
 
 // Offline persistence code (currently disabled):
-// import { enableIndexedDbPersistence } from 'firebase/firestore'; 
+// import { enableIndexedDbPersistence, type FirestoreError } from 'firebase/firestore'; 
 // enableIndexedDbPersistence(db).catch((err: FirestoreError) => {
 //   if (err.code === 'failed-precondition') {
 //     console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
