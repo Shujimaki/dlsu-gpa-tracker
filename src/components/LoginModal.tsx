@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { auth } from '../config/firebase';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import type { User } from '../types';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -27,15 +27,13 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
     }
 
     try {
-      // TODO: Use createUserWithEmailAndPassword for sign up if available
-      const result = await signInWithEmailAndPassword(auth, email, password);
-
-      onLogin({
-        id: result.user.uid,
-        email: result.user.email!,
-        displayName: result.user.displayName || undefined,
-        terms: []
-      });
+      if (isSignUp) {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        onLogin(result.user);
+      } else {
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        onLogin(result.user);
+      }
     } catch (err: unknown) {
       setError((err as unknown as { message?: string }).message || (isSignUp ? 'Failed to create account' : 'Invalid email or password'));
     }
@@ -44,14 +42,8 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      (provider as GoogleAuthProvider).customParameters = { prompt: 'select_account' };
       const result = await signInWithPopup(auth, provider);
-      onLogin({
-        id: result.user.uid,
-        email: result.user.email!,
-        displayName: result.user.displayName || undefined,
-        terms: []
-      });
+      onLogin(result.user);
     } catch (err: unknown) {
       setError((err as unknown as { message?: string }).message || 'Failed to login with Google');
     }

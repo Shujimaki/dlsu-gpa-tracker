@@ -1,8 +1,5 @@
-import { getAnalytics, logEvent } from 'firebase/analytics';
-import { app } from './firebase';
-
-// Initialize Analytics
-const analytics = getAnalytics(app);
+import { logEvent } from 'firebase/analytics';
+import { analytics } from './firebase';
 
 // Custom event logging functions
 export const logPageView = (pageName: string) => {

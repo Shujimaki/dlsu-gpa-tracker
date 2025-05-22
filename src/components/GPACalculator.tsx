@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, TrashIcon, InfoIcon } from 'lucide-react';
+import { PlusIcon, TrashIcon, InfoIcon, Loader2 } from 'lucide-react';
 import type { Course } from '../types';
 import { logGpaCalculation, logDeansListEligibility, logUserAction } from '../config/analytics';
+import { saveUserData, loadUserData } from '../config/firestore';
+import { auth } from '../config/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 // Helper to ensure loaded courses have 'nas' property
 function ensureCoursesWithNAS(courses: unknown[]): Course[] {
@@ -18,7 +21,44 @@ function ensureCoursesWithNAS(courses: unknown[]): Course[] {
   });
 }
 
-const GPACalculator = () => {
+/**
+ * Helper function to store data - uses sessionStorage for anonymous users
+ * and localStorage for the forceLocalStorage option
+ */
+function storeLocalData(key: string, data: unknown, isAnonymous: boolean, forceLocalStorage: boolean) {
+  const storage = (isAnonymous && !forceLocalStorage) ? sessionStorage : localStorage;
+  storage.setItem(key, JSON.stringify(data));
+}
+
+/**
+ * Helper function to load data - checks both sessionStorage and localStorage
+ * with priority for authenticated user data
+ */
+function loadLocalData(key: string, isAnonymous: boolean) {
+  // For authenticated users, check localStorage first
+  if (!isAnonymous) {
+    const localData = localStorage.getItem(key);
+    if (localData) {
+      return JSON.parse(localData);
+    }
+  }
+  
+  // For anonymous users or fallback
+  const sessionData = sessionStorage.getItem(key);
+  if (sessionData) {
+    return JSON.parse(sessionData);
+  }
+  
+  // Final fallback to localStorage even for anonymous
+  return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)!) : null;
+}
+
+interface GPACalculatorProps {
+  user?: FirebaseUser | null;
+  authInitialized?: boolean;
+}
+
+const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) => {
   const defaultCourse: Course = {
     id: crypto.randomUUID(),
     code: '',
@@ -33,23 +73,121 @@ const GPACalculator = () => {
   const [showDeansListModal, setShowDeansListModal] = useState(false);
   const [showGPAModal, setShowGPAModal] = useState(false);
   const [isFlowchartExempt, setIsFlowchartExempt] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [forceLocalStorage, setForceLocalStorage] = useState(() => {
+    // Default to what was previously set, or false if first time
+    return localStorage.getItem('forceLocalStorage') === 'true';
+  });
+  
+  // Save the preference to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('forceLocalStorage', forceLocalStorage.toString());
+  }, [forceLocalStorage]);
+
+  // Handle login/logout transitions
+  useEffect(() => {
+    if (!authInitialized) return;
+  
+    const isAnonymous = !user;
+    const wasAnonymous = sessionStorage.getItem('wasAnonymous') === 'true';
+    
+    // If user just logged in (transition from anonymous → authenticated)
+    if (!isAnonymous && wasAnonymous) {
+      console.log('User login detected - checking for data migration needs');
+      sessionStorage.setItem('wasAnonymous', 'false');
+      
+      // Attempt to migrate session data for currently visible term if needed
+      const migrateCurrentTerm = async () => {
+        if (!user) return;
+        
+        try {
+          // Check if we already have data in Firestore for this term
+          const firestoreData = await loadUserData(user.uid, selectedTerm);
+          
+          // If no cloud data exists, migrate sessionStorage data
+          if (!firestoreData) {
+            const sessionData = sessionStorage.getItem(`term_${selectedTerm}`);
+            if (sessionData) {
+              console.log('Migrating anonymous data to Firestore for term:', selectedTerm);
+              const parsedData = JSON.parse(sessionData);
+              await saveUserData(user.uid, selectedTerm, parsedData);
+            }
+          }
+        } catch (error) {
+          console.error('Error during data migration:', error);
+        }
+      };
+      
+      migrateCurrentTerm();
+    }
+    
+    // Track anonymous state for future transitions
+    if (isAnonymous) {
+      sessionStorage.setItem('wasAnonymous', 'true');
+    }
+  }, [user, authInitialized, selectedTerm]);
 
   // Load saved data when term changes
   useEffect(() => {
-    const savedData = localStorage.getItem(`term_${selectedTerm}`);
-    if (savedData) {
-      setCourses(ensureCoursesWithNAS(JSON.parse(savedData)));
-    } else {
-      setCourses([{
-        id: crypto.randomUUID(),
-        code: '',
-        name: '',
-        units: 3,
-        grade: 0,
-        nas: false,
-      }]);
-    }
-  }, [selectedTerm]);
+    const loadData = async () => {
+      console.log('Loading data for term:', selectedTerm);
+      
+      // If auth isn't initialized yet, wait for it
+      if (!authInitialized) {
+        console.log('Auth not initialized yet, delaying load');
+        return;
+      }
+      
+      const currentUser = user || auth.currentUser;
+      const isAnonymous = !currentUser;
+      let loadedFromFirestore = false;
+
+      if (currentUser && currentUser.uid && !forceLocalStorage) {
+        try {
+          // Try to load from Firestore first if localStorage not forced
+          const firestoreData = await loadUserData(currentUser.uid, selectedTerm);
+          if (firestoreData) {
+            console.log('Loaded from Firestore:', firestoreData);
+            setCourses(ensureCoursesWithNAS(firestoreData));
+            loadedFromFirestore = true;
+          } else {
+            console.log('No data found in Firestore for term', selectedTerm);
+          }
+        } catch (error) {
+          console.error('Error loading from Firestore:', error);
+          // Continue to localStorage fallback
+        }
+      } else if (forceLocalStorage) {
+        console.log('Force localStorage mode enabled - skipping Firestore load');
+      } else {
+        console.log('User not authenticated, loading from session storage');
+      }
+      
+      // Fallback to local storage if no Firestore data
+      if (!loadedFromFirestore) {
+        const localData = loadLocalData(`term_${selectedTerm}`, isAnonymous);
+        if (localData) {
+          console.log('Loaded from local storage:', localData);
+          setCourses(ensureCoursesWithNAS(localData));
+        } else {
+          console.log('No saved data found, using default course');
+          setCourses([{
+            id: crypto.randomUUID(),
+            code: '',
+            name: '',
+            units: 3,
+            grade: 0,
+            nas: false,
+          }]);
+        }
+      }
+      setIsInitialLoad(false);
+    };
+
+    loadData();
+  }, [selectedTerm, authInitialized, user, forceLocalStorage]);
 
   const calculateGPA = () => {
     let totalUnits = 0;
@@ -73,8 +211,88 @@ const GPACalculator = () => {
 
   // Save data when courses change
   useEffect(() => {
-    localStorage.setItem(`term_${selectedTerm}`, JSON.stringify(courses));
-  }, [courses, selectedTerm]);
+    // Don't save on initial load
+    if (isInitialLoad) return;
+    
+    // Don't attempt to save if auth is still initializing
+    if (!authInitialized) {
+      console.log('Auth not initialized yet, delaying save');
+      return;
+    }
+
+    const saveData = async () => {
+      if (courses.length === 0) return;
+      
+      // Clear any existing timeout
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+
+      setSaveStatus('saving');
+      console.log('Saving data for term:', selectedTerm, courses);
+      
+      try {
+        const currentUser = user || auth.currentUser;
+        const isAnonymous = !currentUser;
+        let savedToFirestore = false;
+
+        // Skip Firestore if forceLocalStorage is enabled
+        if (currentUser && currentUser.uid && !forceLocalStorage) {
+          try {
+            // Save to Firestore if user is logged in and localStorage not forced
+            const result = await saveUserData(currentUser.uid, selectedTerm, courses);
+            savedToFirestore = result;
+            if (!result) {
+              console.warn("Firestore save returned false - proceeding to localStorage fallback");
+            }
+          } catch (error) {
+            console.error('Error saving to Firestore:', error);
+            // Continue to localStorage fallback
+          }
+        } else if (forceLocalStorage) {
+          console.log('Force localStorage mode enabled - skipping Firestore save');
+        } else {
+          console.log('User not authenticated, saving to session storage only');
+        }
+
+        // Always save to local storage as backup (using the appropriate storage method)
+        storeLocalData(`term_${selectedTerm}`, courses, isAnonymous, forceLocalStorage);
+        
+        if (savedToFirestore) {
+          setSaveStatus('saved');
+        } else {
+          setSaveStatus('saved');
+          console.log('Saved to local storage only');
+        }
+        
+        // Reset status after 2 seconds
+        const timeout = setTimeout(() => {
+          setSaveStatus('idle');
+        }, 2000);
+        setSaveTimeout(timeout);
+      } catch (error) {
+        console.error('Error saving data:', error);
+        setSaveStatus('error');
+        
+        // Reset error status after 3 seconds
+        const timeout = setTimeout(() => {
+          setSaveStatus('idle');
+        }, 3000);
+        setSaveTimeout(timeout);
+      }
+    };
+
+    // Add a longer debounce for users who are not logged in
+    // This prevents excessive save attempts that might cause 400 errors
+    const currentUser = user || auth.currentUser;
+    const debounceTimer = setTimeout(saveData, currentUser ? 1000 : 2000);
+    return () => {
+      clearTimeout(debounceTimer);
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+    };
+  }, [courses, selectedTerm, isInitialLoad, authInitialized, user, forceLocalStorage]);
 
   // Log analytics when relevant values change
   useEffect(() => {
@@ -121,12 +339,40 @@ const GPACalculator = () => {
     }]);
   };
 
+  const handleTermChange = (value: string) => {
+    if (value === 'add') {
+      addNewTerm();
+    } else {
+      setSelectedTerm(Number(value));
+    }
+  };
+
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-dlsu-green mb-4">
-          GPA Calculator
-        </h2>
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-dlsu-green">
+            GPA Calculator
+          </h2>
+          <div className="flex items-center gap-2">
+            {saveStatus === 'saving' && (
+              <div className="flex items-center text-gray-600">
+                <Loader2 size={16} className="animate-spin mr-1" />
+                Saving...
+              </div>
+            )}
+            {saveStatus === 'saved' && (
+              <div className="text-green-600">
+                Saved
+              </div>
+            )}
+            {saveStatus === 'error' && (
+              <div className="text-red-600">
+                Error saving
+              </div>
+            )}
+          </div>
+        </div>
         <p className="text-sm text-gray-600 mb-4">
           Enter your courses, units, and grades to calculate your GPA.
         </p>
@@ -148,21 +394,14 @@ const GPACalculator = () => {
         </div>
       </div>
 
-      <div className="mb-4 flex items-center gap-4">
+      <div className="mb-4 flex items-center gap-4 flex-wrap">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Term
           </label>
           <select
             value={selectedTerm}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === 'add') {
-                addNewTerm();
-              } else {
-                setSelectedTerm(Number(value));
-              }
-            }}
+            onChange={(e) => handleTermChange(e.target.value)}
             className="w-full md:w-48 p-2 border border-gray-300 rounded"
           >
             {Array.from({ length: maxTerm }, (_, i) => i + 1).map((term) => (
@@ -185,6 +424,18 @@ const GPACalculator = () => {
           />
           <label htmlFor="flowchartExempt" className="ml-2 block text-sm text-gray-700">
             Flowchart exempts me from 12-unit requirement
+          </label>
+        </div>
+        <div className="flex items-center ml-auto">
+          <input
+            type="checkbox"
+            id="forceLocalStorage"
+            checked={forceLocalStorage}
+            onChange={(e) => setForceLocalStorage(e.target.checked)}
+            className="h-4 w-4 text-red-500 focus:ring-red-500 border-gray-300 rounded"
+          />
+          <label htmlFor="forceLocalStorage" className="ml-2 block text-sm text-gray-700">
+            Use local storage only (offline mode)
           </label>
         </div>
       </div>

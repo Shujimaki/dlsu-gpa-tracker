@@ -1,7 +1,7 @@
-import type { User } from '../types';
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import UpdateModal from './UpdateModal';
+import type { User } from 'firebase/auth';
 
 interface HeaderProps {
   user: User | null;
@@ -21,7 +21,7 @@ const Header = ({ user, onLoginClick, onLogout }: HeaderProps) => {
 
   return (
     <header className="bg-dlsu-green text-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 py-3">
+      <div className="w-full px-6 py-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <h1 className="text-xl font-bold">DLSU GPA Tracker</h1>
@@ -30,9 +30,9 @@ const Header = ({ user, onLoginClick, onLogout }: HeaderProps) => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowUpdateModal(true)}
-              className="p-2 text-white hover:text-gray-200 transition-colors relative"
+              className="p-2 hover:bg-dlsu-light-green rounded-full transition-colors relative"
             >
-              <Bell size={24} />
+              <Bell size={24} className="text-dlsu-light-green" />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
 

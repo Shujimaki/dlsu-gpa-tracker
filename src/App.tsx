@@ -1,19 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import GPACalculator from './components/GPACalculator'
 import LoginModal from './components/LoginModal'
 import TabNavigation from './components/TabNavigation'
-import type { User } from './types'
+import type { User as FirebaseUser } from 'firebase/auth'
+import { auth } from './config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 function App() {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<FirebaseUser | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [activeTab, setActiveTab] = useState('gpa')
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setAuthInitialized(true);
+      console.log("Auth state changed:", user ? `User ${user.uid} logged in` : "No user logged in");
+    });
+    
+    // Cleanup the listener on unmount
+    return () => unsubscribe();
+  }, []);
 
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'gpa':
-        return <GPACalculator />;
+        return <GPACalculator user={user} authInitialized={authInitialized} />;
       case 'grade':
         return <div className="p-4">Grade Calculator (Coming Soon)</div>;
       case 'cgpa':
@@ -21,7 +36,7 @@ function App() {
       case 'projections':
         return <div className="p-4">CGPA Projections (Coming Soon)</div>;
       default:
-        return <GPACalculator />;
+        return <GPACalculator user={user} authInitialized={authInitialized} />;
     }
   };
 
@@ -37,7 +52,7 @@ function App() {
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="flex-1 w-full px-6 py-8">
           {renderActiveTab()}
-      </div>
+        </div>
       </main>
 
       <footer className="bg-dlsu-green text-white text-center py-3 text-sm">
@@ -54,12 +69,12 @@ function App() {
       <LoginModal 
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)}
-        onLogin={(user: User) => {
+        onLogin={(user: FirebaseUser) => {
           setUser(user)
           setShowLoginModal(false)
         }}
       />
-      </div>
+    </div>
   )
 }
 

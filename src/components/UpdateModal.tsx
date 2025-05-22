@@ -32,7 +32,7 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
           </button>
         </div>
         <div className="space-y-4">
-          <p className="text-gray-600">March 20, 2024</p>
+          <p className="text-gray-600">March 22, 2022</p>
           <ul className="list-disc list-inside space-y-2 text-gray-700">
             <li>Added flowchart exemption option for Dean's List eligibility</li>
             <li>Added failing grade check for both academic and non-academic subjects</li>
