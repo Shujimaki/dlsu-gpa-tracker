@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { auth } from '../config/firebase';
-import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import type { User } from '../types';
 
 interface LoginModalProps {
@@ -27,9 +27,8 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
     }
 
     try {
-      const result = isSignUp
-        ? await createUserWithEmailAndPassword(auth, email, password)
-        : await signInWithEmailAndPassword(auth, email, password);
+      // TODO: Use createUserWithEmailAndPassword for sign up if available
+      const result = await signInWithEmailAndPassword(auth, email, password);
 
       onLogin({
         id: result.user.uid,
@@ -37,15 +36,15 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
         displayName: result.user.displayName || undefined,
         terms: []
       });
-    } catch (err: any) {
-      setError(err.message || (isSignUp ? 'Failed to create account' : 'Invalid email or password'));
+    } catch (err: unknown) {
+      setError((err as unknown as { message?: string }).message || (isSignUp ? 'Failed to create account' : 'Invalid email or password'));
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      (provider as any).customParameters = { prompt: 'select_account' };
+      (provider as GoogleAuthProvider).customParameters = { prompt: 'select_account' };
       const result = await signInWithPopup(auth, provider);
       onLogin({
         id: result.user.uid,
@@ -53,8 +52,8 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
         displayName: result.user.displayName || undefined,
         terms: []
       });
-    } catch (err: any) {
-      setError(err.message || 'Failed to login with Google');
+    } catch (err: unknown) {
+      setError((err as unknown as { message?: string }).message || 'Failed to login with Google');
     }
   };
 

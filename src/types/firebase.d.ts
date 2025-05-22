@@ -1,19 +1,28 @@
 declare module 'firebase/app' {
-  export interface FirebaseApp {}
-  export function initializeApp(config: any): FirebaseApp;
+  export type FirebaseApp = unknown;
+  export function initializeApp(config: unknown): FirebaseApp;
 }
 
 declare module 'firebase/auth' {
-  export interface Auth {}
-  export function getAuth(app: any): Auth;
-  export function signInWithEmailAndPassword(auth: Auth, email: string, password: string): Promise<any>;
-  export function signInWithPopup(auth: Auth, provider: any): Promise<any>;
+  export type Auth = unknown;
+  export type User = {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+  };
+  export type UserCredential = {
+    user: User;
+  };
+  export function getAuth(app: unknown): Auth;
+  export function signInWithEmailAndPassword(auth: Auth, email: string, password: string): Promise<UserCredential>;
+  export function signInWithPopup(auth: Auth, provider: unknown): Promise<UserCredential>;
   export class GoogleAuthProvider {
     constructor();
+    customParameters?: Record<string, unknown>;
   }
 }
 
 declare module 'firebase/firestore' {
-  export interface Firestore {}
-  export function getFirestore(app: any): Firestore;
+  export type Firestore = unknown;
+  export function getFirestore(app: unknown): Firestore;
 } 

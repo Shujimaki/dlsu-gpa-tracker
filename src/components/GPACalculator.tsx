@@ -1,24 +1,23 @@
 import { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, InfoIcon } from 'lucide-react';
-import type { User, Course } from '../types';
-
-interface GPACalculatorProps {
-  user: User | null;
-}
+import type { Course } from '../types';
 
 // Helper to ensure loaded courses have 'nas' property
-function ensureCoursesWithNAS(courses: any[]): Course[] {
-  return courses.map((c) => ({
-    id: c.id,
-    code: c.code,
-    name: c.name,
-    units: c.units,
-    grade: c.grade,
-    nas: typeof c.nas === 'boolean' ? c.nas : false,
-  }));
+function ensureCoursesWithNAS(courses: unknown[]): Course[] {
+  return courses.map((c) => {
+    const course = c as Record<string, unknown>;
+    return {
+      id: course.id as string,
+      code: course.code as string,
+      name: course.name as string,
+      units: course.units as number,
+      grade: course.grade as number,
+      nas: typeof course.nas === 'boolean' ? course.nas : false,
+    };
+  });
 }
 
-const GPACalculator = ({ user }: GPACalculatorProps) => {
+const GPACalculator = () => {
   const defaultCourse: Course = {
     id: crypto.randomUUID(),
     code: '',
@@ -68,12 +67,12 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
 
   const removeCourse = (id: string) => {
     if (courses.length > 1) {
-      setCourses(courses.filter(course => course.id !== id));
+      setCourses(courses.filter((course: Course) => course.id !== id));
     }
   };
 
   const updateCourse = (id: string, field: keyof Course, value: string | number | boolean) => {
-    setCourses(courses.map(course =>
+    setCourses(courses.map((course: Course) =>
       course.id === id ? { ...course, [field]: value } : course
     ));
   };
@@ -81,7 +80,7 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
   const calculateGPA = () => {
     let totalUnits = 0;
     let totalGradePoints = 0;
-    courses.forEach(course => {
+    courses.forEach((course: Course) => {
       if (!course.nas && course.units !== 0 && course.grade !== undefined && course.grade !== null) {
         totalUnits += course.units;
         totalGradePoints += course.units * course.grade;
@@ -91,7 +90,7 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
   };
 
   const addNewTerm = () => {
-    setMaxTerm(prev => prev + 1);
+    setMaxTerm((prev: number) => prev + 1);
     setSelectedTerm(maxTerm + 1);
     setCourses([{
       id: crypto.randomUUID(),
@@ -103,8 +102,8 @@ const GPACalculator = ({ user }: GPACalculatorProps) => {
     }]);
   };
 
-  const totalAcademicUnits = courses.filter(c => !c.nas).reduce((sum, c) => sum + (c.units || 0), 0);
-  const totalNASUnits = courses.filter(c => c.nas).reduce((sum, c) => sum + (c.units || 0), 0);
+  const totalAcademicUnits = courses.filter((c: Course) => !c.nas).reduce((sum: number, c: Course) => sum + (c.units || 0), 0);
+  const totalNASUnits = courses.filter((c: Course) => c.nas).reduce((sum: number, c: Course) => sum + (c.units || 0), 0);
   const gpa = calculateGPA();
   const hasGradeBelow2 = courses.some(course => !course.nas && course.grade < 2.0 && course.grade >= 0);
   const isDeansLister = (totalAcademicUnits >= 12) && gpa >= 3.0 && !hasGradeBelow2;

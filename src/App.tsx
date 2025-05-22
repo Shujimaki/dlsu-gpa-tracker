@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { auth } from './config/firebase'
 import Header from './components/Header'
 import GPACalculator from './components/GPACalculator'
 import LoginModal from './components/LoginModal'
@@ -14,7 +13,7 @@ function App() {
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'gpa':
-        return <GPACalculator user={user} />;
+        return <GPACalculator />;
       case 'grade':
         return <div className="p-4">Grade Calculator (Coming Soon)</div>;
       case 'cgpa':
@@ -22,7 +21,7 @@ function App() {
       case 'projections':
         return <div className="p-4">CGPA Projections (Coming Soon)</div>;
       default:
-        return <GPACalculator user={user} />;
+        return <GPACalculator />;
     }
   };
 
