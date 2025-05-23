@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { PlusIcon, TrashIcon, InfoIcon, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { PlusIcon, TrashIcon, InfoIcon, Loader2, Printer } from 'lucide-react';
 import type { Course } from '../types';
 import { logGpaCalculation, logDeansListEligibility, logUserAction } from '../config/analytics';
 import { saveUserData, loadUserData, getUserTerms, deleteUserTerm } from '../config/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
+import PrintGradesModal from './PrintGradesModal';
 
 /**
  * Helper function to store data - uses sessionStorage for anonymous users
@@ -47,6 +48,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
   const [availableTerms, setAvailableTerms] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   const [showDeansListModal, setShowDeansListModal] = useState(false);
   const [showGPAModal, setShowGPAModal] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [isFlowchartExempt, setIsFlowchartExempt] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -224,25 +226,53 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
     }
   };
 
-  const calculateGPA = () => {
+  // Calculate GPA
+  const { gpa, totalUnits, totalNASUnits, isDeansLister, isFirstHonors } = useMemo(() => {
+    let totalPoints = 0;
     let totalUnits = 0;
-    let totalGradePoints = 0;
-    courses.forEach((course: Course) => {
-      if (!course.nas && course.units !== 0 && course.grade !== undefined && course.grade !== null) {
+    let totalNASUnits = 0;
+    let hasGradeBelow2 = false;
+    let hasFailingGrade = false;
+
+    courses.forEach((course) => {
+      // Check for failing grades in any subject
+      if (course.grade === 0) {
+        hasFailingGrade = true;
+      }
+      
+      // Check for grades below 2.0 in academic subjects
+      if (!course.nas && course.grade > 0 && course.grade < 2.0) {
+        hasGradeBelow2 = true;
+      }
+
+      if (course.nas) {
+        // Count NAS units separately
+        totalNASUnits += course.units;
+      } else {
+        // Include all academic units in total, but only non-zero grades in GPA calculation
         totalUnits += course.units;
-        totalGradePoints += course.units * course.grade;
+        if (course.grade > 0) {
+          totalPoints += course.grade * course.units;
+        }
       }
     });
-    return totalUnits === 0 ? 0 : Number((totalGradePoints / totalUnits).toFixed(3));
-  };
 
-  const totalAcademicUnits = courses.filter((c: Course) => !c.nas).reduce((sum: number, c: Course) => sum + (c.units || 0), 0);
-  const totalNASUnits = courses.filter((c: Course) => c.nas).reduce((sum: number, c: Course) => sum + (c.units || 0), 0);
-  const gpa = calculateGPA();
-  const hasGradeBelow2 = courses.some(course => !course.nas && course.grade < 2.0 && course.grade >= 0);
-  const hasFailingGrade = courses.some(course => course.grade === 0);
-  const isDeansLister = (isFlowchartExempt || totalAcademicUnits >= 12) && gpa >= 3.0 && !hasGradeBelow2 && !hasFailingGrade;
-  const isFirstHonors = (isFlowchartExempt || totalAcademicUnits >= 12) && gpa >= 3.4 && !hasGradeBelow2 && !hasFailingGrade;
+    const gpaValue = totalUnits > 0 ? (totalPoints / totalUnits).toFixed(3) : '0.000';
+    
+    // Dean's List calculations
+    const hasEnoughUnits = (totalUnits >= 12) || (isFlowchartExempt && totalUnits >= 9);
+    const meetsGpaRequirement = parseFloat(gpaValue) >= 3.0;
+    const isDeansLister = meetsGpaRequirement && hasEnoughUnits && !hasGradeBelow2 && !hasFailingGrade;
+    const isFirstHonors = isDeansLister && parseFloat(gpaValue) >= 3.4;
+
+    return { 
+      gpa: gpaValue, 
+      totalUnits, 
+      totalNASUnits, 
+      isDeansLister, 
+      isFirstHonors 
+    };
+  }, [courses, isFlowchartExempt]);
 
   // Save data for the current term
   useEffect(() => {
@@ -318,7 +348,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
 
   // Log analytics when relevant values change
   useEffect(() => {
-    logGpaCalculation(gpa, selectedTerm);
+    logGpaCalculation(parseFloat(gpa), selectedTerm);
     logDeansListEligibility(isDeansLister, isFirstHonors);
   }, [gpa, selectedTerm, isDeansLister, isFirstHonors]);
 
@@ -724,7 +754,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
               <td className="px-4 py-2">Total Units</td>
               <td></td>
               <td className="px-4 py-2 text-center" colSpan={1}>
-                {totalAcademicUnits}
+                {totalUnits}
                 {totalNASUnits > 0 && (
                   <span className="text-gray-500"> ({totalNASUnits})</span>
                 )}
@@ -736,13 +766,23 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       </div>
 
       <div className="mt-4 flex justify-between items-center">
-        <button
-          onClick={addCourse}
-          className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
-        >
-          <PlusIcon size={18} className="mr-1" />
-          Add Course
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={addCourse}
+            className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
+          >
+            <PlusIcon size={18} className="mr-1" />
+            Add Course
+          </button>
+          
+          <button
+            onClick={() => setShowPrintModal(true)}
+            className="flex items-center px-4 py-2 border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors"
+          >
+            <Printer size={18} className="mr-1" />
+            Print Grades
+          </button>
+        </div>
         <div className="text-right">
           <div className="text-lg font-bold">
             GPA: <span className="text-xl">{gpa}</span>
@@ -813,6 +853,20 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
           </div>
         </div>
       )}
+
+      {/* Print Grades Modal */}
+      <PrintGradesModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        courses={courses}
+        term={selectedTerm}
+        gpa={parseFloat(gpa)}
+        totalUnits={totalUnits}
+        totalNASUnits={totalNASUnits}
+        isDeansLister={isDeansLister}
+        isFirstHonors={isFirstHonors}
+        isFlowchartExempt={isFlowchartExempt}
+      />
     </div>
   );
 };

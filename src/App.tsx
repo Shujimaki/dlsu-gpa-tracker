@@ -103,8 +103,8 @@ function App() {
         </div>
       </main>
 
-      <footer className="bg-dlsu-green text-white py-4 text-sm">
-        <div className="container mx-auto px-6">
+      <footer className="bg-dlsu-green text-white py-4 text-sm w-full">
+        <div className="w-full px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-left">
         <p>© {new Date().getFullYear()} Greendex</p>

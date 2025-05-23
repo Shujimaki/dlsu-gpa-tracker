@@ -28,32 +28,16 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
           <p className="text-gray-600">May 23, 2025</p>
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-dlsu-green">Storage Simplification:</h3>
+              <h3 className="font-medium text-dlsu-green">New Print Grades Feature:</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Simplified data storage to session-only for anonymous users</li>
-                <li>Removed localStorage completely for cleaner data management</li>
-                <li>Anonymous users now start fresh on page refresh</li>
-                <li>Improved sync between anonymous and authenticated states</li>
+                <li>Print or download your term grades with one click</li>
+                <li>Choose between standard paper size or social media story format</li>
+                <li>Add your name and degree program to personalize your grade report</li>
+                <li>Easily share your academic achievements with friends and family</li>
               </ul>
             </div>
             
-            <div>
-              <h3 className="font-medium text-dlsu-green">Term Management:</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Always display Terms 1-12 as standard terms</li>
-                <li>Fixed term creation, display, and deletion</li>
-                <li>Added a 21-term maximum limit</li>
-                <li>Improved handling of custom terms (13+)</li>
-              </ul>
-            </div>
             
-            <div>
-              <h3 className="font-medium text-dlsu-green">Performance & Bug Fixes:</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Strengthen data security with proper timeout handling</li>
-                <li>Enhanced error handling throughout the application</li>
-              </ul>
-            </div>
           </div>
         </div>
         <div className="mt-6 flex justify-end">

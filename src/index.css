@@ -25,6 +25,9 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --dlsu-green: #006f51;
+  --dlsu-light-green: #009a73;
 }
 
 a {
@@ -77,5 +80,30 @@ button:focus-visible {
   }
   button {
     background-color: #f9f9f9;
+  }
+}
+
+/* Print styles */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  #print-preview, #print-preview * {
+    visibility: visible;
+  }
+  
+  #print-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .print:hidden {
+    display: none !important;
   }
 }
