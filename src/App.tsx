@@ -11,9 +11,17 @@ import { onAuthStateChanged, signOut, setPersistence, browserSessionPersistence 
 function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
-  const [showUpdateModal, setShowUpdateModal] = useState(true)
+  const [showUpdateModal, setShowUpdateModal] = useState(false)
   const [activeTab, setActiveTab] = useState('gpa')
   const [authInitialized, setAuthInitialized] = useState(false);
+
+  // Check if update modal should be shown
+  useEffect(() => {
+    const lastUpdateSeen = localStorage.getItem('lastUpdateSeen');
+    if (!lastUpdateSeen || lastUpdateSeen !== '2024-05-22') {
+      setShowUpdateModal(true);
+    }
+  }, []);
 
   // Initialize auth with session persistence (instead of local)
   useEffect(() => {

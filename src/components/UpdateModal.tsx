@@ -8,11 +8,10 @@ interface UpdateModalProps {
 
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   useEffect(() => {
+    // Check if this update has already been seen
     const lastUpdateSeen = localStorage.getItem('lastUpdateSeen');
-    if (!lastUpdateSeen || lastUpdateSeen !== '2024-05-22') {
-      // Show modal automatically if update hasn't been seen
-      onClose();
-    }
+    // We don't need to do anything here - the parent component controls visibility
+    // The previous code was incorrectly calling onClose() which caused issues
   }, []);
 
   const handleClose = () => {
