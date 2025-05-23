@@ -22,10 +22,10 @@ const Header = ({ user, onLoginClick, onLogout, onShowUpdateModal }: HeaderProps
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Top row with logo and notification bell */}
           <div className="flex justify-between items-center w-full">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold">Greendex</h1>
-            </div>
-            
+          <div className="flex items-center">
+            <h1 className="text-xl font-bold">Greendex</h1>
+          </div>
+          
             <button
               onClick={onShowUpdateModal}
               className="p-2 hover:bg-dlsu-light-green rounded-full transition-colors relative"
@@ -35,7 +35,7 @@ const Header = ({ user, onLoginClick, onLogout, onShowUpdateModal }: HeaderProps
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
           </div>
-          
+
           {/* Bottom row with user info and login/logout button */}
           <div className="flex justify-end items-center w-full mt-2 sm:mt-0">
             {user ? (

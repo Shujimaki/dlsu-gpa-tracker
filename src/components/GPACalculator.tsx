@@ -23,34 +23,19 @@ function ensureCoursesWithNAS(courses: unknown[]): Course[] {
 
 /**
  * Helper function to store data - uses sessionStorage for anonymous users
- * and localStorage for the forceLocalStorage option
+ * and Firestore for logged-in users
  */
-function storeLocalData(key: string, data: unknown, isAnonymous: boolean, forceLocalStorage: boolean) {
-  const storage = (isAnonymous && !forceLocalStorage) ? sessionStorage : localStorage;
-  storage.setItem(key, JSON.stringify(data));
+function storeSessionData(key: string, data: unknown) {
+  sessionStorage.setItem(key, JSON.stringify(data));
 }
 
 /**
- * Helper function to load data - checks both sessionStorage and localStorage
- * with priority for authenticated user data
+ * Helper function to load data - checks sessionStorage for anonymous users
+ * and falls back to Firestore for logged-in users
  */
-function loadLocalData(key: string, isAnonymous: boolean) {
-  // For authenticated users, check localStorage first
-  if (!isAnonymous) {
-    const localData = localStorage.getItem(key);
-    if (localData) {
-      return JSON.parse(localData);
-    }
-  }
-  
-  // For anonymous users or fallback
+function loadSessionData(key: string) {
   const sessionData = sessionStorage.getItem(key);
-  if (sessionData) {
-    return JSON.parse(sessionData);
-  }
-  
-  // Final fallback to localStorage even for anonymous
-  return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)!) : null;
+  return sessionData ? JSON.parse(sessionData) : null;
 }
 
 interface GPACalculatorProps {
@@ -81,15 +66,6 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [forceLocalStorage, setForceLocalStorage] = useState(() => {
-    // Default to what was previously set, or false if first time
-    return localStorage.getItem('forceLocalStorage') === 'true';
-  });
-  
-  // Save the preference to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('forceLocalStorage', forceLocalStorage.toString());
-  }, [forceLocalStorage]);
 
   // Handle login/logout transitions
   useEffect(() => {
@@ -138,7 +114,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
             if (sessionData) {
               console.log('Migrating anonymous data to Firestore for term:', selectedTerm);
               const parsedData = JSON.parse(sessionData);
-              await saveUserData(user.uid, selectedTerm, parsedData);
+              await saveUserData(user.uid, selectedTerm, parsedData.courses, parsedData.isFlowchartExempt);
             }
           }
         } catch (error) {
@@ -149,61 +125,50 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       migrateCurrentTerm();
     }
     
-    // When user logs in (whether new or returning), check for custom terms
+    // When user logs in (whether new or returning), check for all terms
     if (!isAnonymous) {
-      console.log('User logged in, checking for custom terms in Firestore...');
+      console.log('User logged in, checking for terms in Firestore...');
       
-      // Function to check for custom terms in Firestore
-      const checkForCustomTerms = async () => {
-        if (!user || forceLocalStorage) return;
+      // Function to check for terms in Firestore
+      const checkForFirestoreTerms = async () => {
+        if (!user) return;
         
         try {
           // Get all terms from Firestore
           const userTerms = await getUserTerms(user.uid);
+          console.log('Found terms in Firestore:', userTerms);
           
           if (userTerms && userTerms.length > 0) {
-            // Filter for custom terms (term > 12)
-            const customTerms = userTerms.filter(term => term > 12);
+            // Find highest term number (up to 21)
+            const highestTerm = Math.min(Math.max(...userTerms), 21);
             
-            if (customTerms.length > 0) {
-              console.log('Found custom terms in Firestore:', customTerms);
-              
-              // Add custom terms to availableTerms if they don't already exist
-              setAvailableTerms(prev => {
-                const newTerms = [...prev];
-                customTerms.forEach(term => {
-                  if (!newTerms.includes(term)) {
-                    newTerms.push(term);
-                  }
-                });
-                return newTerms.sort((a, b) => a - b);
-              });
-            }
+            // Always include terms 1-12, plus any additional terms up to the highest
+            // If highestTerm is <= 12, this will just generate terms 1-12
+            const allTerms = Array.from({ length: Math.max(12, highestTerm) }, (_, i) => i + 1);
+            
+            console.log('Setting available terms:', allTerms);
+            
+            // Update availableTerms
+            setAvailableTerms(allTerms);
+          } else {
+            // Default to terms 1-12 if no terms found
+            setAvailableTerms([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
           }
-          
-          // Also check localStorage for any terms not in Firestore
-          loadAvailableTerms();
         } catch (error) {
-          console.error('Error checking for custom terms:', error);
-          // Fallback to localStorage
-          loadAvailableTerms();
+          console.error('Error checking for terms:', error);
+          // Default to terms 1-12 on error
+          setAvailableTerms([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
         }
       };
       
-      checkForCustomTerms();
+      checkForFirestoreTerms();
     }
     
     // Track anonymous state for future transitions
     if (isAnonymous) {
       sessionStorage.setItem('wasAnonymous', 'true');
     }
-  }, [user, authInitialized, selectedTerm, forceLocalStorage]);
-
-  // Load available terms when component mounts
-  useEffect(() => {
-    console.log("Component mounted, loading available terms...");
-    loadAvailableTerms();
-  }, []);
+  }, [user, authInitialized, selectedTerm]);
 
   // Load data when term changes
   useEffect(() => {
@@ -211,55 +176,19 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       console.log(`Loading data for term ${selectedTerm}...`);
       loadData();
     }
-  }, [selectedTerm, user, authInitialized, forceLocalStorage]);
-
-  // Load available terms from storage
-  const loadAvailableTerms = () => {
-    console.log("Loading available terms...");
-    
-    // Standard terms (1-12) are always available
-    const standardTerms = Array.from({ length: 12 }, (_, i) => i + 1);
-    
-    // Find custom terms in localStorage and sessionStorage (term_13, term_14, etc.)
-    const localStorageTerms = Object.keys(localStorage)
-      .filter(key => key.startsWith('term_'))
-      .map(key => {
-        const match = key.match(/term_(\d+)/);
-        return match ? parseInt(match[1]) : null;
-      })
-      .filter((term): term is number => term !== null && term > 12);
-    
-    const sessionStorageTerms = Object.keys(sessionStorage)
-      .filter(key => key.startsWith('term_'))
-      .map(key => {
-        const match = key.match(/term_(\d+)/);
-        return match ? parseInt(match[1]) : null;
-      })
-      .filter((term): term is number => term !== null && term > 12);
-    
-    // Combine all terms without duplicates
-    const customTerms = [...new Set([...localStorageTerms, ...sessionStorageTerms])];
-    
-    // Combine standard and custom terms
-    const allTerms = [...standardTerms, ...customTerms].sort((a, b) => a - b);
-    console.log("Available terms:", allTerms);
-    
-    // Update state
-    setAvailableTerms(allTerms);
-  };
+  }, [selectedTerm, user, authInitialized]);
 
   // Load data for the current term
   const loadData = async () => {
     try {
       setIsInitialLoad(true);
       const isAnonymous = !user;
-      const shouldUseFirestore = !forceLocalStorage && !!user;
       
       let loadedCourses: Course[] | null = null;
       let termFlowchartExempt = false;
       
-      // Try to load from Firestore first if user is logged in and not forcing local storage
-      if (shouldUseFirestore) {
+      // Try to load from Firestore if user is logged in
+      if (!isAnonymous) {
         try {
           const firestoreData = await loadUserData(user!.uid, selectedTerm);
           if (firestoreData) {
@@ -272,22 +201,22 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
         }
       }
       
-      // If no data from Firestore or not using Firestore, try local storage
+      // If no data from Firestore or anonymous user, try sessionStorage
       if (!loadedCourses) {
         const localKey = `term_${selectedTerm}`;
-        const localData = loadLocalData(localKey, isAnonymous);
+        const sessionData = loadSessionData(localKey);
         
-        if (localData) {
-          if (typeof localData === 'object' && 'courses' in localData) {
+        if (sessionData) {
+          if (typeof sessionData === 'object' && 'courses' in sessionData) {
             // New format with flowchart exemption
-            loadedCourses = localData.courses as Course[];
-            termFlowchartExempt = localData.isFlowchartExempt || false;
+            loadedCourses = sessionData.courses as Course[];
+            termFlowchartExempt = sessionData.isFlowchartExempt || false;
           } else {
             // Old format (just array of courses)
-            loadedCourses = localData as Course[];
+            loadedCourses = sessionData as Course[];
             termFlowchartExempt = false;
           }
-          console.log('Data loaded from localStorage');
+          console.log('Data loaded from sessionStorage');
         }
       }
       
@@ -339,47 +268,49 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       
       return () => clearTimeout(saveTimer);
     }
-  }, [courses, selectedTerm, isInitialLoad, authInitialized, user, forceLocalStorage, isFlowchartExempt]);
+  }, [courses, selectedTerm, isInitialLoad, authInitialized, user, isFlowchartExempt]);
 
   // Save data function
   const saveData = async () => {
     try {
       setSaveStatus('saving');
       const isAnonymous = !user;
-      const shouldUseFirestore = !forceLocalStorage && !!user;
       
-      // Save to local storage first (always)
+      // Save to sessionStorage (for anonymous users or as backup)
       const termData = {
         courses,
         isFlowchartExempt
       };
       
-      const localKey = `term_${selectedTerm}`;
-      storeLocalData(localKey, termData, isAnonymous, forceLocalStorage);
+      const termKey = `term_${selectedTerm}`;
+      storeSessionData(termKey, termData);
       
-      // Save to Firestore if user is logged in and not forcing local storage
-      if (shouldUseFirestore) {
+      // Save to Firestore if user is logged in
+      if (!isAnonymous) {
         try {
           const result = await saveUserData(user!.uid, selectedTerm, courses, isFlowchartExempt);
           if (result) {
             setSaveStatus('saved');
           } else {
             setSaveStatus('error');
+            return false;
           }
         } catch (error) {
           console.error('Error saving to Firestore:', error);
           setSaveStatus('error');
+          return false;
         }
       } else {
         setSaveStatus('saved');
       }
-      
+        
       // Reset status after 2 seconds
       const timeout = setTimeout(() => {
         setSaveStatus('idle');
       }, 2000);
       setSaveTimeout(timeout);
       
+      return true;
     } catch (error) {
       console.error('Error in saveData:', error);
       setSaveStatus('error');
@@ -389,6 +320,8 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
         setSaveStatus('idle');
       }, 3000);
       setSaveTimeout(timeout);
+      
+      return false;
     }
   };
 
@@ -425,9 +358,15 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
   };
 
   // Add a new term
-  const addNewTerm = () => {
+  const addNewTerm = async () => {
+    // Check if we've reached the maximum number of terms (21)
+    if (Math.max(...availableTerms) >= 21) {
+      console.log("Maximum number of terms (21) reached");
+      return;
+    }
+    
     // Save current term data first
-    saveData();
+    await saveData();
     
     // Get the next term number (highest term + 1)
     const nextTerm = Math.max(...availableTerms) + 1;
@@ -438,28 +377,46 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       { id: crypto.randomUUID(), code: '', name: '', units: 3, grade: 4.0, nas: false },
     ];
     
-    // Save the new term data to localStorage
+    // Prepare the new term data
     const newTermData = {
       courses: newCourses,
       isFlowchartExempt: false
     };
     
+    // Always save to sessionStorage
     const newTermKey = `term_${nextTerm}`;
-    storeLocalData(newTermKey, newTermData, !user, forceLocalStorage);
+    storeSessionData(newTermKey, newTermData);
     
-    // Add the new term to availableTerms
-    setAvailableTerms(prev => [...prev, nextTerm].sort((a, b) => a - b));
+    // If logged in, also save to Firestore
+    if (user) {
+      try {
+        console.log(`Saving new Term ${nextTerm} to Firestore`);
+        await saveUserData(user.uid, nextTerm, newCourses, false);
+      } catch (error) {
+        console.error(`Error saving new Term ${nextTerm} to Firestore:`, error);
+      }
+    }
     
-    // Switch to the new term
+    // First update the available terms array
+    console.log(`Adding Term ${nextTerm} to available terms`);
+    setAvailableTerms(prev => {
+      const updatedTerms = [...prev, nextTerm].sort((a, b) => a - b);
+      console.log('Updated available terms:', updatedTerms);
+      return updatedTerms;
+    });
+    
+    // Then update the state to reflect the new term data
     setCourses(newCourses);
     setIsFlowchartExempt(false);
+    
+    // Finally set the selected term to the newly created term
     setSelectedTerm(nextTerm);
     
     console.log(`Successfully created and switched to Term ${nextTerm}`);
   };
 
   // Delete a term (only terms > 12 can be deleted)
-  const deleteTerm = (term: number) => {
+  const deleteTerm = async (term: number) => {
     // Don't allow deleting standard terms 1-12
     if (term <= 12) {
       console.log("Cannot delete standard terms (1-12)");
@@ -468,43 +425,51 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
     
     console.log(`Deleting Term ${term}`);
     
-    // Remove from localStorage and sessionStorage
-    localStorage.removeItem(`term_${term}`);
-    sessionStorage.removeItem(`term_${term}`);
-    
-    // If user is logged in and not forcing local storage, delete from Firestore
-    if (user && !forceLocalStorage) {
-      deleteUserTerm(user.uid, term)
-        .then(success => {
+    try {
+      // Remove from sessionStorage first
+      sessionStorage.removeItem(`term_${term}`);
+      
+      // If user is logged in, also delete from Firestore
+      if (user) {
+        try {
+          const success = await deleteUserTerm(user.uid, term);
           if (success) {
             console.log(`Term ${term} deleted from Firestore`);
           } else {
             console.error(`Failed to delete Term ${term} from Firestore`);
           }
-        })
-        .catch(error => {
+        } catch (error) {
           console.error(`Error deleting Term ${term} from Firestore:`, error);
-        });
-    }
-    
-    // Remove from availableTerms
-    setAvailableTerms(prev => prev.filter(t => t !== term));
-    
-    // If currently on the deleted term, switch to Term 1
-    if (selectedTerm === term) {
-      console.log(`Currently on deleted Term ${term}, switching to Term 1`);
-      setSelectedTerm(1);
+        }
+      }
+      
+      // Remove from availableTerms AFTER Firebase deletion completes
+      setAvailableTerms(prev => {
+        const updated = prev.filter(t => t !== term);
+        console.log(`Updated available terms after deletion:`, updated);
+        return updated;
+      });
+      
+      // If currently on the deleted term, switch to Term 1
+      if (selectedTerm === term) {
+        console.log(`Currently on deleted Term ${term}, switching to Term 1`);
+        setSelectedTerm(1);
+      }
+      
+      console.log(`Term ${term} successfully deleted`);
+    } catch (error) {
+      console.error(`Error in deleteTerm:`, error);
     }
   };
 
   // Handle term change
-  const handleTermChange = (value: string) => {
+  const handleTermChange = async (value: string) => {
     if (value === 'add') {
-      addNewTerm();
+      await addNewTerm();
     } else {
       // Save current term data before switching
       if (!isInitialLoad) {
-        saveData();
+        await saveData();
       }
       
       // Switch to the selected term
@@ -517,6 +482,14 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
     // If the auth is initialized but there's no user, this means user has logged out
     if (authInitialized && !user) {
       console.log('User logged out, resetting calculator to fresh state');
+      
+      // Clear all session data for terms
+      Object.keys(sessionStorage)
+        .filter(key => key.startsWith('term_'))
+        .forEach(key => {
+          console.log(`Clearing session data for ${key}`);
+          sessionStorage.removeItem(key);
+        });
       
       // Reset to default state
       setCourses([{
@@ -532,6 +505,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       setSelectedTerm(1);
       
       // Reset to default terms (1-12 only)
+      console.log('Resetting to default terms (1-12)');
       setAvailableTerms([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
       
       // Reset flowchart exemption
@@ -589,29 +563,31 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       <div className="mb-4 flex flex-col gap-4">
         <div className="flex flex-wrap justify-between">
           <div className="flex flex-wrap gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Term
-              </label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Term
+          </label>
               <div className="flex gap-2">
-                <select
-                  value={selectedTerm}
-                  onChange={(e) => handleTermChange(e.target.value)}
-                  className="w-full md:w-48 p-2 border border-gray-300 rounded"
-                >
+          <select
+            value={selectedTerm}
+            onChange={async (e) => await handleTermChange(e.target.value)}
+            className="w-full md:w-48 p-2 border border-gray-300 rounded"
+          >
                   {availableTerms.map((term) => (
-                    <option key={term} value={term}>
-                      Term {term}
-                    </option>
-                  ))}
-                  <option value="add" className="text-dlsu-green font-medium">
-                    + Add New Term
-                  </option>
-                </select>
+              <option key={term} value={term}>
+                Term {term}
+              </option>
+            ))}
+            {Math.max(...availableTerms) < 21 && (
+              <option value="add" className="text-dlsu-green font-medium">
+                + Add New Term
+              </option>
+            )}
+          </select>
                 
                 {selectedTerm > 12 && (
                   <button
-                    onClick={() => deleteTerm(selectedTerm)}
+                    onClick={async () => await deleteTerm(selectedTerm)}
                     className="p-2 text-red-500 hover:text-red-700 border border-red-300 rounded hover:bg-red-50"
                     title="Delete this term"
                   >
@@ -619,7 +595,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
                   </button>
                 )}
               </div>
-            </div>
+        </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Options
@@ -628,46 +604,18 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
                 htmlFor="flowchartExempt" 
                 className="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 cursor-pointer"
               >
-                <input
-                  type="checkbox"
-                  id="flowchartExempt"
-                  checked={isFlowchartExempt}
-                  onChange={(e) => setIsFlowchartExempt(e.target.checked)}
+          <input
+            type="checkbox"
+            id="flowchartExempt"
+            checked={isFlowchartExempt}
+            onChange={(e) => setIsFlowchartExempt(e.target.checked)}
                   className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded mr-2"
-                />
+          />
                 <span className="text-sm text-gray-700">
                   Flowchart exempts me from 12-unit requirement for this term
                 </span>
-              </label>
-            </div>
-          </div>
-          
-          <div className="mt-4 md:mt-0">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Storage (All Terms)
-            </label>
-            <div className="flex items-center relative group px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">
-              <input
-                type="checkbox"
-                id="forceLocalStorage"
-                checked={forceLocalStorage}
-                onChange={(e) => setForceLocalStorage(e.target.checked)}
-                className="h-4 w-4 text-red-500 focus:ring-red-500 border-gray-300 rounded mr-2"
-              />
-              <label htmlFor="forceLocalStorage" className="block text-sm text-gray-700 flex items-center cursor-pointer">
-                Use local storage only (offline mode)
-                <span className="cursor-help ml-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-500">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-                  </svg>
-                </span>
-              </label>
-              <div className="absolute bottom-full left-0 mb-2 w-64 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity">
-                Stores your data only on this device and prevents syncing to your account. 
-                Use this if you're experiencing connection issues or want to work offline.
-                <div className="absolute top-full left-4 transform -translate-x-1/2 -translate-y-px border-4 border-transparent border-t-gray-800"></div>
-              </div>
-            </div>
+          </label>
+        </div>
           </div>
         </div>
       </div>

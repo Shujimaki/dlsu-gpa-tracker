@@ -44,9 +44,9 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Check if update modal should be hidden based on localStorage
+  // Check if update modal should be hidden based on sessionStorage
   useEffect(() => {
-    const lastUpdateSeen = localStorage.getItem('lastUpdateSeen');
+    const lastUpdateSeen = sessionStorage.getItem('lastUpdateSeen');
     if (lastUpdateSeen === '2024-05-22') {
       setShowUpdateModal(false);
     } else {
@@ -57,19 +57,8 @@ function App() {
   // Handle user logout
   const handleLogout = async () => {
     try {
-      // Clear the session flag for data persistence
-      sessionStorage.removeItem('wasAnonymous');
-      
-      // Clear any custom term data from sessionStorage
-      Object.keys(sessionStorage)
-        .filter(key => key.startsWith('term_'))
-        .forEach(key => {
-          const match = key.match(/term_(\d+)/);
-          const termNumber = match ? parseInt(match[1]) : null;
-          if (termNumber && termNumber > 12) {
-            sessionStorage.removeItem(key);
-          }
-        });
+      // Clear all session data
+      sessionStorage.clear();
       
       // Sign out of Firebase
       await signOut(auth);
@@ -77,7 +66,7 @@ function App() {
       // Clear user state
       setUser(null);
       
-      console.log("User logged out successfully");
+      console.log("User logged out successfully, all session data cleared");
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -118,12 +107,12 @@ function App() {
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-left">
-              <p>© {new Date().getFullYear()} Greendex</p>
+        <p>© {new Date().getFullYear()} Greendex</p>
               <p className="mt-1 text-gray-200">
-                Calculator logic and inspiration based on the original 
-                <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
-                DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
-                </a>.
+          Calculator logic and inspiration based on the original 
+          <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
+          DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
+          </a>.
               </p>
             </div>
             

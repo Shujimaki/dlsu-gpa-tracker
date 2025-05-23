@@ -19,10 +19,9 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
 
-  const clearLocalData = () => {
-    // Clear any localStorage data 
+  const clearSessionData = () => {
+    // Clear any session data
     for (let i = 1; i <= 20; i++) { // Clear the first 20 terms to be safe
-      localStorage.removeItem(`term_${i}`);
       sessionStorage.removeItem(`term_${i}`);
     }
   };
@@ -52,7 +51,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
         
         // Set flag for new account creation
         sessionStorage.setItem('newLogin', 'true');
-        clearLocalData();
+        clearSessionData();
         
         // Clear form fields
         resetForm();
@@ -122,7 +121,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
       if (isNewUser) {
         console.log('New Google account detected');
         sessionStorage.setItem('newLogin', 'true');
-        clearLocalData();
+        clearSessionData();
       }
       
       // Clear form

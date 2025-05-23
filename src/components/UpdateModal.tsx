@@ -8,7 +8,7 @@ interface UpdateModalProps {
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   const handleClose = () => {
     // Save that the user has seen this update
-    localStorage.setItem('lastUpdateSeen', '2024-05-22');
+    sessionStorage.setItem('lastUpdateSeen', '2024-05-22');
     onClose();
   };
 
@@ -40,7 +40,7 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
             <div>
               <h3 className="font-medium text-dlsu-green">Data Management:</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Added "Use local storage only" option for offline usage</li>
+                <li>Added offline usage option</li>
                 <li>Improved data synchronization between devices</li>
                 <li>Enhanced error handling for Firestore operations</li>
                 <li>Fixed data migration issues between login sessions</li>
