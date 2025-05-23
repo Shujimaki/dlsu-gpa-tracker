@@ -260,7 +260,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
     const gpaValue = totalUnits > 0 ? (totalPoints / totalUnits).toFixed(3) : '0.000';
     
     // Dean's List calculations
-    const hasEnoughUnits = (totalUnits >= 12) || (isFlowchartExempt && totalUnits >= 9);
+    const hasEnoughUnits = (totalUnits >= 12) || (isFlowchartExempt);
     const meetsGpaRequirement = parseFloat(gpaValue) >= 3.0;
     const isDeansLister = meetsGpaRequirement && hasEnoughUnits && !hasGradeBelow2 && !hasFailingGrade;
     const isFirstHonors = isDeansLister && parseFloat(gpaValue) >= 3.4;
