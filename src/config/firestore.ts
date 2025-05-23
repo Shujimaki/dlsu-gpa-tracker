@@ -2,11 +2,19 @@ import { db } from './firebase';
 import { 
   doc,
   setDoc,
-  getDoc
+  getDoc,
+  collection,
+  getDocs,
+  deleteDoc
 } from 'firebase/firestore';
 import type { Course } from '../types';
 
-export const saveUserData = async (userId: string, term: number, courses: Course[]) => {
+export interface TermData {
+  courses: Course[];
+  isFlowchartExempt: boolean;
+}
+
+export const saveUserData = async (userId: string, term: number, courses: Course[], isFlowchartExempt: boolean = false) => {
   try {
     // Validate userId and data
     if (!userId || userId.trim() === '') {
@@ -29,11 +37,11 @@ export const saveUserData = async (userId: string, term: number, courses: Course
       nas: typeof course.nas === 'boolean' ? course.nas : false
     }));
     
-    console.log('Saving to Firestore:', { userId, term, courses: validCourses });
+    console.log('Saving to Firestore:', { userId, term, courses: validCourses, isFlowchartExempt });
     
     const userRef = doc(db, 'users', userId);
     const termRef = doc(userRef, 'terms', term.toString());
-    await setDoc(termRef, { courses: validCourses }, { merge: true });
+    await setDoc(termRef, { courses: validCourses, isFlowchartExempt }, { merge: true });
     console.log('Data saved to Firestore successfully');
     return true; // Return true on success
   } catch (error) {
@@ -42,7 +50,7 @@ export const saveUserData = async (userId: string, term: number, courses: Course
   }
 };
 
-export const loadUserData = async (userId: string, term: number): Promise<Course[] | null> => {
+export const loadUserData = async (userId: string, term: number): Promise<TermData | null> => {
   try {
     if (!userId || userId.trim() === '') {
       console.warn('Cannot load from Firestore: userId is empty or undefined');
@@ -56,11 +64,64 @@ export const loadUserData = async (userId: string, term: number): Promise<Course
     if (termDoc.exists()) {
       const data = termDoc.data();
       console.log('Data loaded from Firestore:', data);
-      return data.courses as Course[];
+      return {
+        courses: data.courses as Course[],
+        isFlowchartExempt: data.isFlowchartExempt || false
+      };
     }
     return null;
   } catch (error) {
     console.error('Error loading user data:', error);
     return null;
+  }
+};
+
+export const getUserTerms = async (userId: string): Promise<number[]> => {
+  try {
+    if (!userId || userId.trim() === '') {
+      console.warn('Cannot get terms from Firestore: userId is empty or undefined');
+      return [];
+    }
+    
+    const userRef = doc(db, 'users', userId);
+    const termsCollectionRef = collection(userRef, 'terms');
+    const termsSnapshot = await getDocs(termsCollectionRef);
+    
+    if (termsSnapshot.empty) {
+      console.log('No terms found in Firestore for user:', userId);
+      return [];
+    }
+    
+    // Extract term numbers from document IDs
+    const termNumbers = termsSnapshot.docs.map(doc => {
+      const termId = doc.id;
+      const termNumber = parseInt(termId);
+      return isNaN(termNumber) ? null : termNumber;
+    }).filter((term): term is number => term !== null);
+    
+    console.log('Terms loaded from Firestore:', termNumbers);
+    return termNumbers;
+  } catch (error) {
+    console.error('Error getting user terms:', error);
+    return [];
+  }
+};
+
+export const deleteUserTerm = async (userId: string, term: number): Promise<boolean> => {
+  try {
+    if (!userId || userId.trim() === '') {
+      console.warn('Cannot delete term from Firestore: userId is empty or undefined');
+      return false;
+    }
+    
+    const userRef = doc(db, 'users', userId);
+    const termRef = doc(userRef, 'terms', term.toString());
+    
+    await deleteDoc(termRef);
+    console.log(`Term ${term} deleted from Firestore for user ${userId}`);
+    return true;
+  } catch (error) {
+    console.error(`Error deleting term ${term}:`, error);
+    return false;
   }
 }; 

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface UpdateModalProps {
@@ -7,18 +6,13 @@ interface UpdateModalProps {
 }
 
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
-  useEffect(() => {
-    // Check if this update has already been seen
-    const lastUpdateSeen = localStorage.getItem('lastUpdateSeen');
-    // We don't need to do anything here - the parent component controls visibility
-    // The previous code was incorrectly calling onClose() which caused issues
-  }, []);
-
   const handleClose = () => {
+    // Save that the user has seen this update
     localStorage.setItem('lastUpdateSeen', '2024-05-22');
     onClose();
   };
 
+  // Don't render anything if not open
   if (!isOpen) return null;
 
   return (
