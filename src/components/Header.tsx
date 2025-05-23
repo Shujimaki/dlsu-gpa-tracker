@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Bell } from 'lucide-react';
 import type { User } from 'firebase/auth';
 
