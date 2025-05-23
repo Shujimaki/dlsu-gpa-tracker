@@ -8,7 +8,7 @@ interface UpdateModalProps {
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   const handleClose = () => {
     // Save that the user has seen this update
-    sessionStorage.setItem('lastUpdateSeen', '2024-05-22');
+    sessionStorage.setItem('lastUpdateSeen', '2025-05-23');
     onClose();
   };
 
@@ -25,35 +25,33 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
           </button>
         </div>
         <div className="space-y-4">
-          <p className="text-gray-600">May 22, 2025</p>
+          <p className="text-gray-600">May 23, 2025</p>
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-dlsu-green">Account & Storage Improvements:</h3>
+              <h3 className="font-medium text-dlsu-green">Storage Simplification:</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Fixed Firebase authentication issues</li>
-                <li>Added proper error handling for login/registration</li>
-                <li>Implemented session persistence (no auto-login after browser restart)</li>
-                <li>New accounts now start with a clean slate</li>
+                <li>Simplified data storage to session-only for anonymous users</li>
+                <li>Removed localStorage completely for cleaner data management</li>
+                <li>Anonymous users now start fresh on page refresh</li>
+                <li>Improved sync between anonymous and authenticated states</li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-medium text-dlsu-green">Data Management:</h3>
+              <h3 className="font-medium text-dlsu-green">Term Management:</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Added offline usage option</li>
-                <li>Improved data synchronization between devices</li>
-                <li>Enhanced error handling for Firestore operations</li>
-                <li>Fixed data migration issues between login sessions</li>
+                <li>Always display Terms 1-12 as standard terms</li>
+                <li>Fixed term creation, display, and deletion</li>
+                <li>Added a 21-term maximum limit</li>
+                <li>Improved handling of custom terms (13+)</li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-medium text-dlsu-green">User Experience:</h3>
+              <h3 className="font-medium text-dlsu-green">Performance & Bug Fixes:</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Better saving status indicators</li>
-                <li>Improved loading states throughout the app</li>
-                <li>Enhanced form validation and error messages</li>
-                <li>Fixed NAS handling and grade calculations</li>
+                <li>Strengthen data security with proper timeout handling</li>
+                <li>Enhanced error handling throughout the application</li>
               </ul>
             </div>
           </div>

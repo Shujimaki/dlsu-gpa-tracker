@@ -1,25 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, InfoIcon, Loader2 } from 'lucide-react';
 import type { Course } from '../types';
 import { logGpaCalculation, logDeansListEligibility, logUserAction } from '../config/analytics';
 import { saveUserData, loadUserData, getUserTerms, deleteUserTerm } from '../config/firestore';
-import { auth } from '../config/firebase';
 import type { User as FirebaseUser } from 'firebase/auth';
-
-// Helper to ensure loaded courses have 'nas' property
-function ensureCoursesWithNAS(courses: unknown[]): Course[] {
-  return courses.map((c) => {
-    const course = c as Record<string, unknown>;
-    return {
-      id: course.id as string,
-      code: course.code as string,
-      name: course.name as string,
-      units: course.units as number,
-      grade: course.grade as number,
-      nas: typeof course.nas === 'boolean' ? course.nas : false,
-    };
-  });
-}
 
 /**
  * Helper function to store data - uses sessionStorage for anonymous users
@@ -43,6 +27,7 @@ interface GPACalculatorProps {
   authInitialized?: boolean;
 }
 
+// Define the structure of term data for type safety
 interface TermData {
   courses: Course[];
   isFlowchartExempt: boolean;
@@ -184,16 +169,14 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       setIsInitialLoad(true);
       const isAnonymous = !user;
       
-      let loadedCourses: Course[] | null = null;
-      let termFlowchartExempt = false;
+      let loadedData: TermData | null = null;
       
       // Try to load from Firestore if user is logged in
       if (!isAnonymous) {
         try {
           const firestoreData = await loadUserData(user!.uid, selectedTerm);
           if (firestoreData) {
-            loadedCourses = firestoreData.courses;
-            termFlowchartExempt = firestoreData.isFlowchartExempt;
+            loadedData = firestoreData as TermData;
             console.log('Data loaded from Firestore');
           }
         } catch (error) {
@@ -202,28 +185,30 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       }
       
       // If no data from Firestore or anonymous user, try sessionStorage
-      if (!loadedCourses) {
+      if (!loadedData) {
         const localKey = `term_${selectedTerm}`;
         const sessionData = loadSessionData(localKey);
         
         if (sessionData) {
           if (typeof sessionData === 'object' && 'courses' in sessionData) {
             // New format with flowchart exemption
-            loadedCourses = sessionData.courses as Course[];
-            termFlowchartExempt = sessionData.isFlowchartExempt || false;
+            loadedData = sessionData as TermData;
+            console.log('Data loaded from sessionStorage');
           } else {
             // Old format (just array of courses)
-            loadedCourses = sessionData as Course[];
-            termFlowchartExempt = false;
+            loadedData = {
+              courses: sessionData as Course[],
+              isFlowchartExempt: false
+            };
+            console.log('Data loaded from sessionStorage (legacy format)');
           }
-          console.log('Data loaded from sessionStorage');
         }
       }
       
       // If we found data, use it
-      if (loadedCourses && loadedCourses.length > 0) {
-        setCourses(loadedCourses);
-        setIsFlowchartExempt(termFlowchartExempt);
+      if (loadedData && loadedData.courses.length > 0) {
+        setCourses(loadedData.courses);
+        setIsFlowchartExempt(loadedData.isFlowchartExempt);
       } else {
         // Initialize with empty courses if nothing found
         setCourses([
@@ -305,6 +290,9 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       }
         
       // Reset status after 2 seconds
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
       const timeout = setTimeout(() => {
         setSaveStatus('idle');
       }, 2000);
@@ -316,6 +304,9 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       setSaveStatus('error');
       
       // Reset error status after 3 seconds
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
       const timeout = setTimeout(() => {
         setSaveStatus('idle');
       }, 3000);
@@ -512,6 +503,15 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       setIsFlowchartExempt(false);
     }
   }, [user, authInitialized]);
+
+  // Cleanup any timeouts when component unmounts
+  useEffect(() => {
+    return () => {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+    };
+  }, [saveTimeout]);
 
   return (
     <div>
