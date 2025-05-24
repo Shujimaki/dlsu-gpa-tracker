@@ -135,23 +135,31 @@ function App() {
                 </a>.
               </p>
             </div>
-            <div className="flex gap-3">
-              <a
-                href="https://github.com/renzocabarios/dlsu-gpa-tracker"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white hover:text-gray-200 transition-colors"
-                aria-label="GitHub"
-              >
-                <Github size={20} />
-              </a>
-              <a
-                href="mailto:renzo.cabarios@gmail.com"
-                className="text-white hover:text-gray-200 transition-colors"
-                aria-label="Email"
-              >
-                <Mail size={20} />
-              </a>
+            <div className="flex flex-col items-end">
+              <p className="font-medium mb-1">Contact Us</p>
+              <div className="flex gap-3 items-center">
+                <a
+                  href="mailto:contactgreendex@gmail.com"
+                  className="text-white hover:text-gray-200 transition-colors flex items-center gap-1"
+                  aria-label="Email"
+                >
+                  <Mail size={16} />
+                  <span>contactgreendex@gmail.com</span>
+                </a>
+              </div>
+              <div className="flex gap-3 items-center mt-1">
+                <a
+                  href="https://github.com/Shujimaki"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white hover:text-gray-200 transition-colors flex items-center gap-1"
+                  aria-label="GitHub"
+                >
+                  <Github size={16} />
+                  <span>@Shujimaki</span>
+                </a>
+              </div>
+              <p className="text-xs text-gray-300 mt-2">For suggestions, bug reports, or feedback</p>
             </div>
           </div>
         </div>
