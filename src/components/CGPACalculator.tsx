@@ -67,6 +67,23 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     };
   }, [termsData]);
 
+  // Save CGPA data to session storage for the Projections tab
+  useEffect(() => {
+    try {
+      // Save CGPA data to session storage
+      const cgpaData = {
+        cgpa,
+        totalUnits,
+        totalTerms
+      };
+      
+      sessionStorage.setItem('cgpa_data', JSON.stringify(cgpaData));
+      console.log('CGPA data saved to session storage:', cgpaData);
+    } catch (error) {
+      console.error('Error saving CGPA data to session storage:', error);
+    }
+  }, [cgpa, totalUnits, totalTerms]);
+
   // Calculate GPA for a single term
   const calculateTermGPA = (courses: Course[]): { 
     gpa: string; 
@@ -311,6 +328,15 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
               <p className="text-3xl font-bold text-dlsu-green">{cgpa}</p>
             </div>
           </div>
+        </div>
+        
+        <div className="flex justify-end">
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('switchTab', { detail: 'projections' }))}
+            className="px-4 py-2 bg-dlsu-green text-white rounded hover:bg-green-700 transition-colors"
+          >
+            View CGPA Projections
+          </button>
         </div>
       </div>
 

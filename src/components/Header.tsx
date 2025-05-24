@@ -21,9 +21,9 @@ const Header = ({ user, onLoginClick, onLogout, onShowUpdateModal }: HeaderProps
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Top row with logo and notification bell */}
           <div className="flex justify-between items-center w-full">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold">Greendex</h1>
-            </div>
+          <div className="flex items-center">
+            <h1 className="text-xl font-bold">Greendex</h1>
+          </div>
           
             <button
               onClick={onShowUpdateModal}

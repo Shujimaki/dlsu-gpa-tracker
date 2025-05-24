@@ -16,10 +16,6 @@ const TabNavigation = ({ activeTab, setActiveTab }: TabNavigationProps) => {
     {
       id: 'cgpa',
       label: 'CGPA Calculator'
-    },
-    {
-      id: 'projections',
-      label: 'CGPA Projections'
     }
   ];
 
@@ -43,6 +39,18 @@ const TabNavigation = ({ activeTab, setActiveTab }: TabNavigationProps) => {
           {tab.label}
         </button>
       ))}
+      {activeTab === 'projections' && (
+        <button
+          className={`px-4 py-3 font-medium text-sm md:text-base transition-colors duration-200 focus:outline-none
+            border-t border-l border-r ml-2
+            bg-gray-50 border-b-0 text-dlsu-green z-10
+          `}
+          style={{ position: 'relative', top: '2px' }}
+          onClick={() => setActiveTab('projections')}
+        >
+          CGPA Projections
+        </button>
+      )}
     </div>
   );
 };

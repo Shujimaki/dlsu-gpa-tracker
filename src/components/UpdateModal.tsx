@@ -28,7 +28,17 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
           <p className="text-gray-600">May 24, 2025</p>
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-dlsu-green">New CGPA Calculator Tab:</h3>
+              <h3 className="font-medium text-dlsu-green">New CGPA Projections Feature:</h3>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
+                <li>Calculate the GPA you need to achieve your target CGPA</li>
+                <li>Set your total units to graduate and target CGPA</li>
+                <li>Access directly from the CGPA Calculator tab</li>
+                <li>See instantly if your target CGPA is achievable</li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-medium text-dlsu-green">CGPA Calculator Improvements:</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
                 <li>View all your terms in one place with a comprehensive overview</li>
                 <li>Automatically calculate your cumulative GPA across all terms</li>
@@ -37,23 +47,7 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
               </ul>
             </div>
             
-            <div>
-              <h3 className="font-medium text-dlsu-green">Improved Term Management:</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Clear term data while keeping the term in your list</li>
-                <li>Only the last term can be completely removed</li>
-                <li>Standard terms (1-12) can now be cleared but not removed</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-medium text-dlsu-green">Print Grades Feature:</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Print or download your term grades with one click</li>
-                <li>Choose between standard paper size or social media story format</li>
-                <li>Add your name and degree program to personalize your grade report</li>
-              </ul>
-            </div>
+          
           </div>
         </div>
         <div className="mt-6 flex justify-end">

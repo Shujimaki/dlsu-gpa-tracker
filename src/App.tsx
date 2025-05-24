@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import GPACalculator from './components/GPACalculator'
 import CGPACalculator from './components/CGPACalculator'
+import CGPAProjections from './components/CGPAProjections'
 import LoginModal from './components/LoginModal'
 import TabNavigation from './components/TabNavigation'
 import UpdateModal from './components/UpdateModal'
@@ -21,6 +22,22 @@ function App() {
     const storedTerm = sessionStorage.getItem('currentTerm');
     return storedTerm ? parseInt(storedTerm, 10) : 1;
   });
+
+  // Listen for tab switch events
+  useEffect(() => {
+    const handleSwitchTab = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('switchTab', handleSwitchTab);
+    
+    return () => {
+      window.removeEventListener('switchTab', handleSwitchTab);
+    };
+  }, []);
 
   // Initialize auth with session persistence (instead of local)
   useEffect(() => {
@@ -118,7 +135,10 @@ function App() {
           )}
           
           {activeTab === 'projections' && (
-            <div className="p-4">CGPA Projections (Coming Soon)</div>
+            <CGPAProjections
+              user={user}
+              authInitialized={authInitialized}
+            />
           )}
         </div>
       </main>
@@ -173,6 +193,7 @@ function App() {
           onLogin={(user: FirebaseUser) => {
             setUser(user);
             setShowLoginModal(false);
+            setActiveTab('gpa'); // Redirect to GPA Calculator tab after login
           }}
         />
       )}

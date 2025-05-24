@@ -202,7 +202,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
             // New format with flowchart exemption
             loadedData = sessionData as TermData;
             console.log('Data loaded from sessionStorage');
-          } else {
+        } else {
             // Old format (just array of courses)
             loadedData = {
               courses: sessionData as Course[],
@@ -228,7 +228,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       console.error('Error in loadData:', error);
       setIsInitialLoad(false);
     }
-  };
+    };
 
   // Calculate GPA
   const { gpa, totalUnits, totalNASUnits, isDeansLister, isFirstHonors } = useMemo(() => {
@@ -290,7 +290,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   }, [courses, selectedTerm, isInitialLoad, authInitialized, user, isFlowchartExempt]);
 
   // Save data function
-  const saveData = async () => {
+    const saveData = async () => {
     try {
       setSaveStatus('saving');
       const isAnonymous = !user;
@@ -313,31 +313,31 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           } else {
             setSaveStatus('error');
             return false;
-          }
-        } catch (error) {
-          console.error('Error saving to Firestore:', error);
+            }
+          } catch (error) {
+            console.error('Error saving to Firestore:', error);
           setSaveStatus('error');
           return false;
         }
-      } else {
-        setSaveStatus('saved');
-      }
+        } else {
+          setSaveStatus('saved');
+        }
         
-      // Reset status after 2 seconds
+        // Reset status after 2 seconds
       if (saveTimeout) {
         clearTimeout(saveTimeout);
       }
-      const timeout = setTimeout(() => {
-        setSaveStatus('idle');
-      }, 2000);
-      setSaveTimeout(timeout);
+        const timeout = setTimeout(() => {
+          setSaveStatus('idle');
+        }, 2000);
+        setSaveTimeout(timeout);
       
       return true;
-    } catch (error) {
+      } catch (error) {
       console.error('Error in saveData:', error);
-      setSaveStatus('error');
-      
-      // Reset error status after 3 seconds
+        setSaveStatus('error');
+        
+        // Reset error status after 3 seconds
       if (saveTimeout) {
         clearTimeout(saveTimeout);
       }
@@ -370,8 +370,8 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
   const removeCourse = (id: string) => {
     // Now we allow removing all courses
-    setCourses(courses.filter((course: Course) => course.id !== id));
-    logUserAction('remove_course');
+      setCourses(courses.filter((course: Course) => course.id !== id));
+      logUserAction('remove_course');
   };
 
   const updateCourse = (id: string, field: keyof Course, value: string | number | boolean) => {
@@ -643,27 +643,27 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       <div className="mb-4 flex flex-col gap-4">
         <div className="flex flex-wrap justify-between">
           <div className="flex flex-wrap gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Term
-              </label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Term
+          </label>
               <div className="flex gap-2">
-                <select
-                  value={selectedTerm}
+          <select
+            value={selectedTerm}
                   onChange={async (e) => await handleTermChange(e.target.value)}
                   className="w-full md:w-48 p-2 border border-gray-300 rounded bg-white text-gray-900"
-                >
+          >
                   {availableTerms.map((term) => (
                     <option key={term} value={term} className="bg-white text-gray-900">
-                      Term {term}
-                    </option>
-                  ))}
+                Term {term}
+              </option>
+            ))}
                   {Math.max(...availableTerms) < 21 && (
                     <option value="add" className="text-dlsu-green font-medium bg-white">
                       + Add New Term
-                    </option>
+            </option>
                   )}
-                </select>
+          </select>
                 
                 <button
                   onClick={() => handleDeleteClick(selectedTerm)}
@@ -677,7 +677,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                   )}
                 </button>
               </div>
-            </div>
+        </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Options
@@ -723,89 +723,89 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               </tr>
             ) : (
               courses.map(course => (
-                <tr key={course.id} className="border-b border-gray-200 hover:bg-gray-50 md:align-middle bg-white md:bg-transparent">
-                  <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
-                    <input
-                      type="text"
-                      value={course.code}
-                      onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
+              <tr key={course.id} className="border-b border-gray-200 hover:bg-gray-50 md:align-middle bg-white md:bg-transparent">
+                <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
+                  <input
+                    type="text"
+                    value={course.code}
+                    onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0 bg-white text-gray-900"
-                      maxLength={7}
-                      placeholder="e.g., NUMMETS"
-                    />
-                  </td>
-                  <td className="px-4 py-3 align-middle">
-                    <input
-                      type="text"
-                      value={course.name}
-                      onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
+                    maxLength={7}
+                    placeholder="e.g., NUMMETS"
+                  />
+                </td>
+                <td className="px-4 py-3 align-middle">
+                  <input
+                    type="text"
+                    value={course.name}
+                    onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded text-base bg-white text-gray-900"
-                      placeholder="e.g., Numerical Methods"
-                    />
-                  </td>
-                  <td className="px-4 py-3 align-middle min-w-[80px]">
-                    <select
-                      value={course.units}
-                      onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
+                    placeholder="e.g., Numerical Methods"
+                  />
+                </td>
+                <td className="px-4 py-3 align-middle min-w-[80px]">
+                  <select
+                    value={course.units}
+                    onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
                       className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                    >
-                      {course.nas
-                        ? [0, 1, 2, 3].map(units => (
+                  >
+                    {course.nas
+                      ? [0, 1, 2, 3].map(units => (
                             <option key={units} value={units} className="bg-white text-gray-900">
-                              ({units})
-                            </option>
-                          ))
-                        : [1, 2, 3, 4, 5].map(units => (
+                            ({units})
+                          </option>
+                        ))
+                      : [1, 2, 3, 4, 5].map(units => (
                             <option key={units} value={units} className="bg-white text-gray-900">
-                              {units}
-                            </option>
-                          ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-3 align-middle min-w-[80px]">
-                    {course.nas && course.units === 0 ? (
-                      <select
-                        value={course.grade === 1 ? 'P' : 'F'}
-                        onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
-                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                      >
-                        <option value="P" className="bg-white text-gray-900">P</option>
-                        <option value="F" className="bg-white text-gray-900">F</option>
-                      </select>
-                    ) : (
-                      <select
-                        value={course.grade}
-                        onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                      >
-                        {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
-                          <option key={grade} value={grade} className="bg-white text-gray-900">
-                            {grade}
+                            {units}
                           </option>
                         ))}
-                      </select>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 align-middle">
-                    <div className="flex justify-center items-center">
-                      <input
-                        type="checkbox"
-                        checked={course.nas}
-                        onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
-                        className="accent-dlsu-green bg-white border-gray-300"
-                        aria-label="Non-Academic Subject"
-                      />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 align-middle">
-                    <button
-                      onClick={() => removeCourse(course.id)}
-                      className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
+                  </select>
+                </td>
+                <td className="px-4 py-3 align-middle min-w-[80px]">
+                  {course.nas && course.units === 0 ? (
+                    <select
+                      value={course.grade === 1 ? 'P' : 'F'}
+                      onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
+                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
                     >
-                      <TrashIcon size={20} />
-                    </button>
-                  </td>
-                </tr>
+                        <option value="P" className="bg-white text-gray-900">P</option>
+                        <option value="F" className="bg-white text-gray-900">F</option>
+                    </select>
+                  ) : (
+                    <select
+                      value={course.grade}
+                      onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
+                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
+                    >
+                      {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
+                          <option key={grade} value={grade} className="bg-white text-gray-900">
+                          {grade}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </td>
+                <td className="px-4 py-3 align-middle">
+                  <div className="flex justify-center items-center">
+                    <input
+                      type="checkbox"
+                      checked={course.nas}
+                      onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
+                        className="accent-dlsu-green bg-white border-gray-300"
+                      aria-label="Non-Academic Subject"
+                    />
+                  </div>
+                </td>
+                <td className="px-4 py-3 align-middle">
+                  <button
+                    onClick={() => removeCourse(course.id)}
+                      className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
+                  >
+                    <TrashIcon size={20} />
+                  </button>
+                </td>
+              </tr>
               ))
             )}
           </tbody>
@@ -827,13 +827,13 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
       <div className="mt-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <button
-            onClick={addCourse}
-            className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
-          >
-            <PlusIcon size={18} className="mr-1" />
-            Add Course
-          </button>
+        <button
+          onClick={addCourse}
+          className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
+        >
+          <PlusIcon size={18} className="mr-1" />
+          Add Course
+        </button>
           
           <button
             onClick={() => setShowPrintModal(true)}
