@@ -145,10 +145,28 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     }
   }, [user, authInitialized, selectedTerm]);
 
+  // Update selectedTerm when initialTerm changes
+  useEffect(() => {
+    console.log(`initialTerm changed to ${initialTerm}, updating selectedTerm`);
+    setSelectedTerm(initialTerm);
+  }, [initialTerm]);
+
+  // Load data when component mounts or when authInitialized changes
+  useEffect(() => {
+    if (authInitialized) {
+      console.log('Component mounted or auth initialized, loading data...');
+      loadData();
+    }
+  }, [authInitialized]); // Only run when authInitialized changes or component mounts
+
   // Load data when term changes
   useEffect(() => {
     if (authInitialized) {
       console.log(`Loading data for term ${selectedTerm}...`);
+      
+      // Store current term in sessionStorage
+      sessionStorage.setItem('currentTerm', selectedTerm.toString());
+      
       loadData();
     }
   }, [selectedTerm, user, authInitialized]);

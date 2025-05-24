@@ -16,7 +16,11 @@ function App() {
   const [showUpdateModal, setShowUpdateModal] = useState(true) // Always start with true
   const [activeTab, setActiveTab] = useState('gpa')
   const [authInitialized, setAuthInitialized] = useState(false);
-  const [selectedTerm, setSelectedTerm] = useState(1);
+  const [selectedTerm, setSelectedTerm] = useState(() => {
+    // Initialize from sessionStorage if available, otherwise use term 1
+    const storedTerm = sessionStorage.getItem('currentTerm');
+    return storedTerm ? parseInt(storedTerm, 10) : 1;
+  });
 
   // Initialize auth with session persistence (instead of local)
   useEffect(() => {
@@ -80,39 +84,6 @@ function App() {
     setActiveTab('gpa');
   };
 
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case 'gpa':
-        return (
-          <GPACalculator 
-            user={user} 
-            authInitialized={authInitialized}
-            initialTerm={selectedTerm}
-          />
-        );
-      case 'grade':
-        return <div className="p-4">Grade Calculator (Coming Soon)</div>;
-      case 'cgpa':
-        return (
-          <CGPACalculator 
-            user={user} 
-            authInitialized={authInitialized}
-            onEditTerm={handleEditTerm}
-          />
-        );
-      case 'projections':
-        return <div className="p-4">CGPA Projections (Coming Soon)</div>;
-      default:
-        return (
-          <GPACalculator 
-            user={user} 
-            authInitialized={authInitialized}
-            initialTerm={selectedTerm}
-          />
-        );
-    }
-  };
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header 
@@ -125,7 +96,30 @@ function App() {
       <main className="flex-1 flex flex-col w-full">
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="flex-1 w-full px-6 py-8">
-          {renderActiveTab()}
+          {/* Keep GPACalculator always mounted but hidden when not active */}
+          <div style={{ display: activeTab === 'gpa' ? 'block' : 'none' }}>
+            <GPACalculator 
+              user={user} 
+              authInitialized={authInitialized}
+              initialTerm={selectedTerm}
+            />
+          </div>
+          
+          {activeTab === 'grade' && (
+            <div className="p-4">Grade Calculator (Coming Soon)</div>
+          )}
+          
+          {activeTab === 'cgpa' && (
+            <CGPACalculator 
+              user={user} 
+              authInitialized={authInitialized}
+              onEditTerm={handleEditTerm}
+            />
+          )}
+          
+          {activeTab === 'projections' && (
+            <div className="p-4">CGPA Projections (Coming Soon)</div>
+          )}
         </div>
       </main>
 
@@ -133,12 +127,12 @@ function App() {
         <div className="w-full px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-left">
-        <p>© {new Date().getFullYear()} Greendex</p>
+              <p>© {new Date().getFullYear()} Greendex</p>
               <p className="mt-1 text-gray-200">
-          Calculator logic and inspiration based on the original 
-          <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
-          DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
-          </a>.
+                Calculator logic and inspiration based on the original 
+                <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
+                  DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
+                </a>.
               </p>
             </div>
             <div className="flex gap-3">
@@ -165,14 +159,14 @@ function App() {
 
       {/* Login Modal */}
       {showLoginModal && (
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        onLogin={(user: FirebaseUser) => {
+        <LoginModal 
+          isOpen={showLoginModal} 
+          onClose={() => setShowLoginModal(false)}
+          onLogin={(user: FirebaseUser) => {
             setUser(user);
             setShowLoginModal(false);
-        }}
-      />
+          }}
+        />
       )}
 
       {/* Update Modal */}
