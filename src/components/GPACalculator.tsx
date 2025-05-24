@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PlusIcon, TrashIcon, InfoIcon, Loader2, Printer } from 'lucide-react';
+import { PlusIcon, TrashIcon, InfoIcon, Loader2, Printer, AlertTriangle } from 'lucide-react';
 import type { Course } from '../types';
 import { logGpaCalculation, logDeansListEligibility, logUserAction } from '../config/analytics';
 import { saveUserData, loadUserData, getUserTerms, deleteUserTerm } from '../config/firestore';
@@ -26,6 +26,7 @@ function loadSessionData(key: string) {
 interface GPACalculatorProps {
   user?: FirebaseUser | null;
   authInitialized?: boolean;
+  initialTerm?: number;
 }
 
 // Define the structure of term data for type safety
@@ -34,17 +35,9 @@ interface TermData {
   isFlowchartExempt: boolean;
 }
 
-const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) => {
-  const defaultCourse: Course = {
-    id: crypto.randomUUID(),
-    code: '',
-    name: '',
-    units: 3,
-    grade: 0,
-    nas: false,
-  };
-  const [courses, setCourses] = useState<Course[]>([defaultCourse]);
-  const [selectedTerm, setSelectedTerm] = useState(1);
+const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACalculatorProps) => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedTerm, setSelectedTerm] = useState(initialTerm);
   const [availableTerms, setAvailableTerms] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   const [showDeansListModal, setShowDeansListModal] = useState(false);
   const [showGPAModal, setShowGPAModal] = useState(false);
@@ -53,6 +46,8 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [termToDelete, setTermToDelete] = useState<number | null>(null);
 
   // Handle login/logout transitions
   useEffect(() => {
@@ -69,14 +64,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       sessionStorage.setItem('wasAnonymous', 'false'); // Clear anonymous flag to prevent migration
       
       // Reset to default state for fresh accounts
-      setCourses([{
-        id: crypto.randomUUID(),
-        code: '',
-        name: '',
-        units: 3,
-        grade: 0,
-        nas: false,
-      }]);
+      setCourses([]);
       
       // Skip any other login transition logic
       return;
@@ -213,9 +201,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
         setIsFlowchartExempt(loadedData.isFlowchartExempt);
       } else {
         // Initialize with empty courses if nothing found
-        setCourses([
-          { id: crypto.randomUUID(), code: '', name: '', units: 3, grade: 4.0, nas: false },
-        ]);
+        setCourses([]);
         setIsFlowchartExempt(false);
       }
       
@@ -365,10 +351,9 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
   };
 
   const removeCourse = (id: string) => {
-    if (courses.length > 1) {
-      setCourses(courses.filter((course: Course) => course.id !== id));
-      logUserAction('remove_course');
-    }
+    // Now we allow removing all courses
+    setCourses(courses.filter((course: Course) => course.id !== id));
+    logUserAction('remove_course');
   };
 
   const updateCourse = (id: string, field: keyof Course, value: string | number | boolean) => {
@@ -393,10 +378,8 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
     const nextTerm = Math.max(...availableTerms) + 1;
     console.log(`Creating new Term ${nextTerm}`);
     
-    // Create empty courses for the new term
-    const newCourses = [
-      { id: crypto.randomUUID(), code: '', name: '', units: 3, grade: 4.0, nas: false },
-    ];
+    // Create empty courses for the new term (now an empty array)
+    const newCourses: Course[] = [];
     
     // Prepare the new term data
     const newTermData = {
@@ -444,40 +427,78 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       return;
     }
     
-    console.log(`Deleting Term ${term}`);
+    console.log(`Processing term ${term}`);
     
     try {
-      // Remove from sessionStorage first
-      sessionStorage.removeItem(`term_${term}`);
+      // Check if this is the last term
+      const isLastTerm = term === Math.max(...availableTerms);
       
-      // If user is logged in, also delete from Firestore
+      // Clear the data for this term
+      const emptyTermData = {
+        courses: [],
+        isFlowchartExempt: false
+      };
+      
+      // Update sessionStorage
+      if (isLastTerm) {
+        // If it's the last term, remove it completely
+        sessionStorage.removeItem(`term_${term}`);
+      } else {
+        // Otherwise just clear the data
+        storeSessionData(`term_${term}`, emptyTermData);
+      }
+      
+      // If user is logged in, handle Firestore
       if (user) {
         try {
-          const success = await deleteUserTerm(user.uid, term);
-          if (success) {
-            console.log(`Term ${term} deleted from Firestore`);
+          if (isLastTerm) {
+            // Delete the term from Firestore if it's the last term
+            const success = await deleteUserTerm(user.uid, term);
+            if (success) {
+              console.log(`Term ${term} deleted from Firestore`);
+            } else {
+              console.error(`Failed to delete Term ${term} from Firestore`);
+            }
           } else {
-            console.error(`Failed to delete Term ${term} from Firestore`);
+            // Otherwise just clear the data
+            await saveUserData(user.uid, term, [], false);
+            console.log(`Term ${term} data cleared in Firestore`);
           }
         } catch (error) {
-          console.error(`Error deleting Term ${term} from Firestore:`, error);
+          console.error(`Error handling term ${term} in Firestore:`, error);
         }
       }
       
-      // Remove from availableTerms AFTER Firebase deletion completes
-      setAvailableTerms(prev => {
-        const updated = prev.filter(t => t !== term);
-        console.log(`Updated available terms after deletion:`, updated);
-        return updated;
-      });
-      
-      // If currently on the deleted term, switch to Term 1
-      if (selectedTerm === term) {
-        console.log(`Currently on deleted Term ${term}, switching to Term 1`);
-        setSelectedTerm(1);
+      // Update availableTerms only if it's the last term
+      if (isLastTerm) {
+        setAvailableTerms(prev => {
+          const updated = prev.filter(t => t !== term);
+          console.log(`Updated available terms after deletion:`, updated);
+          return updated;
+        });
       }
       
-      console.log(`Term ${term} successfully deleted`);
+      // If currently on the term being processed, update the view
+      if (selectedTerm === term) {
+        // If it's the last term and we're deleting it, switch to Term 1
+        if (isLastTerm) {
+          console.log(`Currently on deleted Term ${term}, switching to Term 1`);
+          setSelectedTerm(1);
+        } else {
+          // Otherwise just clear the courses
+          setCourses([]);
+          setIsFlowchartExempt(false);
+          console.log(`Term ${term} data cleared`);
+        }
+      }
+      
+      // Show feedback based on action
+      if (isLastTerm) {
+        console.log(`Term ${term} successfully deleted`);
+      } else {
+        console.log(`Term ${term} data cleared but term remains available`);
+        // Could show a toast notification here
+      }
     } catch (error) {
       console.error(`Error in deleteTerm:`, error);
     }
@@ -513,14 +534,7 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
         });
       
       // Reset to default state
-      setCourses([{
-        id: crypto.randomUUID(),
-        code: '',
-        name: '',
-        units: 3,
-        grade: 0,
-        nas: false,
-      }]);
+      setCourses([]);
       
       // Reset to Term 1
       setSelectedTerm(1);
@@ -542,6 +556,27 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       }
     };
   }, [saveTimeout]);
+
+  // Function to handle delete button click
+  const handleDeleteClick = (term: number) => {
+    setTermToDelete(term);
+    setShowDeleteConfirm(true);
+  };
+  
+  // Function to confirm deletion
+  const confirmDelete = async () => {
+    if (termToDelete !== null) {
+      await deleteTerm(termToDelete);
+      setShowDeleteConfirm(false);
+      setTermToDelete(null);
+    }
+  };
+  
+  // Function to cancel deletion
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setTermToDelete(null);
+  };
 
   return (
     <div>
@@ -593,39 +628,43 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
       <div className="mb-4 flex flex-col gap-4">
         <div className="flex flex-wrap justify-between">
           <div className="flex flex-wrap gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Term
-          </label>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Term
+              </label>
               <div className="flex gap-2">
-          <select
-            value={selectedTerm}
-            onChange={async (e) => await handleTermChange(e.target.value)}
-            className="w-full md:w-48 p-2 border border-gray-300 rounded"
-          >
+                <select
+                  value={selectedTerm}
+                  onChange={async (e) => await handleTermChange(e.target.value)}
+                  className="w-full md:w-48 p-2 border border-gray-300 rounded"
+                >
                   {availableTerms.map((term) => (
-              <option key={term} value={term}>
-                Term {term}
-              </option>
-            ))}
-            {Math.max(...availableTerms) < 21 && (
-              <option value="add" className="text-dlsu-green font-medium">
-                + Add New Term
-              </option>
-            )}
-          </select>
+                    <option key={term} value={term}>
+                      Term {term}
+                    </option>
+                  ))}
+                  {Math.max(...availableTerms) < 21 && (
+                    <option value="add" className="text-dlsu-green font-medium">
+                      + Add New Term
+                    </option>
+                  )}
+                </select>
                 
-                {selectedTerm > 12 && (
+                {selectedTerm > 0 && (
                   <button
-                    onClick={async () => await deleteTerm(selectedTerm)}
-                    className="p-2 text-red-500 hover:text-red-700 border border-red-300 rounded hover:bg-red-50"
-                    title="Delete this term"
+                    onClick={() => handleDeleteClick(selectedTerm)}
+                    className={`p-2 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center`}
+                    title={selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? "Delete this term" : "Clear term data"}
                   >
-                    <TrashIcon size={20} />
+                    {(selectedTerm === Math.max(...availableTerms) && selectedTerm > 12) ? (
+                      <TrashIcon size={20} />
+                    ) : (
+                      <span className="text-sm px-1">Clear</span>
+                    )}
                   </button>
                 )}
               </div>
-        </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Options
@@ -663,91 +702,99 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
             </tr>
           </thead>
           <tbody>
-            {courses.map(course => (
-              <tr key={course.id} className="border-b border-gray-200 hover:bg-gray-50 md:align-middle bg-white md:bg-transparent">
-                <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
-                  <input
-                    type="text"
-                    value={course.code}
-                    onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0"
-                    maxLength={7}
-                    placeholder="e.g., NUMMETS"
-                  />
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <input
-                    type="text"
-                    value={course.name}
-                    onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded text-base"
-                    placeholder="e.g., Numerical Methods"
-                  />
-                </td>
-                <td className="px-4 py-3 align-middle min-w-[80px]">
-                  <select
-                    value={course.units}
-                    onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
-                    className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
-                  >
-                    {course.nas
-                      ? [0, 1, 2, 3].map(units => (
-                          <option key={units} value={units}>
-                            ({units})
-                          </option>
-                        ))
-                      : [1, 2, 3, 4, 5].map(units => (
-                          <option key={units} value={units}>
-                            {units}
-                          </option>
-                        ))}
-                  </select>
-                </td>
-                <td className="px-4 py-3 align-middle min-w-[80px]">
-                  {course.nas && course.units === 0 ? (
-                    <select
-                      value={course.grade === 1 ? 'P' : 'F'}
-                      onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
-                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
-                    >
-                      <option value="P">P</option>
-                      <option value="F">F</option>
-                    </select>
-                  ) : (
-                    <select
-                      value={course.grade}
-                      onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
-                    >
-                      {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
-                        <option key={grade} value={grade}>
-                          {grade}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <div className="flex justify-center items-center">
-                    <input
-                      type="checkbox"
-                      checked={course.nas}
-                      onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
-                      className="accent-dlsu-green"
-                      aria-label="Non-Academic Subject"
-                    />
-                  </div>
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <button
-                    onClick={() => removeCourse(course.id)}
-                    className="p-2 text-red-500 hover:text-red-700 rounded"
-                  >
-                    <TrashIcon size={20} />
-                  </button>
+            {courses.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-8 text-gray-500">
+                  No courses added yet. Click "Add Course" to get started.
                 </td>
               </tr>
-            ))}
+            ) : (
+              courses.map(course => (
+                <tr key={course.id} className="border-b border-gray-200 hover:bg-gray-50 md:align-middle bg-white md:bg-transparent">
+                  <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
+                    <input
+                      type="text"
+                      value={course.code}
+                      onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0"
+                      maxLength={7}
+                      placeholder="e.g., NUMMETS"
+                    />
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <input
+                      type="text"
+                      value={course.name}
+                      onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-base"
+                      placeholder="e.g., Numerical Methods"
+                    />
+                  </td>
+                  <td className="px-4 py-3 align-middle min-w-[80px]">
+                    <select
+                      value={course.units}
+                      onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
+                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
+                    >
+                      {course.nas
+                        ? [0, 1, 2, 3].map(units => (
+                            <option key={units} value={units}>
+                              ({units})
+                            </option>
+                          ))
+                        : [1, 2, 3, 4, 5].map(units => (
+                            <option key={units} value={units}>
+                              {units}
+                            </option>
+                          ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 align-middle min-w-[80px]">
+                    {course.nas && course.units === 0 ? (
+                      <select
+                        value={course.grade === 1 ? 'P' : 'F'}
+                        onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
+                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
+                      >
+                        <option value="P">P</option>
+                        <option value="F">F</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={course.grade}
+                        onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
+                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
+                      >
+                        {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
+                          <option key={grade} value={grade}>
+                            {grade}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <div className="flex justify-center items-center">
+                      <input
+                        type="checkbox"
+                        checked={course.nas}
+                        onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
+                        className="accent-dlsu-green"
+                        aria-label="Non-Academic Subject"
+                      />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <button
+                      onClick={() => removeCourse(course.id)}
+                      className="p-2 text-red-500 hover:text-red-700 rounded"
+                    >
+                      <TrashIcon size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-gray-300 font-medium">
@@ -867,6 +914,57 @@ const GPACalculator = ({ user, authInitialized = false }: GPACalculatorProps) =>
         isFirstHonors={isFirstHonors}
         isFlowchartExempt={isFlowchartExempt}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && termToDelete !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <div className="flex items-center mb-4 text-amber-500">
+              <AlertTriangle className="mr-2" />
+              <h3 className="text-lg font-bold">Confirm Action</h3>
+            </div>
+            {termToDelete <= 12 ? (
+              <div className="mb-4">
+                <p className="mb-2">
+                  You are about to clear all data for Term {termToDelete}.
+                </p>
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-3 text-sm">
+                  <p><strong>Note:</strong> Standard terms (1-12) cannot be deleted, only cleared. The term will always remain in the list.</p>
+                </div>
+              </div>
+            ) : termToDelete === Math.max(...availableTerms) ? (
+              <p className="mb-4">
+                You are about to delete Term {termToDelete}. This will remove the term from the list.
+                Are you sure you want to continue?
+              </p>
+            ) : (
+              <div className="mb-4">
+                <p className="mb-2">
+                  You are about to clear all data for Term {termToDelete}.
+                </p>
+                <div className="bg-amber-50 border-l-4 border-amber-400 p-3 text-sm">
+                  <p><strong>Note:</strong> Only the last custom term can be completely removed from the list.</p>
+                  <p>Term {termToDelete} will remain in the list but all its courses will be cleared.</p>
+                </div>
+              </div>
+            )}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className={`px-4 py-2 ${termToDelete === Math.max(...availableTerms) && termToDelete > 12 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'} rounded`}
+              >
+                {(termToDelete === Math.max(...availableTerms) && termToDelete > 12) ? 'Delete Term' : 'Clear Term Data'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

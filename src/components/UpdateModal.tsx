@@ -8,7 +8,7 @@ interface UpdateModalProps {
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   const handleClose = () => {
     // Save that the user has seen this update
-    sessionStorage.setItem('lastUpdateSeen', '2025-05-23');
+    sessionStorage.setItem('lastUpdateSeen', '2025-05-24');
     onClose();
   };
 
@@ -25,10 +25,18 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
           </button>
         </div>
         <div className="space-y-4">
-          <p className="text-gray-600">May 23, 2025</p>
+          <p className="text-gray-600">May 24, 2025</p>
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium text-dlsu-green">New Print Grades Feature:</h3>
+              <h3 className="font-medium text-dlsu-green">New Features for All Users:</h3>
+              <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
+                <li><strong>Clear Button for All Terms:</strong> You can now clear all courses from any term, including standard terms 1-12. Standard terms cannot be deleted, only cleared.</li>
+                <li><strong>Improved Term Management:</strong> Custom terms (13+) can only be deleted if they are the last term. Otherwise, you can clear their data while keeping the term in your list.</li>
+                <li><strong>Better Feedback:</strong> The app now gives clear explanations and confirmation dialogs for clearing or deleting terms, so you always know what will happen.</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-medium text-dlsu-green">Print Grades Feature:</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
                 <li>Print or download your term grades with one click</li>
                 <li>Choose between standard paper size or social media story format</li>
@@ -36,8 +44,6 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
                 <li>Easily share your academic achievements with friends and family</li>
               </ul>
             </div>
-            
-            
           </div>
         </div>
         <div className="mt-6 flex justify-end">

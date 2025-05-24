@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import GPACalculator from './components/GPACalculator'
+import CGPACalculator from './components/CGPACalculator'
 import LoginModal from './components/LoginModal'
 import TabNavigation from './components/TabNavigation'
 import UpdateModal from './components/UpdateModal'
@@ -15,6 +16,7 @@ function App() {
   const [showUpdateModal, setShowUpdateModal] = useState(true) // Always start with true
   const [activeTab, setActiveTab] = useState('gpa')
   const [authInitialized, setAuthInitialized] = useState(false);
+  const [selectedTerm, setSelectedTerm] = useState(1);
 
   // Initialize auth with session persistence (instead of local)
   useEffect(() => {
@@ -72,18 +74,44 @@ function App() {
     }
   };
 
+  // Handle editing a term from CGPA Calculator
+  const handleEditTerm = (term: number) => {
+    setSelectedTerm(term);
+    setActiveTab('gpa');
+  };
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'gpa':
-        return <GPACalculator key={user?.uid || 'anonymous'} user={user} authInitialized={authInitialized} />;
+        return (
+          <GPACalculator 
+            key={user?.uid || 'anonymous'} 
+            user={user} 
+            authInitialized={authInitialized}
+            initialTerm={selectedTerm}
+          />
+        );
       case 'grade':
         return <div className="p-4">Grade Calculator (Coming Soon)</div>;
       case 'cgpa':
-        return <div className="p-4">CGPA Calculator (Coming Soon)</div>;
+        return (
+          <CGPACalculator 
+            user={user} 
+            authInitialized={authInitialized}
+            onEditTerm={handleEditTerm}
+          />
+        );
       case 'projections':
         return <div className="p-4">CGPA Projections (Coming Soon)</div>;
       default:
-        return <GPACalculator key={user?.uid || 'anonymous'} user={user} authInitialized={authInitialized} />;
+        return (
+          <GPACalculator 
+            key={user?.uid || 'anonymous'} 
+            user={user} 
+            authInitialized={authInitialized}
+            initialTerm={selectedTerm}
+          />
+        );
     }
   };
 
@@ -107,59 +135,54 @@ function App() {
         <div className="w-full px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-left">
-        <p>© {new Date().getFullYear()} Greendex</p>
+              <p>© {new Date().getFullYear()} Greendex</p>
               <p className="mt-1 text-gray-200">
-          Calculator logic and inspiration based on the original 
-          <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
-          DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
-          </a>.
+                Calculator logic and inspiration based on the original 
+                <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
+                  DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
+                </a>.
               </p>
             </div>
-            
-            <div className="flex flex-col items-center md:items-end mt-4 md:mt-0">
-              <p className="font-medium mb-2">Contact Us</p>
-              <div className="flex flex-col sm:flex-row items-center gap-3">
-                <a 
-                  href="mailto:contactgreendex@gmail.com" 
-                  className="flex items-center text-white hover:text-dlsu-light-green transition-colors"
-                  title="Email us"
-                >
-                  <Mail size={16} className="mr-1 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm">contactgreendex@gmail.com</span>
-                </a>
-                <a 
-                  href="https://github.com/Shujimaki" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-white hover:text-dlsu-light-green transition-colors"
-                  title="GitHub"
-                >
-                  <Github size={16} className="mr-1 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm">@Shujimaki</span>
-                </a>
-              </div>
-              <p className="text-xs mt-2 text-gray-200">For suggestions, bug reports, or feedback</p>
+            <div className="flex gap-3">
+              <a
+                href="https://github.com/renzocabarios/dlsu-gpa-tracker"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white hover:text-gray-200 transition-colors"
+                aria-label="GitHub"
+              >
+                <Github size={20} />
+              </a>
+              <a
+                href="mailto:renzo.cabarios@gmail.com"
+                className="text-white hover:text-gray-200 transition-colors"
+                aria-label="Email"
+              >
+                <Mail size={20} />
+              </a>
             </div>
           </div>
         </div>
       </footer>
 
-      <LoginModal 
-        isOpen={showLoginModal} 
-        onClose={() => setShowLoginModal(false)}
-        onLogin={(user: FirebaseUser) => {
-          setUser(user)
-          setShowLoginModal(false)
-        }}
-      />
-      
-      {/* Always render the UpdateModal, its visibility is controlled by isOpen */}
-      <UpdateModal
-        isOpen={showUpdateModal}
-        onClose={() => setShowUpdateModal(false)}
-      />
+      {/* Login Modal */}
+      {showLoginModal && (
+        <LoginModal 
+          isOpen={showLoginModal}
+          onClose={() => setShowLoginModal(false)}
+          onLogin={(user: FirebaseUser) => {
+            setUser(user);
+            setShowLoginModal(false);
+          }}
+        />
+      )}
+
+      {/* Update Modal */}
+      {showUpdateModal && (
+        <UpdateModal isOpen={showUpdateModal} onClose={() => setShowUpdateModal(false)} />
+      )}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
