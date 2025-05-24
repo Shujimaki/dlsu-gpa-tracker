@@ -5,10 +5,16 @@
 @layer base {
   html {
     @apply antialiased;
+    color-scheme: light only;
   }
   
   body {
     @apply bg-gray-50 text-gray-900 min-h-screen;
+  }
+  
+  input, select, textarea, button {
+    @apply bg-white text-gray-900 border-gray-300;
+    color-scheme: light only;
   }
 }
 
@@ -17,9 +23,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: light only;
+  color: #213547;
+  background-color: #ffffff;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -44,6 +50,8 @@ body {
   display: block;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #f9fafb;
+  color: #111827;
 }
 
 h1 {
@@ -58,7 +66,7 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #f9f9f9;
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -70,14 +78,22 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root {
     color: #213547;
     background-color: #ffffff;
   }
-  a:hover {
-    color: #747bff;
+  
+  html, body, input, select, textarea, button {
+    color-scheme: light only;
   }
+  
+  input, select, textarea {
+    background-color: #ffffff;
+    color: #111827;
+    border-color: #d1d5db;
+  }
+  
   button {
     background-color: #f9f9f9;
   }

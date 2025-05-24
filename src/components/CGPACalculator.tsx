@@ -331,7 +331,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
                   <h4 className="font-medium">Term {term.term}</h4>
                   <button 
                     onClick={() => onEditTerm(term.term)}
-                    className="p-1.5 text-gray-500 hover:text-dlsu-green rounded-full hover:bg-gray-100"
+                    className="p-1.5 text-gray-500 hover:text-dlsu-green rounded-full hover:bg-gray-100 bg-white"
                     title="Edit Term"
                   >
                     <Edit size={16} />

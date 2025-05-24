@@ -625,14 +625,14 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
         <div className="flex gap-4">
           <button
             onClick={() => setShowDeansListModal(true)}
-            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
+            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1 bg-white hover:bg-gray-50"
           >
             <InfoIcon size={16} />
             Dean's List Rules
           </button>
           <button
             onClick={() => setShowGPAModal(true)}
-            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
+            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1 bg-white hover:bg-gray-50"
           >
             <InfoIcon size={16} />
             How GPA is Calculated
@@ -651,15 +651,15 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 <select
                   value={selectedTerm}
                   onChange={async (e) => await handleTermChange(e.target.value)}
-                  className="w-full md:w-48 p-2 border border-gray-300 rounded"
+                  className="w-full md:w-48 p-2 border border-gray-300 rounded bg-white text-gray-900"
                 >
                   {availableTerms.map((term) => (
-                    <option key={term} value={term}>
+                    <option key={term} value={term} className="bg-white text-gray-900">
                       Term {term}
                     </option>
                   ))}
                   {Math.max(...availableTerms) < 21 && (
-                    <option value="add" className="text-dlsu-green font-medium">
+                    <option value="add" className="text-dlsu-green font-medium bg-white">
                       + Add New Term
                     </option>
                   )}
@@ -667,7 +667,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 
                 <button
                   onClick={() => handleDeleteClick(selectedTerm)}
-                  className={`p-2 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center`}
+                  className={`p-2 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center bg-white`}
                   title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
                 >
                   {selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? (
@@ -729,7 +729,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                       type="text"
                       value={course.code}
                       onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0"
+                      className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0 bg-white text-gray-900"
                       maxLength={7}
                       placeholder="e.g., NUMMETS"
                     />
@@ -739,7 +739,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                       type="text"
                       value={course.name}
                       onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-base"
+                      className="w-full p-2 border border-gray-300 rounded text-base bg-white text-gray-900"
                       placeholder="e.g., Numerical Methods"
                     />
                   </td>
@@ -747,16 +747,16 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                     <select
                       value={course.units}
                       onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
-                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
+                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
                     >
                       {course.nas
                         ? [0, 1, 2, 3].map(units => (
-                            <option key={units} value={units}>
+                            <option key={units} value={units} className="bg-white text-gray-900">
                               ({units})
                             </option>
                           ))
                         : [1, 2, 3, 4, 5].map(units => (
-                            <option key={units} value={units}>
+                            <option key={units} value={units} className="bg-white text-gray-900">
                               {units}
                             </option>
                           ))}
@@ -767,19 +767,19 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                       <select
                         value={course.grade === 1 ? 'P' : 'F'}
                         onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
-                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
+                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
                       >
-                        <option value="P">P</option>
-                        <option value="F">F</option>
+                        <option value="P" className="bg-white text-gray-900">P</option>
+                        <option value="F" className="bg-white text-gray-900">F</option>
                       </select>
                     ) : (
                       <select
                         value={course.grade}
                         onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px]"
+                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
                       >
                         {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
-                          <option key={grade} value={grade}>
+                          <option key={grade} value={grade} className="bg-white text-gray-900">
                             {grade}
                           </option>
                         ))}
@@ -792,7 +792,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                         type="checkbox"
                         checked={course.nas}
                         onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
-                        className="accent-dlsu-green"
+                        className="accent-dlsu-green bg-white border-gray-300"
                         aria-label="Non-Academic Subject"
                       />
                     </div>
@@ -800,7 +800,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                   <td className="px-4 py-3 align-middle">
                     <button
                       onClick={() => removeCourse(course.id)}
-                      className="p-2 text-red-500 hover:text-red-700 rounded"
+                      className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
                     >
                       <TrashIcon size={20} />
                     </button>
@@ -837,7 +837,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           
           <button
             onClick={() => setShowPrintModal(true)}
-            className="flex items-center px-4 py-2 border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors"
+            className="flex items-center px-4 py-2 border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors bg-white"
           >
             <Printer size={18} className="mr-1" />
             Print Grades
@@ -961,7 +961,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={cancelDelete}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 bg-white text-gray-700"
               >
                 Cancel
               </button>

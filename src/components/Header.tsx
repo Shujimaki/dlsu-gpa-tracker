@@ -21,16 +21,16 @@ const Header = ({ user, onLoginClick, onLogout, onShowUpdateModal }: HeaderProps
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Top row with logo and notification bell */}
           <div className="flex justify-between items-center w-full">
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold">Greendex</h1>
-          </div>
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold">Greendex</h1>
+            </div>
           
             <button
               onClick={onShowUpdateModal}
               className="p-2 hover:bg-dlsu-light-green rounded-full transition-colors relative"
               aria-label="Updates"
             >
-              <Bell size={24} className="text-dlsu-light-green" />
+              <Bell size={24} />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
           </div>
