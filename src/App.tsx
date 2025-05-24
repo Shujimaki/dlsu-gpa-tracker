@@ -49,7 +49,7 @@ function App() {
   // Check if update modal should be hidden based on sessionStorage
   useEffect(() => {
     const lastUpdateSeen = sessionStorage.getItem('lastUpdateSeen');
-    if (lastUpdateSeen === '2025-05-23') {
+    if (lastUpdateSeen === '2025-05-24') {
       setShowUpdateModal(false);
     } else {
       console.log("Update modal should be shown");
@@ -85,7 +85,6 @@ function App() {
       case 'gpa':
         return (
           <GPACalculator 
-            key={user?.uid || 'anonymous'} 
             user={user} 
             authInitialized={authInitialized}
             initialTerm={selectedTerm}
@@ -106,7 +105,6 @@ function App() {
       default:
         return (
           <GPACalculator 
-            key={user?.uid || 'anonymous'} 
             user={user} 
             authInitialized={authInitialized}
             initialTerm={selectedTerm}
@@ -135,12 +133,12 @@ function App() {
         <div className="w-full px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-left">
-              <p>© {new Date().getFullYear()} Greendex</p>
+        <p>© {new Date().getFullYear()} Greendex</p>
               <p className="mt-1 text-gray-200">
-                Calculator logic and inspiration based on the original 
-                <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
-                  DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
-                </a>.
+          Calculator logic and inspiration based on the original 
+          <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
+          DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
+          </a>.
               </p>
             </div>
             <div className="flex gap-3">
@@ -167,14 +165,14 @@ function App() {
 
       {/* Login Modal */}
       {showLoginModal && (
-        <LoginModal 
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-          onLogin={(user: FirebaseUser) => {
+      <LoginModal 
+        isOpen={showLoginModal} 
+        onClose={() => setShowLoginModal(false)}
+        onLogin={(user: FirebaseUser) => {
             setUser(user);
             setShowLoginModal(false);
-          }}
-        />
+        }}
+      />
       )}
 
       {/* Update Modal */}

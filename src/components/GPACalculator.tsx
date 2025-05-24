@@ -421,17 +421,14 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
   // Delete a term (only terms > 12 can be deleted)
   const deleteTerm = async (term: number) => {
-    // Don't allow deleting standard terms 1-12
-    if (term <= 12) {
-      console.log("Cannot delete standard terms (1-12)");
-      return;
-    }
+    // For terms 1-12, we only clear data, never delete
+    const isStandardTerm = term <= 12;
     
     console.log(`Processing term ${term}`);
     
     try {
-      // Check if this is the last term
-      const isLastTerm = term === Math.max(...availableTerms);
+      // Check if this is the last term and it's not a standard term
+      const isLastTerm = term === Math.max(...availableTerms) && !isStandardTerm;
       
       // Clear the data for this term
       const emptyTermData = {
@@ -441,7 +438,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       
       // Update sessionStorage
       if (isLastTerm) {
-        // If it's the last term, remove it completely
+        // If it's the last term and not a standard term, remove it completely
         sessionStorage.removeItem(`term_${term}`);
       } else {
         // Otherwise just clear the data
@@ -452,7 +449,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       if (user) {
         try {
           if (isLastTerm) {
-            // Delete the term from Firestore if it's the last term
+            // Delete the term from Firestore if it's the last term and not a standard term
             const success = await deleteUserTerm(user.uid, term);
             if (success) {
               console.log(`Term ${term} deleted from Firestore`);
@@ -469,7 +466,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
         }
       }
       
-      // Update availableTerms only if it's the last term
+      // Update availableTerms only if it's the last term and not a standard term
       if (isLastTerm) {
         setAvailableTerms(prev => {
           const updated = prev.filter(t => t !== term);
@@ -650,19 +647,17 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                   )}
                 </select>
                 
-                {selectedTerm > 0 && (
-                  <button
-                    onClick={() => handleDeleteClick(selectedTerm)}
-                    className={`p-2 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center`}
-                    title={selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? "Delete this term" : "Clear term data"}
-                  >
-                    {(selectedTerm === Math.max(...availableTerms) && selectedTerm > 12) ? (
-                      <TrashIcon size={20} />
-                    ) : (
-                      <span className="text-sm px-1">Clear</span>
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={() => handleDeleteClick(selectedTerm)}
+                  className={`p-2 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center`}
+                  title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
+                >
+                  {selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? (
+                    <TrashIcon size={20} />
+                  ) : (
+                    <span className="text-sm px-1">Clear</span>
+                  )}
+                </button>
               </div>
             </div>
             <div>
@@ -923,16 +918,8 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               <AlertTriangle className="mr-2" />
               <h3 className="text-lg font-bold">Confirm Action</h3>
             </div>
-            {termToDelete <= 12 ? (
-              <div className="mb-4">
-                <p className="mb-2">
-                  You are about to clear all data for Term {termToDelete}.
-                </p>
-                <div className="bg-amber-50 border-l-4 border-amber-400 p-3 text-sm">
-                  <p><strong>Note:</strong> Standard terms (1-12) cannot be deleted, only cleared. The term will always remain in the list.</p>
-                </div>
-              </div>
-            ) : termToDelete === Math.max(...availableTerms) ? (
+            
+            {termToDelete > 12 && termToDelete === Math.max(...availableTerms) ? (
               <p className="mb-4">
                 You are about to delete Term {termToDelete}. This will remove the term from the list.
                 Are you sure you want to continue?
@@ -943,11 +930,16 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                   You are about to clear all data for Term {termToDelete}.
                 </p>
                 <div className="bg-amber-50 border-l-4 border-amber-400 p-3 text-sm">
-                  <p><strong>Note:</strong> Only the last custom term can be completely removed from the list.</p>
+                  {termToDelete <= 12 ? (
+                    <p><strong>Note:</strong> Standard terms (1-12) cannot be removed from the list, only cleared.</p>
+                  ) : (
+                    <p><strong>Note:</strong> Only the last term can be completely removed from the list.</p>
+                  )}
                   <p>Term {termToDelete} will remain in the list but all its courses will be cleared.</p>
                 </div>
               </div>
             )}
+            
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={cancelDelete}
@@ -957,9 +949,9 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               </button>
               <button
                 onClick={confirmDelete}
-                className={`px-4 py-2 ${termToDelete === Math.max(...availableTerms) && termToDelete > 12 ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-500 text-white hover:bg-amber-600'} rounded`}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
               >
-                {(termToDelete === Math.max(...availableTerms) && termToDelete > 12) ? 'Delete Term' : 'Clear Term Data'}
+                {termToDelete > 12 && termToDelete === Math.max(...availableTerms) ? 'Delete Term' : 'Clear Term Data'}
               </button>
             </div>
           </div>
