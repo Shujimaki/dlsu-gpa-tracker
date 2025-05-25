@@ -6,6 +6,9 @@ import { saveUserData, loadUserData, getUserTerms, deleteUserTerm } from '../con
 import type { User as FirebaseUser } from 'firebase/auth';
 import PrintGradesModal from './PrintGradesModal';
 
+// Maximum academic units allowed per term
+const MAX_ACADEMIC_UNITS = 25;
+
 /**
  * Helper function to store data - uses sessionStorage for anonymous users
  * and Firestore for logged-in users
@@ -356,12 +359,31 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     logDeansListEligibility(isDeansLister, isFirstHonors);
   }, [gpa, selectedTerm, isDeansLister, isFirstHonors]);
 
+  // Calculate total academic units
+  const calculateTotalAcademicUnits = (courseList: Course[]): number => {
+    return courseList.reduce((total, course) => {
+      return total + (course.nas ? 0 : course.units);
+    }, 0);
+  };
+
   const addCourse = () => {
+    // Calculate current academic units
+    const currentAcademicUnits = calculateTotalAcademicUnits(courses);
+    
+    // Default units for new course
+    const defaultUnits = 3;
+    
+    // Check if adding a new academic course would exceed the limit
+    if (currentAcademicUnits + defaultUnits > MAX_ACADEMIC_UNITS) {
+      alert(`Cannot add more courses. Maximum of ${MAX_ACADEMIC_UNITS} academic units allowed per term.`);
+      return;
+    }
+    
     setCourses([...courses, {
       id: crypto.randomUUID(),
       code: '',
       name: '',
-      units: 3,
+      units: defaultUnits,
       grade: 0,
       nas: false,
     }]);
@@ -370,11 +392,35 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
   const removeCourse = (id: string) => {
     // Now we allow removing all courses
-      setCourses(courses.filter((course: Course) => course.id !== id));
-      logUserAction('remove_course');
+    setCourses(courses.filter((course: Course) => course.id !== id));
+    logUserAction('remove_course');
   };
 
   const updateCourse = (id: string, field: keyof Course, value: string | number | boolean) => {
+    // Special handling for units and nas fields to enforce academic units limit
+    if ((field === 'units' || field === 'nas') && typeof value !== 'string') {
+      const updatedCourses = [...courses];
+      const courseIndex = updatedCourses.findIndex(course => course.id === id);
+      
+      if (courseIndex === -1) return;
+      
+      const course = updatedCourses[courseIndex];
+      
+      // Create a temporary updated course to check
+      const updatedCourse = { ...course, [field]: value };
+      
+      // Calculate what the new total academic units would be
+      let newTotalAcademicUnits = calculateTotalAcademicUnits(
+        updatedCourses.map((c, idx) => idx === courseIndex ? updatedCourse : c)
+      );
+      
+      // If updating would exceed the limit, prevent the update
+      if (newTotalAcademicUnits > MAX_ACADEMIC_UNITS) {
+        alert(`Cannot update. Maximum of ${MAX_ACADEMIC_UNITS} academic units allowed per term.`);
+        return;
+      }
+    }
+    
     setCourses(courses.map((course: Course) =>
       course.id === id ? { ...course, [field]: value } : course
     ));
@@ -877,8 +923,9 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               <strong>Note:</strong> Academic dishonesty includes cheating, plagiarism, and other forms of academic misconduct as defined in the DLSU Student Handbook.
             </div>
             <button
+              style= {{marginTop: '1.5rem', minHeight: '0'}}
               onClick={() => setShowDeansListModal(false)}
-              className="mt-4 px-4 py-2 bg-dlsu-green text-white rounded hover:bg-dlsu-light-green"
+              className="mt-6 bg-dlsu-green text-white px-4 py-2 rounded hover:bg-dlsu-green/90 transition-colors block"
             >
               Close
             </button>
@@ -905,8 +952,9 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               <strong>Note:</strong> Non-Academic Subjects (NAS) are <u>not</u> included in GPA calculations, but are considered for Dean's List eligibility.
             </div>
             <button
+              style= {{marginTop: '1.5rem', minHeight: '0'}}
               onClick={() => setShowGPAModal(false)}
-              className="mt-4 px-4 py-2 bg-dlsu-green text-white rounded hover:bg-dlsu-light-green"
+              className="mt-6 bg-dlsu-green text-white px-4 py-2 rounded hover:bg-dlsu-green/90 transition-colors block"
             >
               Close
             </button>

@@ -367,18 +367,26 @@ const PrintGradesModal = ({
       badge.style.border = 'none';
       badge.style.outline = 'none';
       badge.style.boxShadow = 'none';
+      badge.style.padding = size === 'story' ? '2rem' : '1rem';
       
       const badgeH3 = badge.querySelector('h3') as HTMLElement;
       if (badgeH3) {
         styleTextElement(badgeH3, '1.2');
-        badgeH3.style.whiteSpace = 'nowrap';
-        badgeH3.style.fontSize = size === 'story' ? '2rem' : '1.25rem';
+        badgeH3.style.whiteSpace = 'normal';
+        badgeH3.style.maxWidth = '90%';
+        badgeH3.style.margin = '0 auto';
+        badgeH3.style.display = 'block'; 
+        badgeH3.style.padding = '0';
+        badgeH3.style.textAlign = 'center';
+        badgeH3.style.fontSize = size === 'story' ? '2.5rem' : '1.25rem';
       }
       
       const badgeP = badge.querySelector('p') as HTMLElement;
       if (badgeP) {
         styleTextElement(badgeP, '1.2');
-        badgeP.style.whiteSpace = 'nowrap';
+        badgeP.style.whiteSpace = 'normal';
+        badgeP.style.maxWidth = '90%';
+        badgeP.style.textAlign = 'center';
         badgeP.style.fontSize = size === 'story' ? '1.5rem' : '1rem';
       }
     });
@@ -439,28 +447,109 @@ const PrintGradesModal = ({
     const headings = clone.querySelectorAll('h1, h2, h3, h4, h5, h6');
     headings.forEach(heading => {
       const headingEl = heading as HTMLElement;
-      headingEl.style.whiteSpace = 'nowrap';
-      headingEl.style.overflow = 'hidden';
-      headingEl.style.textOverflow = 'ellipsis';
-      headingEl.style.margin = '0';
-      headingEl.style.padding = '0';
-      headingEl.style.lineHeight = '1.2';
-      headingEl.style.border = 'none';
-      headingEl.style.outline = 'none';
-      headingEl.style.boxShadow = 'none';
+      // Don't apply nowrap to name and degree which should wrap
+      if (headingEl.parentElement && headingEl.parentElement.classList.contains('text-right')) {
+        headingEl.style.whiteSpace = 'normal';
+        headingEl.style.overflow = 'hidden';
+        headingEl.style.textOverflow = 'ellipsis';
+        headingEl.style.display = '-webkit-box';
+        (headingEl.style as any)['-webkit-line-clamp'] = '2';
+        (headingEl.style as any)['-webkit-box-orient'] = 'vertical';
+        headingEl.style.maxWidth = size === 'story' ? '500px' : '300px';
+        headingEl.style.margin = '0';
+        headingEl.style.padding = '0';
+        headingEl.style.lineHeight = '1.3';
+        headingEl.style.border = 'none';
+        headingEl.style.outline = 'none';
+        headingEl.style.boxShadow = 'none';
+      } else if (headingEl.parentElement && headingEl.parentElement.classList.contains('bg-dlsu-green') && headingEl.tagName === 'H3') {
+        // Special handling for Dean's Lister heading
+        headingEl.style.whiteSpace = 'normal';
+        headingEl.style.overflow = 'hidden';
+        headingEl.style.textOverflow = 'ellipsis';
+        headingEl.style.margin = '0 auto';
+        headingEl.style.padding = '0';
+        headingEl.style.maxWidth = '90%';
+        headingEl.style.textAlign = 'center';
+        headingEl.style.display = 'block';
+        headingEl.style.lineHeight = '1.3';
+        headingEl.style.border = 'none';
+        headingEl.style.outline = 'none';
+        headingEl.style.boxShadow = 'none';
+      } else {
+        headingEl.style.whiteSpace = 'nowrap';
+        headingEl.style.overflow = 'visible'; // Changed to visible for Term XXX Grades
+        headingEl.style.textOverflow = 'clip';
+        headingEl.style.margin = '0';
+        headingEl.style.padding = '0';
+        headingEl.style.lineHeight = '1.2';
+        headingEl.style.border = 'none';
+        headingEl.style.outline = 'none';
+        headingEl.style.boxShadow = 'none';
+      }
     });
   
     // Style all paragraphs
     const paragraphs = clone.querySelectorAll('p');
     paragraphs.forEach(paragraph => {
       const paragraphEl = paragraph as HTMLElement;
-      paragraphEl.style.margin = '0';
-      paragraphEl.style.padding = '0';
-      paragraphEl.style.lineHeight = '1.2';
+      // Special handling for degree paragraph in the header
+      if (paragraphEl.parentElement && paragraphEl.parentElement.classList.contains('text-right')) {
+        paragraphEl.style.whiteSpace = 'normal';
+        paragraphEl.style.overflow = 'hidden';
+        paragraphEl.style.textOverflow = 'ellipsis';
+        paragraphEl.style.display = '-webkit-box';
+        (paragraphEl.style as any)['-webkit-line-clamp'] = '2';
+        (paragraphEl.style as any)['-webkit-box-orient'] = 'vertical';
+        paragraphEl.style.maxWidth = size === 'story' ? '500px' : '300px';
+        paragraphEl.style.margin = '0';
+        paragraphEl.style.padding = '0';
+        paragraphEl.style.lineHeight = '1.3';
+      } else {
+        paragraphEl.style.margin = '0';
+        paragraphEl.style.padding = '0';
+        paragraphEl.style.lineHeight = '1.2';
+      }
       paragraphEl.style.border = 'none';
       paragraphEl.style.outline = 'none';
       paragraphEl.style.boxShadow = 'none';
     });
+    
+    // Fix header layout
+    const header = clone.querySelector('.bg-dlsu-green') as HTMLElement;
+    if (header) {
+      const headerContent = header.querySelector('.flex') as HTMLElement;
+      if (headerContent) {
+        headerContent.style.justifyContent = 'space-between';
+        headerContent.style.alignItems = 'center';
+        headerContent.style.height = '100%';
+        
+        // Fix left side (Term XX Grades)
+        const leftDiv = headerContent.children[0] as HTMLElement;
+        if (leftDiv) {
+          leftDiv.style.width = '40%';
+          leftDiv.style.flexShrink = '0';
+        }
+        
+        // Fix right side (Name and Degree)
+        const rightDiv = headerContent.children[1] as HTMLElement;
+        if (rightDiv) {
+          rightDiv.style.width = '60%';
+          rightDiv.style.maxWidth = '60%';
+          
+          // Ensure right alignment
+          const nameElement = rightDiv.querySelector('h2') as HTMLElement;
+          if (nameElement) {
+            nameElement.style.marginLeft = 'auto';
+          }
+          
+          const degreeElement = rightDiv.querySelector('p') as HTMLElement;
+          if (degreeElement) {
+            degreeElement.style.marginLeft = 'auto';
+          }
+        }
+      }
+    }
   
     // Append clone to temporary container
     tempContainer.appendChild(clone);
