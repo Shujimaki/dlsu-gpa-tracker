@@ -13,6 +13,19 @@
   overflow: hidden;
 }
 
+/* Macbook-specific fixes for text wrapping in the header */
+.print-story .bg-dlsu-green h2,
+.print-story .bg-dlsu-green p {
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
 /* Standard size */
 .print-standard-portrait {
   width: 8.5in !important;
@@ -91,8 +104,6 @@
 .print-story table td {
   padding: 0.75rem 1rem;
 }
-
-
 
 /* Mobile styles */
 @media (max-width: 640px) {

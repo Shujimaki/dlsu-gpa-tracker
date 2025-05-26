@@ -41,6 +41,46 @@ const PrintGradesModal = ({
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const previewContainerRef = useRef<HTMLDivElement>(null);
   
+  // Reset preview when changing format to avoid layout issues
+  const handleSizeChange = (newSize: 'standard' | 'story') => {
+    // First set the size state
+    setSize(newSize);
+    
+    // If IG/FB story is selected, automatically set orientation to portrait
+    if (newSize === 'story' && orientation !== 'portrait') {
+      setOrientation('portrait');
+    }
+    
+    // Force re-render of preview component when in preview step
+    if (step === 'preview') {
+      // Set a brief timeout to ensure the state is updated
+      setTimeout(() => {
+        // Force a complete re-render by temporarily setting step to info and back
+        setStep('info');
+        setTimeout(() => {
+          setStep('preview');
+        }, 10);
+      }, 10);
+    }
+  };
+  
+  const handleOrientationChange = (newOrientation: 'portrait' | 'landscape') => {
+    // First set the orientation state
+    setOrientation(newOrientation);
+    
+    // Force re-render of preview component when in preview step
+    if (step === 'preview') {
+      // Set a brief timeout to ensure the state is updated
+      setTimeout(() => {
+        // Force a complete re-render by temporarily setting step to info and back
+        setStep('info');
+        setTimeout(() => {
+          setStep('preview');
+        }, 10);
+      }, 10);
+    }
+  };
+  
   if (!isOpen) return null;
   
   const handleSubmitInfo = (e: FormEvent) => {
@@ -302,7 +342,15 @@ const PrintGradesModal = ({
           const headerRightH2 = headerRight.querySelector('h2') as HTMLElement;
           if (headerRightH2) {
             styleTextElement(headerRightH2, '1.2');
-            headerRightH2.style.whiteSpace = 'nowrap';
+            // Fix for Macbook text wrapping issues in IG/FB story format
+            if (size === 'story') {
+              headerRightH2.style.whiteSpace = 'normal';
+              headerRightH2.style.wordBreak = 'break-word';
+              headerRightH2.style.overflowWrap = 'break-word';
+              headerRightH2.style.width = '100%';
+            } else {
+              headerRightH2.style.whiteSpace = 'nowrap';
+            }
             headerRightH2.style.overflow = 'hidden';
             headerRightH2.style.textOverflow = 'ellipsis';
             headerRightH2.style.fontSize = size === 'story' ? '2rem' : '1.25rem';
@@ -311,7 +359,15 @@ const PrintGradesModal = ({
           const headerRightP = headerRight.querySelector('p') as HTMLElement;
           if (headerRightP) {
             styleTextElement(headerRightP, '1.2');
-            headerRightP.style.whiteSpace = 'nowrap';
+            // Fix for Macbook text wrapping issues in IG/FB story format
+            if (size === 'story') {
+              headerRightP.style.whiteSpace = 'normal';
+              headerRightP.style.wordBreak = 'break-word';
+              headerRightP.style.overflowWrap = 'break-word';
+              headerRightP.style.width = '100%';
+            } else {
+              headerRightP.style.whiteSpace = 'nowrap';
+            }
             headerRightP.style.overflow = 'hidden';
             headerRightP.style.textOverflow = 'ellipsis';
             headerRightP.style.fontSize = size === 'story' ? '1.5rem' : '1rem';
@@ -645,7 +701,7 @@ const PrintGradesModal = ({
                         name="size"
                         value="standard"
                         checked={size === 'standard'}
-                        onChange={() => setSize('standard')}
+                        onChange={() => handleSizeChange('standard')}
                         className="mr-3 h-4 w-4 accent-dlsu-green"
                       />
                       <div className="min-w-0 flex-1">
@@ -659,7 +715,7 @@ const PrintGradesModal = ({
                         name="size"
                         value="story"
                         checked={size === 'story'}
-                        onChange={() => setSize('story')}
+                        onChange={() => handleSizeChange('story')}
                         className="mr-3 h-4 w-4 accent-dlsu-green"
                       />
                       <div className="min-w-0 flex-1">
@@ -678,7 +734,7 @@ const PrintGradesModal = ({
                         name="orientation"
                         value="portrait"
                         checked={orientation === 'portrait'}
-                        onChange={() => setOrientation('portrait')}
+                        onChange={() => handleOrientationChange('portrait')}
                         className="mr-3 h-4 w-4 accent-dlsu-green"
                         disabled={size === 'story'}
                       />
@@ -693,7 +749,7 @@ const PrintGradesModal = ({
                         name="orientation"
                         value="landscape"
                         checked={orientation === 'landscape'}
-                        onChange={() => setOrientation('landscape')}
+                        onChange={() => handleOrientationChange('landscape')}
                         className="mr-3 h-4 w-4 accent-dlsu-green"
                         disabled={size === 'story'}
                       />

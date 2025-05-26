@@ -143,7 +143,10 @@ const PrintPreview = ({
                     textOverflow: 'ellipsis',
                     lineHeight: '1.3',
                     maxWidth: size === 'story' ? '500px' : '300px',
-                    marginLeft: 'auto'
+                    marginLeft: 'auto',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
+                    whiteSpace: 'normal'
                   }}
                 >
                   {name}
@@ -160,7 +163,10 @@ const PrintPreview = ({
                     textOverflow: 'ellipsis',
                     lineHeight: '1.3',
                     maxWidth: size === 'story' ? '500px' : '300px',
-                    marginLeft: 'auto'
+                    marginLeft: 'auto',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'break-word',
+                    whiteSpace: 'normal'
                   }}
                 >
                   {degree}
