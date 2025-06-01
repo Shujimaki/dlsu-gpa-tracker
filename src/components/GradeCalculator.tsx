@@ -128,7 +128,22 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
           setIsLoading(false);
         }
       } else {
-        // For anonymous users, try to load from session storage
+        // For anonymous users, treat every page refresh as a new session
+        const isNewAnonymousSession = !sessionStorage.getItem('anonymousSession');
+        
+        if (isNewAnonymousSession) {
+          // Mark this as an active anonymous session
+          sessionStorage.setItem('anonymousSession', 'true');
+          
+          // Clear any existing grade calculator data
+          sessionStorage.removeItem('grade_calculator_data');
+          
+          // Don't try to load data, just use the default state
+          setIsLoading(false);
+          return;
+        }
+        
+        // For continuing anonymous sessions, try to load from session storage
         try {
           const savedData = sessionStorage.getItem('grade_calculator_data');
           if (savedData) {
@@ -208,6 +223,36 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
       setActiveSubjectId(subjects[0].id);
     }
   }, [subjects, activeSubjectId]);
+
+  // Add a useEffect to reset the calculator when a user logs out
+  useEffect(() => {
+    // If the auth is initialized but there's no user, this means user has logged out
+    if (authInitialized && !user) {
+      // Clear data from session storage
+      sessionStorage.removeItem('grade_calculator_data');
+      
+      // Reset to default state
+      setSubjects([{
+        id: crypto.randomUUID(),
+        name: 'Subject 1',
+        passingGrade: 60,
+        categories: []
+      }]);
+      
+      // Reset active subject ID
+      setActiveSubjectId(null);
+    }
+  }, [user, authInitialized]);
+
+  // Clear anonymous session marker when component unmounts
+  useEffect(() => {
+    return () => {
+      // Only clear if user is not logged in
+      if (!user) {
+        sessionStorage.removeItem('anonymousSession');
+      }
+    };
+  }, [user]);
 
   const activeSubject = useMemo(() => {
     return subjects.find(subject => subject.id === activeSubjectId) || null;

@@ -60,6 +60,20 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         } catch (error) {
           console.error('Error loading CGPA settings:', error);
         }
+      } else {
+        // For anonymous users, load from sessionStorage
+        try {
+          const anonymousSettings = sessionStorage.getItem('cgpa_settings');
+          if (anonymousSettings) {
+            const parsedSettings = JSON.parse(anonymousSettings);
+            if (parsedSettings && typeof parsedSettings.creditedUnits === 'number') {
+              setCreditedUnits(parsedSettings.creditedUnits);
+              setCreditedUnitsInput(parsedSettings.creditedUnits.toString());
+            }
+          }
+        } catch (error) {
+          console.error('Error loading anonymous CGPA settings:', error);
+        }
       }
     };
     
@@ -69,10 +83,12 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   // Save settings when values change
   useEffect(() => {
     const saveSettings = async () => {
+      if (isLoading) return; // Don't save during initial load
+      
+      setSaveStatus('Saving...');
+      
       if (user && authInitialized) {
         try {
-          setSaveStatus('Saving...');
-          
           const settings: CGPASettings = {
             creditedUnits
           };
@@ -88,13 +104,24 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
           setSaveStatus('Error saving');
           setTimeout(() => setSaveStatus(null), 2000);
         }
+      } else {
+        // For anonymous users, save to sessionStorage
+        try {
+          sessionStorage.setItem('cgpa_settings', JSON.stringify({ creditedUnits }));
+          setSaveStatus('Settings saved');
+          setTimeout(() => setSaveStatus(null), 2000);
+        } catch (error) {
+          console.error('Error saving anonymous CGPA settings:', error);
+          setSaveStatus('Error saving');
+          setTimeout(() => setSaveStatus(null), 2000);
+        }
       }
     };
     
     // Debounce save to avoid too many requests
     const timeoutId = setTimeout(saveSettings, 1000);
     return () => clearTimeout(timeoutId);
-  }, [creditedUnits, user, authInitialized]);
+  }, [creditedUnits, user, authInitialized, isLoading]);
 
   // Handle credited units input change
   const handleCreditedUnitsChange = (value: string) => {
@@ -104,6 +131,45 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     const numValue = parseInt(value) || 0;
     setCreditedUnits(Math.max(0, numValue));
   };
+
+  // Add a useEffect to reset the calculator when a user logs out
+  useEffect(() => {
+    // If the auth is initialized but there's no user, this means user has logged out
+    if (authInitialized && !user) {
+      // Clear anonymous session data
+      sessionStorage.removeItem('cgpa_settings');
+    }
+  }, [user, authInitialized]);
+
+  // Clear anonymous settings marker when component unmounts if user is not logged in
+  useEffect(() => {
+    return () => {
+      // Only mark for cleanup if user is not logged in and this is navigation away from component
+      if (!user) {
+        sessionStorage.setItem('cgpa_settings_cleanup', 'true');
+      }
+    };
+  }, [user]);
+
+  // Handle page unload to save settings
+  useEffect(() => {
+    // Save settings immediately on page unload for anonymous users
+    const handleBeforeUnload = () => {
+      if (!user && !isLoading) {
+        try {
+          sessionStorage.setItem('cgpa_settings', JSON.stringify({ creditedUnits }));
+        } catch (error) {
+          console.error('Error saving CGPA settings before unload:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [user, creditedUnits, isLoading]);
 
   // Calculate CGPA from all terms
   const { cgpa, totalTerms, totalUnits, totalWithCredited } = useMemo(() => {
@@ -428,7 +494,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
             </div>
           </div>
           
-          {user && saveStatus && (
+          {saveStatus && (
             <div className="text-sm text-green-600">
               {saveStatus}
             </div>
@@ -497,8 +563,8 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
                             </td>
                           </tr>
                         ) : (
-                          term.courses.map(course => (
-                            <tr key={course.id} className="hover:bg-gray-50">
+                          term.courses.map((course, index) => (
+                            <tr key={course.id} className={`hover:bg-gray-50 ${index % 2 === 0 ? '!bg-white' : '!bg-slate-100'}`}>
                               <td className="px-2 py-1.5 font-medium">
                                 {course.code || '-'}
                               </td>
