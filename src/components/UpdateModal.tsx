@@ -8,7 +8,7 @@ interface UpdateModalProps {
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   const handleClose = () => {
     // Save that the user has seen this update
-    sessionStorage.setItem('lastUpdateSeen', '2025-05-24');
+    sessionStorage.setItem('lastUpdateSeen', '2025-06-01');
     onClose();
   };
 
@@ -25,15 +25,18 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
           </button>
         </div>
         <div className="space-y-4">
-          <p className="text-gray-600">May 24, 2025</p>
+          <p className="text-gray-600">June 1, 2025</p>
           <div className="space-y-4">
+          
+            
             <div>
-              <h3 className="font-medium text-dlsu-green">New CGPA Projections Feature:</h3>
+              <h3 className="font-medium text-dlsu-green">New & Improved Grade Calculator:</h3>
               <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Calculate the GPA you need to achieve your target CGPA</li>
-                <li>Set your total units to graduate and target CGPA</li>
-                <li>Access directly from the CGPA Calculator tab</li>
-                <li>See instantly if your target CGPA is achievable</li>
+                <li>Calculate grades per subject with weighted categories.</li>
+                <li>Choose from preset passing grades (50% to 70%) with automatic transmutation.</li>
+                <li>Manage up to 8 subjects, with names and categories saved to your account.</li>
+                <li>See your raw percentage and final transmuted grade for each subject.</li>
+                <li>Disclaimer: Official grades are always from MLS.</li>
               </ul>
             </div>
             

@@ -3,6 +3,7 @@ import Header from './components/Header'
 import GPACalculator from './components/GPACalculator'
 import CGPACalculator from './components/CGPACalculator'
 import CGPAProjections from './components/CGPAProjections'
+import GradeCalculator from './components/GradeCalculator'
 import LoginModal from './components/LoginModal'
 import TabNavigation from './components/TabNavigation'
 import UpdateModal from './components/UpdateModal'
@@ -122,9 +123,13 @@ function App() {
             />
           </div>
           
-          {activeTab === 'grade' && (
-            <div className="p-4">Grade Calculator (Coming Soon)</div>
-          )}
+          {/* Keep GradeCalculator always mounted but hidden when not active */}
+          <div style={{ display: activeTab === 'grade' ? 'block' : 'none' }}>
+            <GradeCalculator 
+              user={user}
+              authInitialized={authInitialized}
+            />
+          </div>
           
           {activeTab === 'cgpa' && (
             <CGPACalculator 

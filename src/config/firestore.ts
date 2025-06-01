@@ -14,6 +14,15 @@ export interface TermData {
   isFlowchartExempt: boolean;
 }
 
+export interface ProjectionSettings {
+  targetCGPA: number;
+  totalUnits: number;
+}
+
+export interface CGPASettings {
+  creditedUnits: number;
+}
+
 export const saveUserData = async (userId: string, term: number, courses: Course[], isFlowchartExempt: boolean = false) => {
   try {
     // Validate userId and data
@@ -123,5 +132,91 @@ export const deleteUserTerm = async (userId: string, term: number): Promise<bool
   } catch (error) {
     console.error(`Error deleting term ${term}:`, error);
     return false;
+  }
+};
+
+export const saveUserProjectionSettings = async (userId: string, settings: ProjectionSettings): Promise<boolean> => {
+  try {
+    // Validate userId
+    if (!userId || userId.trim() === '') {
+      console.warn('Cannot save projection settings: userId is empty or undefined');
+      return false;
+    }
+    
+    console.log('Saving projection settings to Firestore:', { userId, settings });
+    
+    const userRef = doc(db, 'users', userId);
+    await setDoc(doc(userRef, 'settings', 'projections'), settings, { merge: true });
+    console.log('Projection settings saved to Firestore successfully');
+    return true;
+  } catch (error) {
+    console.error('Error saving projection settings:', error);
+    return false;
+  }
+};
+
+export const loadUserProjectionSettings = async (userId: string): Promise<ProjectionSettings | null> => {
+  try {
+    if (!userId || userId.trim() === '') {
+      console.warn('Cannot load projection settings: userId is empty or undefined');
+      return null;
+    }
+    
+    const userRef = doc(db, 'users', userId);
+    const settingsRef = doc(userRef, 'settings', 'projections');
+    const settingsDoc = await getDoc(settingsRef);
+    
+    if (settingsDoc.exists()) {
+      const data = settingsDoc.data() as ProjectionSettings;
+      console.log('Projection settings loaded from Firestore:', data);
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error loading projection settings:', error);
+    return null;
+  }
+};
+
+export const saveUserCGPASettings = async (userId: string, settings: CGPASettings): Promise<boolean> => {
+  try {
+    // Validate userId
+    if (!userId || userId.trim() === '') {
+      console.warn('Cannot save CGPA settings: userId is empty or undefined');
+      return false;
+    }
+    
+    console.log('Saving CGPA settings to Firestore:', { userId, settings });
+    
+    const userRef = doc(db, 'users', userId);
+    await setDoc(doc(userRef, 'settings', 'cgpa'), settings, { merge: true });
+    console.log('CGPA settings saved to Firestore successfully');
+    return true;
+  } catch (error) {
+    console.error('Error saving CGPA settings:', error);
+    return false;
+  }
+};
+
+export const loadUserCGPASettings = async (userId: string): Promise<CGPASettings | null> => {
+  try {
+    if (!userId || userId.trim() === '') {
+      console.warn('Cannot load CGPA settings: userId is empty or undefined');
+      return null;
+    }
+    
+    const userRef = doc(db, 'users', userId);
+    const settingsRef = doc(userRef, 'settings', 'cgpa');
+    const settingsDoc = await getDoc(settingsRef);
+    
+    if (settingsDoc.exists()) {
+      const data = settingsDoc.data() as CGPASettings;
+      console.log('CGPA settings loaded from Firestore:', data);
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error loading CGPA settings:', error);
+    return null;
   }
 }; 

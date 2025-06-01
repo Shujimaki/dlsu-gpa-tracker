@@ -161,4 +161,35 @@
 :root {
   --dlsu-green: #006f51;
   --dlsu-light-green: #00a651;
+}
+
+/* 
+  Specific override for GradeCalculator subject buttons to ensure horizontal layout 
+  and correct height when active, counteracting the general rule above.
+*/
+.grade-calc-subject-tabs-container .grade-calc-subject-button.bg-dlsu-green.text-white {
+  display: flex !important; /* Tailwind's 'flex' */
+  flex-direction: row !important; /* Tailwind's 'flex-row' */
+  justify-content: space-between !important; /* Tailwind's 'justify-between' */
+  align-items: center !important; /* Tailwind's 'items-center' */
+  min-height: 2.5rem !important; /* Corresponds to h-10 (40px / 16px base = 2.5rem) */
+  height: 2.5rem !important; /* Corresponds to h-10 */
+  padding-top: 0 !important; /* Corresponds to py-0 */
+  padding-bottom: 0 !important; /* Corresponds to py-0 */
+  text-align: left !important; /* Ensure text alignment is as expected for flex items */
+  margin: 0 !important; /* Reset any margin that might be set by the conflicting rule */
+}
+
+/* Ensure that even the first child, if it matches, gets these specific styles */
+.grade-calc-subject-tabs-container .grade-calc-subject-button.bg-dlsu-green.text-white:first-child {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  min-height: 2.5rem !important;
+  height: 2.5rem !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  text-align: left !important;
+  margin: 0 !important;
 } 

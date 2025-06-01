@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
+import { saveUserProjectionSettings, loadUserProjectionSettings } from '../config/firestore';
+import type { ProjectionSettings } from '../config/firestore';
 
 
 interface CGPAProjectionsProps {
@@ -7,17 +9,38 @@ interface CGPAProjectionsProps {
   authInitialized?: boolean;
 }
 
-const CGPAProjections = ({}: CGPAProjectionsProps) => {
+const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps) => {
   // State for user inputs
-  const [targetCGPA, setTargetCGPA] = useState<number>(3.5);
-  const [totalUnits, setTotalUnits] = useState<number>(180); // Default total units to graduate
-  const [totalUnitsInput, setTotalUnitsInput] = useState<string>("180"); // String state for input field
+  const [targetCGPA, setTargetCGPA] = useState<number>(3.4);
+  const [totalUnits, setTotalUnits] = useState<number>(200); // Default total units to graduate
+  const [totalUnitsInput, setTotalUnitsInput] = useState<string>("200"); // String state for input field
   
   // State for data from CGPA Calculator
   const [currentCGPA, setCurrentCGPA] = useState<number>(0);
   const [earnedUnits, setEarnedUnits] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  // Load user settings when user logs in
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      if (user && authInitialized) {
+        try {
+          const settings = await loadUserProjectionSettings(user.uid);
+          if (settings) {
+            setTargetCGPA(settings.targetCGPA);
+            setTotalUnits(settings.totalUnits);
+            setTotalUnitsInput(settings.totalUnits.toString());
+          }
+        } catch (error) {
+          console.error('Error loading user projection settings:', error);
+        }
+      }
+    };
+    
+    loadUserSettings();
+  }, [user, authInitialized]);
 
   // Load CGPA data from sessionStorage
   useEffect(() => {
@@ -45,6 +68,37 @@ const CGPAProjections = ({}: CGPAProjectionsProps) => {
       setIsLoading(false);
     }
   }, []);
+
+  // Save settings when values change
+  useEffect(() => {
+    const saveSettings = async () => {
+      if (user && authInitialized) {
+        try {
+          setSaveStatus('Saving...');
+          
+          const settings: ProjectionSettings = {
+            targetCGPA,
+            totalUnits
+          };
+          
+          const saved = await saveUserProjectionSettings(user.uid, settings);
+          if (saved) {
+            setSaveStatus('Settings saved');
+            // Clear the save status after a short delay
+            setTimeout(() => setSaveStatus(null), 2000);
+          }
+        } catch (error) {
+          console.error('Error saving projection settings:', error);
+          setSaveStatus('Error saving');
+          setTimeout(() => setSaveStatus(null), 2000);
+        }
+      }
+    };
+    
+    // Debounce save to avoid too many requests
+    const timeoutId = setTimeout(saveSettings, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [targetCGPA, totalUnits, user, authInitialized]);
 
   // Handle total units input change
   const handleTotalUnitsChange = (value: string) => {
@@ -182,6 +236,12 @@ const CGPAProjections = ({}: CGPAProjectionsProps) => {
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent"
               />
             </div>
+            
+            {user && saveStatus && (
+              <div className="mt-2 text-sm text-green-600">
+                {saveStatus}
+              </div>
+            )}
           </div>
         </div>
       </div>

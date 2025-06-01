@@ -62,7 +62,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     
     // If this is a new account login, clear all flags and reset state
     if (!isAnonymous && isNewLogin) {
-      console.log('New account detected - starting with fresh data');
       sessionStorage.setItem('newLogin', 'false');
       sessionStorage.setItem('wasAnonymous', 'false'); // Clear anonymous flag to prevent migration
       
@@ -75,7 +74,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     
     // If user just logged in (transition from anonymous → authenticated)
     if (!isAnonymous && wasAnonymous) {
-      console.log('User login detected - checking for data migration needs');
       sessionStorage.setItem('wasAnonymous', 'false');
       
       // Attempt to migrate session data for currently visible term if needed
@@ -90,7 +88,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           if (!firestoreData) {
             const sessionData = sessionStorage.getItem(`term_${selectedTerm}`);
             if (sessionData) {
-              console.log('Migrating anonymous data to Firestore for term:', selectedTerm);
               const parsedData = JSON.parse(sessionData);
               await saveUserData(user.uid, selectedTerm, parsedData.courses, parsedData.isFlowchartExempt);
             }
@@ -105,7 +102,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     
     // When user logs in (whether new or returning), check for all terms
     if (!isAnonymous) {
-      console.log('User logged in, checking for terms in Firestore...');
       
       // Function to check for terms in Firestore
       const checkForFirestoreTerms = async () => {
@@ -114,7 +110,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
         try {
           // Get all terms from Firestore
           const userTerms = await getUserTerms(user.uid);
-          console.log('Found terms in Firestore:', userTerms);
           
           if (userTerms && userTerms.length > 0) {
             // Find highest term number (up to 21)
@@ -123,8 +118,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
             // Always include terms 1-12, plus any additional terms up to the highest
             // If highestTerm is <= 12, this will just generate terms 1-12
             const allTerms = Array.from({ length: Math.max(12, highestTerm) }, (_, i) => i + 1);
-            
-            console.log('Setting available terms:', allTerms);
             
             // Update availableTerms
             setAvailableTerms(allTerms);
@@ -150,14 +143,12 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
   // Update selectedTerm when initialTerm changes
   useEffect(() => {
-    console.log(`initialTerm changed to ${initialTerm}, updating selectedTerm`);
     setSelectedTerm(initialTerm);
   }, [initialTerm]);
 
   // Load data when component mounts or when authInitialized changes
   useEffect(() => {
     if (authInitialized) {
-      console.log('Component mounted or auth initialized, loading data...');
       loadData();
     }
   }, [authInitialized]); // Only run when authInitialized changes or component mounts
@@ -165,8 +156,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   // Load data when term changes
   useEffect(() => {
     if (authInitialized) {
-      console.log(`Loading data for term ${selectedTerm}...`);
-      
       // Store current term in sessionStorage
       sessionStorage.setItem('currentTerm', selectedTerm.toString());
       
@@ -188,7 +177,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           const firestoreData = await loadUserData(user!.uid, selectedTerm);
           if (firestoreData) {
             loadedData = firestoreData as TermData;
-            console.log('Data loaded from Firestore');
           }
         } catch (error) {
           console.error('Error loading from Firestore:', error);
@@ -204,14 +192,12 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           if (typeof sessionData === 'object' && 'courses' in sessionData) {
             // New format with flowchart exemption
             loadedData = sessionData as TermData;
-            console.log('Data loaded from sessionStorage');
         } else {
             // Old format (just array of courses)
             loadedData = {
               courses: sessionData as Course[],
               isFlowchartExempt: false
             };
-            console.log('Data loaded from sessionStorage (legacy format)');
           }
         }
       }
@@ -371,7 +357,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     const currentAcademicUnits = calculateTotalAcademicUnits(courses);
     
     // Default units for new course
-    const defaultUnits = 3;
+    const defaultUnits = 1;
     
     // Check if adding a new academic course would exceed the limit
     if (currentAcademicUnits + defaultUnits > MAX_ACADEMIC_UNITS) {
@@ -431,7 +417,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   const addNewTerm = async () => {
     // Check if we've reached the maximum number of terms (21)
     if (Math.max(...availableTerms) >= 21) {
-      console.log("Maximum number of terms (21) reached");
       return;
     }
     
@@ -440,7 +425,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     
     // Get the next term number (highest term + 1)
     const nextTerm = Math.max(...availableTerms) + 1;
-    console.log(`Creating new Term ${nextTerm}`);
     
     // Create empty courses for the new term (now an empty array)
     const newCourses: Course[] = [];
@@ -458,7 +442,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     // If logged in, also save to Firestore
     if (user) {
       try {
-        console.log(`Saving new Term ${nextTerm} to Firestore`);
         await saveUserData(user.uid, nextTerm, newCourses, false);
       } catch (error) {
         console.error(`Error saving new Term ${nextTerm} to Firestore:`, error);
@@ -466,10 +449,8 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     }
     
     // First update the available terms array
-    console.log(`Adding Term ${nextTerm} to available terms`);
     setAvailableTerms(prev => {
       const updatedTerms = [...prev, nextTerm].sort((a, b) => a - b);
-      console.log('Updated available terms:', updatedTerms);
       return updatedTerms;
     });
     
@@ -479,16 +460,12 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     
     // Finally set the selected term to the newly created term
     setSelectedTerm(nextTerm);
-    
-    console.log(`Successfully created and switched to Term ${nextTerm}`);
   };
 
   // Delete a term (only terms > 12 can be deleted)
   const deleteTerm = async (term: number) => {
     // For terms 1-12, we only clear data, never delete
     const isStandardTerm = term <= 12;
-    
-    console.log(`Processing term ${term}`);
     
     try {
       // Check if this is the last term and it's not a standard term
@@ -515,15 +492,12 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           if (isLastTerm) {
             // Delete the term from Firestore if it's the last term and not a standard term
             const success = await deleteUserTerm(user.uid, term);
-            if (success) {
-              console.log(`Term ${term} deleted from Firestore`);
-            } else {
+            if (!success) {
               console.error(`Failed to delete Term ${term} from Firestore`);
             }
           } else {
             // Otherwise just clear the data
             await saveUserData(user.uid, term, [], false);
-            console.log(`Term ${term} data cleared in Firestore`);
           }
         } catch (error) {
           console.error(`Error handling term ${term} in Firestore:`, error);
@@ -534,7 +508,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       if (isLastTerm) {
         setAvailableTerms(prev => {
           const updated = prev.filter(t => t !== term);
-          console.log(`Updated available terms after deletion:`, updated);
           return updated;
         });
       }
@@ -543,22 +516,12 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       if (selectedTerm === term) {
         // If it's the last term and we're deleting it, switch to Term 1
         if (isLastTerm) {
-          console.log(`Currently on deleted Term ${term}, switching to Term 1`);
           setSelectedTerm(1);
         } else {
           // Otherwise just clear the courses
           setCourses([]);
           setIsFlowchartExempt(false);
-          console.log(`Term ${term} data cleared`);
         }
-      }
-      
-      // Show feedback based on action
-      if (isLastTerm) {
-        console.log(`Term ${term} successfully deleted`);
-      } else {
-        console.log(`Term ${term} data cleared but term remains available`);
-        // Could show a toast notification here
       }
     } catch (error) {
       console.error(`Error in deleteTerm:`, error);
@@ -584,13 +547,11 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   useEffect(() => {
     // If the auth is initialized but there's no user, this means user has logged out
     if (authInitialized && !user) {
-      console.log('User logged out, resetting calculator to fresh state');
       
       // Clear all session data for terms
       Object.keys(sessionStorage)
         .filter(key => key.startsWith('term_'))
         .forEach(key => {
-          console.log(`Clearing session data for ${key}`);
           sessionStorage.removeItem(key);
         });
       
@@ -601,7 +562,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       setSelectedTerm(1);
       
       // Reset to default terms (1-12 only)
-      console.log('Resetting to default terms (1-12)');
       setAvailableTerms([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
       
       // Reset flowchart exemption
@@ -641,9 +601,10 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
   return (
     <div>
-      <div className="mb-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-dlsu-green">
+      {/* Header Card - updated to match other calculator components */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-2">
+          <h2 className="text-2xl font-bold text-dlsu-green mb-2">
             GPA Calculator
           </h2>
           <div className="flex items-center gap-2">
@@ -665,20 +626,20 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
             )}
           </div>
         </div>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-gray-600 mb-4">
           Enter your courses, units, and grades to calculate your GPA.
         </p>
         <div className="flex gap-4">
           <button
             onClick={() => setShowDeansListModal(true)}
-            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1 bg-white hover:bg-gray-50"
+            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
           >
             <InfoIcon size={16} />
             Dean's List Rules
           </button>
           <button
             onClick={() => setShowGPAModal(true)}
-            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1 bg-white hover:bg-gray-50"
+            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
           >
             <InfoIcon size={16} />
             How GPA is Calculated
@@ -687,33 +648,35 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       </div>
 
       <div className="mb-4 flex flex-col gap-4">
-        <div className="flex flex-wrap justify-between">
-          <div className="flex flex-wrap gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Term
-          </label>
+        {/* Term selection & options - card container */}
+        <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Term selector */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Term
+              </label>
               <div className="flex gap-2">
-          <select
-            value={selectedTerm}
+                <select
+                  value={selectedTerm}
                   onChange={async (e) => await handleTermChange(e.target.value)}
-                  className="w-full md:w-48 p-2 border border-gray-300 rounded bg-white text-gray-900"
-          >
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent"
+                >
                   {availableTerms.map((term) => (
                     <option key={term} value={term} className="bg-white text-gray-900">
-                Term {term}
-              </option>
-            ))}
+                      Term {term}
+                    </option>
+                  ))}
                   {Math.max(...availableTerms) < 21 && (
                     <option value="add" className="text-dlsu-green font-medium bg-white">
                       + Add New Term
-            </option>
+                    </option>
                   )}
-          </select>
+                </select>
                 
                 <button
                   onClick={() => handleDeleteClick(selectedTerm)}
-                  className={`p-2 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center bg-white`}
+                  className={`p-2 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center`}
                   title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
                 >
                   {selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? (
@@ -723,186 +686,207 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                   )}
                 </button>
               </div>
-        </div>
-            <div>
+            </div>
+            
+            {/* Flowchart exemption */}
+            <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Options
+                Term Options
               </label>
               <label 
                 htmlFor="flowchartExempt" 
-                className="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 cursor-pointer"
+                className="flex items-center p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 cursor-pointer"
               >
-          <input
-            type="checkbox"
-            id="flowchartExempt"
-            checked={isFlowchartExempt}
-            onChange={(e) => setIsFlowchartExempt(e.target.checked)}
+                <input
+                  type="checkbox"
+                  id="flowchartExempt"
+                  checked={isFlowchartExempt}
+                  onChange={(e) => setIsFlowchartExempt(e.target.checked)}
                   className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded mr-2"
-          />
+                />
                 <span className="text-sm text-gray-700">
-                  Flowchart exempts me from 12-unit requirement for this term
+                  Flowchart exempts me from 12-unit requirement
                 </span>
-          </label>
-        </div>
+              </label>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="overflow-x-auto relative">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-dlsu-light-green text-white">
-              <th className="px-4 py-2 text-left">Course Code</th>
-              <th className="px-4 py-2 text-left">Course Name (Optional)</th>
-              <th className="px-4 py-2 text-center min-w-[80px]">Units</th>
-              <th className="px-4 py-2 text-center min-w-[80px]">Grade</th>
-              <th className="px-4 py-2 text-center">Non-Academic Subject <span title='What is this?'>?</span></th>
-              <th className="px-4 py-2 w-10"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {courses.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-500">
-                  No courses added yet. Click "Add Course" to get started.
-                </td>
+      {/* Course table - card container */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-4">
+        <div className="overflow-x-auto relative">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-dlsu-light-green text-white">
+                <th className="px-4 py-2 text-left">Course Code</th>
+                <th className="px-4 py-2 text-left">Course Name (Optional)</th>
+                <th className="px-4 py-2 text-center min-w-[80px]">Units</th>
+                <th className="px-4 py-2 text-center min-w-[80px]">Grade</th>
+                <th className="px-4 py-2 text-center">Non-Academic Subject <span title='What is this?'>?</span></th>
+                <th className="px-4 py-2 w-10"></th>
               </tr>
+            </thead>
+            {isInitialLoad ? (
+              <tbody>
+                <tr>
+                  <td colSpan={6} className="py-12">
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-dlsu-green"></div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
             ) : (
-              courses.map(course => (
-              <tr key={course.id} className="border-b border-gray-200 hover:bg-gray-50 md:align-middle bg-white md:bg-transparent">
-                <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
-                  <input
-                    type="text"
-                    value={course.code}
-                    onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0 bg-white text-gray-900"
-                    maxLength={7}
-                    placeholder="e.g., NUMMETS"
-                  />
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <input
-                    type="text"
-                    value={course.name}
-                    onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-base bg-white text-gray-900"
-                    placeholder="e.g., Numerical Methods"
-                  />
-                </td>
-                <td className="px-4 py-3 align-middle min-w-[80px]">
-                  <select
-                    value={course.units}
-                    onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
-                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                  >
-                    {course.nas
-                      ? [0, 1, 2, 3].map(units => (
-                            <option key={units} value={units} className="bg-white text-gray-900">
-                            ({units})
-                          </option>
-                        ))
-                      : [1, 2, 3, 4, 5].map(units => (
-                            <option key={units} value={units} className="bg-white text-gray-900">
-                            {units}
-                          </option>
-                        ))}
-                  </select>
-                </td>
-                <td className="px-4 py-3 align-middle min-w-[80px]">
-                  {course.nas && course.units === 0 ? (
-                    <select
-                      value={course.grade === 1 ? 'P' : 'F'}
-                      onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
-                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                    >
-                        <option value="P" className="bg-white text-gray-900">P</option>
-                        <option value="F" className="bg-white text-gray-900">F</option>
-                    </select>
-                  ) : (
-                    <select
-                      value={course.grade}
-                      onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                    >
-                      {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
-                          <option key={grade} value={grade} className="bg-white text-gray-900">
-                          {grade}
-                        </option>
-                      ))}
-                    </select>
+              <tbody>
+                {courses.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-gray-500">
+                      No courses added yet. Click "Add Course" to get started.
+                    </td>
+                  </tr>
+                ) : (
+                  courses.map(course => (
+                  <tr key={course.id} className={`border-b border-gray-200 hover:bg-gray-50 md:align-middle ${courses.indexOf(course) % 2 === 0 ? '!bg-white' : '!bg-slate-100'}`}>
+                    <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
+                      <input
+                        type="text"
+                        value={course.code}
+                        onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
+                          className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0 bg-white text-gray-900"
+                        maxLength={7}
+                        placeholder="e.g., NUMMETS"
+                      />
+                    </td>
+                    <td className="px-4 py-3 align-middle">
+                      <input
+                        type="text"
+                        value={course.name}
+                        onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
+                          className="w-full p-2 border border-gray-300 rounded text-base bg-white text-gray-900"
+                        placeholder="e.g., Numerical Methods"
+                      />
+                    </td>
+                    <td className="px-4 py-3 align-middle min-w-[80px]">
+                      <select
+                        value={course.units}
+                        onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
+                          className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
+                      >
+                        {course.nas
+                          ? [0, 1, 2, 3].map(units => (
+                                <option key={units} value={units} className="bg-white text-gray-900">
+                                ({units})
+                              </option>
+                            ))
+                          : [1, 2, 3, 4, 5].map(units => (
+                                <option key={units} value={units} className="bg-white text-gray-900">
+                                {units}
+                              </option>
+                            ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-3 align-middle min-w-[80px]">
+                      {course.nas && course.units === 0 ? (
+                        <select
+                          value={course.grade === 1 ? 'P' : 'F'}
+                          onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
+                            className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
+                        >
+                            <option value="P" className="bg-white text-gray-900">P</option>
+                            <option value="F" className="bg-white text-gray-900">F</option>
+                        </select>
+                      ) : (
+                        <select
+                          value={course.grade}
+                          onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
+                            className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
+                        >
+                          {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
+                              <option key={grade} value={grade} className="bg-white text-gray-900">
+                              {grade}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 align-middle">
+                      <div className="flex justify-center items-center">
+                        <input
+                          type="checkbox"
+                          checked={course.nas}
+                          onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
+                            className="accent-dlsu-green bg-white border-gray-300"
+                          aria-label="Non-Academic Subject"
+                        />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 align-middle">
+                      <button
+                        onClick={() => removeCourse(course.id)}
+                          className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
+                      >
+                        <TrashIcon size={20} />
+                      </button>
+                    </td>
+                  </tr>
+                  ))
+                )}
+              </tbody>
+            )}
+            <tfoot>
+              <tr className="border-t-2 border-gray-300 font-medium">
+                <td className="px-4 py-2">Total Units</td>
+                <td></td>
+                <td className="px-4 py-2 text-center" colSpan={1}>
+                  {totalUnits}
+                  {totalNASUnits > 0 && (
+                    <span className="text-gray-500"> ({totalNASUnits})</span>
                   )}
                 </td>
-                <td className="px-4 py-3 align-middle">
-                  <div className="flex justify-center items-center">
-                    <input
-                      type="checkbox"
-                      checked={course.nas}
-                      onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
-                        className="accent-dlsu-green bg-white border-gray-300"
-                      aria-label="Non-Academic Subject"
-                    />
-                  </div>
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <button
-                    onClick={() => removeCourse(course.id)}
-                      className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
-                  >
-                    <TrashIcon size={20} />
-                  </button>
-                </td>
+                <td colSpan={2}></td>
               </tr>
-              ))
-            )}
-          </tbody>
-          <tfoot>
-            <tr className="border-t-2 border-gray-300 font-medium">
-              <td className="px-4 py-2">Total Units</td>
-              <td></td>
-              <td className="px-4 py-2 text-center" colSpan={1}>
-                {totalUnits}
-                {totalNASUnits > 0 && (
-                  <span className="text-gray-500"> ({totalNASUnits})</span>
-                )}
-              </td>
-              <td colSpan={2}></td>
-            </tr>
-          </tfoot>
-        </table>
+            </tfoot>
+          </table>
+        </div>
       </div>
 
-      <div className="mt-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-        <button
-          onClick={addCourse}
-          className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
-        >
-          <PlusIcon size={18} className="mr-1" />
-          Add Course
-        </button>
-          
-          <button
-            onClick={() => setShowPrintModal(true)}
-            className="flex items-center px-4 py-2 border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors bg-white"
-          >
-            <Printer size={18} className="mr-1" />
-            Print Grades
-          </button>
-        </div>
-        <div className="text-right">
-          <div className="text-lg font-bold">
-            GPA: <span className="text-xl">{gpa}</span>
+      {/* Bottom controls - Add course, Print grades, GPA display */}
+      <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <button
+              onClick={addCourse}
+              className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
+            >
+              <PlusIcon size={18} className="mr-1" />
+              Add Course
+            </button>
+            
+            <button
+              onClick={() => setShowPrintModal(true)}
+              className="flex items-center px-4 py-2 border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors"
+            >
+              <Printer size={18} className="mr-1" />
+              Print Grades
+            </button>
           </div>
-          {isFirstHonors && (
-            <div className="text-sm text-dlsu-green">
-              First Honors Dean's Lister
+          
+          <div className="text-right w-full md:w-auto">
+            <div className="text-lg font-bold">
+              GPA: <span className="text-xl text-dlsu-green">{gpa}</span>
             </div>
-          )}
-          {isDeansLister && !isFirstHonors && (
-            <div className="text-sm text-dlsu-green">
-              Second Honors Dean's Lister
-            </div>
-          )}
+            {isFirstHonors && (
+              <div className="text-sm text-dlsu-green font-medium">
+                First Honors Dean's Lister
+              </div>
+            )}
+            {isDeansLister && !isFirstHonors && (
+              <div className="text-sm text-dlsu-green font-medium">
+                Second Honors Dean's Lister
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

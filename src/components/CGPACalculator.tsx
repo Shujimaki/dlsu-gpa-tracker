@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getUserTerms, loadUserData } from '../config/firestore';
+import { getUserTerms, loadUserData, saveUserCGPASettings, loadUserCGPASettings } from '../config/firestore';
 import type { Course } from '../types';
 import type { User as FirebaseUser } from 'firebase/auth';
+import type { CGPASettings } from '../config/firestore';
 import { Edit } from 'lucide-react';
 
 // Local implementation of loadSessionData
@@ -42,9 +43,70 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   const [termsData, setTermsData] = useState<TermSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [creditedUnits, setCreditedUnits] = useState<number>(0);
+  const [creditedUnitsInput, setCreditedUnitsInput] = useState<string>("0");
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  // Load user settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (user && authInitialized) {
+        try {
+          const settings = await loadUserCGPASettings(user.uid);
+          if (settings) {
+            setCreditedUnits(settings.creditedUnits);
+            setCreditedUnitsInput(settings.creditedUnits.toString());
+          }
+        } catch (error) {
+          console.error('Error loading CGPA settings:', error);
+        }
+      }
+    };
+    
+    loadSettings();
+  }, [user, authInitialized]);
+
+  // Save settings when values change
+  useEffect(() => {
+    const saveSettings = async () => {
+      if (user && authInitialized) {
+        try {
+          setSaveStatus('Saving...');
+          
+          const settings: CGPASettings = {
+            creditedUnits
+          };
+          
+          const saved = await saveUserCGPASettings(user.uid, settings);
+          if (saved) {
+            setSaveStatus('Settings saved');
+            // Clear the save status after a short delay
+            setTimeout(() => setSaveStatus(null), 2000);
+          }
+        } catch (error) {
+          console.error('Error saving CGPA settings:', error);
+          setSaveStatus('Error saving');
+          setTimeout(() => setSaveStatus(null), 2000);
+        }
+      }
+    };
+    
+    // Debounce save to avoid too many requests
+    const timeoutId = setTimeout(saveSettings, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [creditedUnits, user, authInitialized]);
+
+  // Handle credited units input change
+  const handleCreditedUnitsChange = (value: string) => {
+    setCreditedUnitsInput(value);
+    
+    // Convert to number for calculations
+    const numValue = parseInt(value) || 0;
+    setCreditedUnits(Math.max(0, numValue));
+  };
 
   // Calculate CGPA from all terms
-  const { cgpa, totalTerms, totalUnits } = useMemo(() => {
+  const { cgpa, totalTerms, totalUnits, totalWithCredited } = useMemo(() => {
     let totalPoints = 0;
     let totalUnits = 0;
     let activeTerms = 0;
@@ -58,14 +120,19 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
       }
     });
 
+    // Calculate CGPA without credited units
     const cgpaValue = totalUnits > 0 ? (totalPoints / totalUnits).toFixed(3) : '0.000';
+    
+    // Add credited units to total units for display purposes only
+    const totalWithCreditedValue = totalUnits + creditedUnits;
     
     return {
       cgpa: cgpaValue,
       totalTerms: activeTerms,
-      totalUnits
+      totalUnits,
+      totalWithCredited: totalWithCreditedValue
     };
-  }, [termsData]);
+  }, [termsData, creditedUnits]);
 
   // Save CGPA data to session storage for the Projections tab
   useEffect(() => {
@@ -73,7 +140,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
       // Save CGPA data to session storage
       const cgpaData = {
         cgpa,
-        totalUnits,
+        totalUnits: totalWithCredited, // Use total with credited units
         totalTerms
       };
       
@@ -82,7 +149,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     } catch (error) {
       console.error('Error saving CGPA data to session storage:', error);
     }
-  }, [cgpa, totalUnits, totalTerms]);
+  }, [cgpa, totalUnits, totalWithCredited, totalTerms]);
 
   // Calculate GPA for a single term
   const calculateTermGPA = (courses: Course[]): { 
@@ -320,8 +387,12 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
               <p className="text-xl font-semibold">{totalTerms}</p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-500">Total Units</p>
+              <p className="text-sm text-gray-500">Academic Units</p>
               <p className="text-xl font-semibold">{totalUnits}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-500">Total Units</p>
+              <p className="text-xl font-semibold">{totalWithCredited}</p>
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-500">CGPA</p>
@@ -330,13 +401,47 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
           </div>
         </div>
         
+        <div className="flex flex-col space-y-4">
+          {/* Credited Units Input */}
+          <div className="relative group">
+            <label htmlFor="creditedUnits" className="block text-sm font-medium text-gray-700">
+              Credited Units (from previous school/degree)
+              <span className="ml-1 text-gray-400 cursor-help text-xs">
+                (?)
+              </span>
+            </label>
+            <input
+              type="number"
+              id="creditedUnits"
+              value={creditedUnitsInput}
+              onChange={(e) => handleCreditedUnitsChange(e.target.value)}
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-dlsu-green focus:border-dlsu-green sm:text-sm"
+              min="0"
+            />
+            <div
+              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-xs p-2 
+                         bg-gray-800 text-white text-xs rounded-md shadow-lg 
+                         opacity-0 group-hover:opacity-100 transition-opacity duration-300 
+                         pointer-events-none whitespace-normal z-10"
+            >
+              Enter the total number of academic units you've earned from a previous school or degree that are credited towards your current DLSU degree. These units contribute to your total earned units but NOT to the CGPA calculation in this app.
+            </div>
+          </div>
+          
+          {user && saveStatus && (
+            <div className="text-sm text-green-600">
+              {saveStatus}
+            </div>
+          )}
+        
         <div className="flex justify-end">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('switchTab', { detail: 'projections' }))}
-            className="px-4 py-2 bg-dlsu-green text-white rounded hover:bg-green-700 transition-colors"
+              className="px-4 py-2 h-10 bg-dlsu-green text-white rounded hover:bg-green-700 transition-colors"
           >
             View CGPA Projections
           </button>
+          </div>
         </div>
       </div>
 
