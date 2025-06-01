@@ -18,6 +18,27 @@
   }
 }
 
+@layer components {
+  /* App-specific button styles */
+  .warning-login-btn {
+    @apply bg-dlsu-green text-white transition-colors;
+  }
+
+  .warning-login-btn:hover {
+    @apply bg-dlsu-dark-green;
+  }
+  
+  .header-login-btn, 
+  .header-logout-btn {
+    @apply bg-white text-dlsu-green transition-colors;
+  }
+  
+  .header-login-btn:hover,
+  .header-logout-btn:hover {
+    @apply bg-gray-100;
+  }
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

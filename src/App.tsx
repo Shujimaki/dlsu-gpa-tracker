@@ -10,7 +10,7 @@ import UpdateModal from './components/UpdateModal'
 import type { User as FirebaseUser } from 'firebase/auth'
 import { auth } from './config/firebase';
 import { onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
-import { Github, Mail } from 'lucide-react';
+import { Github, Mail, AlertTriangle } from 'lucide-react';
 
 function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
@@ -23,6 +23,80 @@ function App() {
     const storedTerm = sessionStorage.getItem('currentTerm');
     return storedTerm ? parseInt(storedTerm, 10) : 1;
   });
+
+  // Anonymous user warning state
+  const [showAnonymousWarning, setShowAnonymousWarning] = useState(false);
+  const [warningDismissed, setWarningDismissed] = useState(false);
+
+  // Add basic beforeunload handler for anonymous users
+  useEffect(() => {
+    // Only add if user is not logged in and auth is initialized
+    if (authInitialized && !user) {
+      console.log("Adding beforeunload handler for anonymous user");
+      
+      // NOTE: We intentionally removed the beforeunload handler since we're now showing
+      // a permanent warning banner to the user. This avoids duplicate warnings.
+      // If data loss prevention is critical in the future, this can be re-enabled.
+      
+      return () => {
+        console.log("No beforeunload handler to remove");
+      };
+    }
+  }, [authInitialized, user]);
+
+  // Check for anonymous user data and show warning if needed
+  useEffect(() => {
+    // Skip if user is logged in or auth is not initialized
+    if (user || !authInitialized) {
+      return;
+    }
+    
+    console.log("Setting up anonymous user data detection");
+    
+    // Function to check for user data
+    const checkForUserData = () => {
+      // Skip check if user is logged in
+      if (user) return;
+      
+      const hasData = Object.keys(sessionStorage).some(key => 
+        key.startsWith('term_') || 
+        key === 'grade_calculator_data' || 
+        key === 'cgpa_settings'
+      );
+      
+      // Only update state if the value is changing to avoid re-renders
+      if (hasData !== showAnonymousWarning) {
+        console.log("Anonymous user data status changed:", hasData ? "Data found" : "No data");
+        setShowAnonymousWarning(hasData);
+      }
+    };
+    
+    // Initial check
+    checkForUserData();
+    
+    // Set up listeners for storage changes
+    const handleStorageChange = () => {
+      console.log("Storage changed, rechecking data");
+      checkForUserData();
+    };
+    
+    // Use storage event and periodic checks
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Check every 10 seconds as a fallback
+    const interval = setInterval(checkForUserData, 10000);
+    
+    // Also check after any user interaction with the page
+    document.addEventListener('click', checkForUserData);
+    document.addEventListener('keydown', checkForUserData);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('click', checkForUserData);
+      document.removeEventListener('keydown', checkForUserData);
+      clearInterval(interval);
+    };
+  }, [user, authInitialized, showAnonymousWarning]);
 
   // Listen for tab switch events
   useEffect(() => {
@@ -61,6 +135,13 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setAuthInitialized(true);
+      
+      // Hide warning when user is logged in
+      if (user) {
+        setShowAnonymousWarning(false);
+        setWarningDismissed(false);
+      }
+      
       console.log("Auth state changed:", user ? `User ${user.uid} logged in` : "No user logged in");
     });
     
@@ -87,6 +168,9 @@ function App() {
       // Sign out of Firebase
       await signOut(auth);
       
+      // Reset warning states
+      setWarningDismissed(false);
+      
       // Clear user state
       setUser(null);
       
@@ -109,7 +193,45 @@ function App() {
         onLoginClick={() => setShowLoginModal(true)} 
         onLogout={handleLogout} 
         onShowUpdateModal={() => setShowUpdateModal(true)}
+        showWarningIndicator={showAnonymousWarning && warningDismissed && !user}
+        onShowWarning={() => setWarningDismissed(false)}
       />
+      
+      {/* Anonymous user warning banner */}
+      {showAnonymousWarning && !warningDismissed && (
+        <div className="bg-dlsu-green bg-opacity-10 border-b border-dlsu-green border-opacity-30 p-3 transition-all duration-300">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 text-dlsu-green mr-2 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-dlsu-green font-medium">
+                    Your data is only saved temporarily
+                  </p>
+                  <p className="text-gray-600 text-sm mt-1">
+                    You're using Greendex without logging in. Your data will be lost if you close or refresh this page.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 sm:flex-shrink-0">
+                <button 
+                  onClick={() => setWarningDismissed(true)}
+                  className="text-gray-600 hover:text-dlsu-green text-sm py-1.5 px-3 h-8 rounded whitespace-nowrap"
+                  aria-label="Hide warning"
+                >
+                  Hide
+                </button>
+                <button 
+                  onClick={() => setShowLoginModal(true)}
+                  className="warning-login-btn px-3 py-1.5 rounded text-sm h-8"
+                >
+                  Login
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <main className="flex-1 flex flex-col w-full">
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />

@@ -10,6 +10,7 @@ module.exports = {
       colors: {
         'dlsu-green': '#006f51',
         'dlsu-light-green': '#00a651',
+        'dlsu-dark-green': '#005940',
       },
       backgroundColor: {
         // Ensure light backgrounds for form elements
