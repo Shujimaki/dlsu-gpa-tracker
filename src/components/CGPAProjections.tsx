@@ -22,24 +22,47 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
-  // Load user settings when user logs in
+  // Load user settings (Firestore for logged-in, sessionStorage for anonymous)
   useEffect(() => {
-    const loadUserSettings = async () => {
-      if (user && authInitialized) {
+    const loadSettings = async () => {
+      if (!authInitialized) return;
+
+      if (user) { // Logged-in user
         try {
+          // console.log('Loading projection settings from Firestore for user:', user.uid);
           const settings = await loadUserProjectionSettings(user.uid);
           if (settings) {
             setTargetCGPA(settings.targetCGPA);
             setTotalUnits(settings.totalUnits);
             setTotalUnitsInput(settings.totalUnits.toString());
           }
-        } catch (error) {
-          console.error('Error loading user projection settings:', error);
+        } catch (err) {
+          console.error('Error loading user projection settings from Firestore:', err);
+          // Optionally set an error state here if critical
+        }
+      } else { // Anonymous user
+        try {
+          // console.log('Loading projection settings from sessionStorage for anonymous user');
+          const anonymousSettings = sessionStorage.getItem('projection_settings');
+          if (anonymousSettings) {
+            const parsedSettings = JSON.parse(anonymousSettings);
+            if (parsedSettings) {
+              if (typeof parsedSettings.targetCGPA === 'number') {
+                setTargetCGPA(parsedSettings.targetCGPA);
+              }
+              if (typeof parsedSettings.totalUnits === 'number') {
+                setTotalUnits(parsedSettings.totalUnits);
+                setTotalUnitsInput(parsedSettings.totalUnits.toString());
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error loading anonymous projection settings from sessionStorage:', err);
         }
       }
     };
     
-    loadUserSettings();
+    loadSettings();
   }, [user, authInitialized]);
 
   // Load CGPA data from sessionStorage
@@ -69,36 +92,48 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
     }
   }, []);
 
-  // Save settings when values change
+  // Save settings for ANONYMOUS users to sessionStorage (immediately)
   useEffect(() => {
-    const saveSettings = async () => {
-      if (user && authInitialized) {
-        try {
-          setSaveStatus('Saving...');
-          
-          const settings: ProjectionSettings = {
-            targetCGPA,
-            totalUnits
-          };
-          
-          const saved = await saveUserProjectionSettings(user.uid, settings);
-          if (saved) {
-            setSaveStatus('Settings saved');
-            // Clear the save status after a short delay
-            setTimeout(() => setSaveStatus(null), 2000);
-          }
-        } catch (error) {
-          console.error('Error saving projection settings:', error);
+    if (isLoading || !authInitialized || user) {
+      // Only run if not loading, auth is initialized, and user is anonymous
+      return;
+    }
+
+    try {
+      // console.log('Saving anonymous projection settings to sessionStorage:', { targetCGPA, totalUnits });
+      sessionStorage.setItem('projection_settings', JSON.stringify({ targetCGPA, totalUnits }));
+    } catch (err) {
+      console.error('Error saving anonymous projection settings to sessionStorage:', err);
+    }
+  }, [targetCGPA, totalUnits, isLoading, authInitialized, user]);
+
+  // Save settings for LOGGED-IN users to Firestore (debounced)
+  useEffect(() => {
+    if (isLoading || !authInitialized || !user) {
+      // Only run if not loading, auth is initialized, and user is logged IN
+      return;
+    }
+
+    const saveToFirestore = async () => {
+      setSaveStatus('Saving...'); // Indicator for async Firestore operation
+      try {
+        const settings: ProjectionSettings = { targetCGPA, totalUnits };
+        const saved = await saveUserProjectionSettings(user.uid, settings);
+        if (saved) {
+          setSaveStatus('Settings saved');
+        } else {
           setSaveStatus('Error saving');
-          setTimeout(() => setSaveStatus(null), 2000);
         }
+      } catch (err) {
+        console.error('Error saving projection settings to Firestore:', err);
+        setSaveStatus('Error saving');
       }
+      setTimeout(() => setSaveStatus(null), 2000);
     };
     
-    // Debounce save to avoid too many requests
-    const timeoutId = setTimeout(saveSettings, 1000);
+    const timeoutId = setTimeout(saveToFirestore, 1000);
     return () => clearTimeout(timeoutId);
-  }, [targetCGPA, totalUnits, user, authInitialized]);
+  }, [targetCGPA, totalUnits, isLoading, authInitialized, user]); // Added isLoading and authInitialized
 
   // Handle total units input change
   const handleTotalUnitsChange = (value: string) => {

@@ -80,48 +80,54 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     loadSettings();
   }, [user, authInitialized]);
 
-  // Save settings when values change
+  // Save settings for ANONYMOUS users to sessionStorage (immediately)
   useEffect(() => {
-    const saveSettings = async () => {
-      if (isLoading) return; // Don't save during initial load
-      
-      setSaveStatus('Saving...');
-      
-      if (user && authInitialized) {
-        try {
-          const settings: CGPASettings = {
-            creditedUnits
-          };
-          
-          const saved = await saveUserCGPASettings(user.uid, settings);
-          if (saved) {
-            setSaveStatus('Settings saved');
-            // Clear the save status after a short delay
-            setTimeout(() => setSaveStatus(null), 2000);
-          }
-        } catch (error) {
-          console.error('Error saving CGPA settings:', error);
-          setSaveStatus('Error saving');
-          setTimeout(() => setSaveStatus(null), 2000);
-        }
-      } else {
-        // For anonymous users, save to sessionStorage
-        try {
-          sessionStorage.setItem('cgpa_settings', JSON.stringify({ creditedUnits }));
+    if (isLoading || !authInitialized || user) {
+      // Only run if not loading, auth is initialized, and user is anonymous
+      return;
+    }
+
+    try {
+      // console.log('Saving anonymous CGPA settings to sessionStorage:', { creditedUnits });
+      sessionStorage.setItem('cgpa_settings', JSON.stringify({ creditedUnits }));
+      // For immediate sessionStorage saves, a persistent "Saving..." indicator isn't usually shown.
+      // A brief confirmation could be added if desired, but often it's silent.
+      // E.g., setSaveStatus('Saved locally'); setTimeout(() => setSaveStatus(null), 1500);
+    } catch (error) {
+      console.error('Error saving anonymous CGPA settings to sessionStorage:', error);
+    }
+  }, [creditedUnits, isLoading, authInitialized, user]);
+
+  // Save settings for LOGGED-IN users to Firestore (debounced)
+  useEffect(() => {
+    if (isLoading || !authInitialized || !user) {
+      // Only run if not loading, auth is initialized, and user is logged IN
+      return;
+    }
+
+    const saveToFirestore = async () => {
+      setSaveStatus('Saving...'); // Indicator for async Firestore operation
+      try {
+        const settings: CGPASettings = { creditedUnits };
+        const saved = await saveUserCGPASettings(user.uid, settings);
+        if (saved) {
           setSaveStatus('Settings saved');
-          setTimeout(() => setSaveStatus(null), 2000);
-        } catch (error) {
-          console.error('Error saving anonymous CGPA settings:', error);
-          setSaveStatus('Error saving');
-          setTimeout(() => setSaveStatus(null), 2000);
+        } else {
+          // Assuming saveUserCGPASettings returns false on a non-exception failure
+          setSaveStatus('Error saving'); 
         }
+      } catch (error) {
+        console.error('Error saving CGPA settings to Firestore:', error);
+        setSaveStatus('Error saving');
       }
+      // Clear the save status after a short delay
+      setTimeout(() => setSaveStatus(null), 2000);
     };
-    
+
     // Debounce save to avoid too many requests
-    const timeoutId = setTimeout(saveSettings, 1000);
+    const timeoutId = setTimeout(saveToFirestore, 1000);
     return () => clearTimeout(timeoutId);
-  }, [creditedUnits, user, authInitialized, isLoading]);
+  }, [creditedUnits, isLoading, authInitialized, user]); // Dependencies remain similar, logic inside effect filters
 
   // Handle credited units input change
   const handleCreditedUnitsChange = (value: string) => {
@@ -495,12 +501,12 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
           </div>
           
           {saveStatus && (
-            <div className="text-sm text-green-600">
+            <div className="text-sm text-green-600 mt-1">
               {saveStatus}
             </div>
           )}
         
-        <div className="flex justify-end">
+        <div className="flex justify-end mt-4">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('switchTab', { detail: 'projections' }))}
               className="px-4 py-2 h-10 bg-dlsu-green text-white rounded hover:bg-green-700 transition-colors"
