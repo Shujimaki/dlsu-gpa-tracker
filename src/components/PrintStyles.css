@@ -161,7 +161,7 @@
 :root {
   --dlsu-green: #006f51;
   --dlsu-light-green: #00a651;
-}
+} 
 
 /* 
   Specific override for GradeCalculator subject buttons to ensure horizontal layout 

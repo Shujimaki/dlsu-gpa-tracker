@@ -47,56 +47,124 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   const [creditedUnitsInput, setCreditedUnitsInput] = useState<string>("0");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
-  // Load user settings
+  // Load user settings and handle migration for creditedUnits
   useEffect(() => {
-    const loadSettings = async () => {
-      if (user && authInitialized) {
+    const loadAndMigrateSettings = async () => {
+      if (!authInitialized) return;
+      // console.log("CGPACalc: loadAndMigrateSettings START. User:", user ? user.uid : 'anonymous', "AuthInitialized:", authInitialized);
+
+      // 1. Try to get current anonymous data for cgpa_settings (creditedUnits)
+      let anonymousCreditedUnits: number | null = null;
+      const anonymousSettingsString = sessionStorage.getItem('cgpa_settings');
+      if (anonymousSettingsString) {
+        try {
+          const parsed = JSON.parse(anonymousSettingsString);
+          if (parsed && typeof parsed.creditedUnits === 'number') {
+            anonymousCreditedUnits = parsed.creditedUnits;
+            // console.log("CGPACalc: Parsed anonymous creditedUnits:", anonymousCreditedUnits);
+          }
+        } catch (e) {
+          console.error("Error parsing anonymous cgpa_settings from sessionStorage", e);
+        }
+      }
+
+      const newLoginSession = sessionStorage.getItem('newLogin') === 'true';
+      // console.log("CGPACalc: newLogin flag from session:", newLoginSession);
+
+      if (user) { // User is logged in
+        if (newLoginSession) {
+          // console.log("CGPACalc: New login detected. Clearing newLogin flag. Migration will be attempted.");
+          sessionStorage.removeItem('newLogin'); // Clear the flag, but still proceed to check for migration
+        }
+
+        let firestoreCreditedUnits: number = 0; // Default to 0
+        let firestoreSettingsExist = false;
+
         try {
           const settings = await loadUserCGPASettings(user.uid);
           if (settings) {
-            setCreditedUnits(settings.creditedUnits);
-            setCreditedUnitsInput(settings.creditedUnits.toString());
+            firestoreSettingsExist = true;
+            firestoreCreditedUnits = settings.creditedUnits;
+            // console.log("CGPACalc: Firestore creditedUnits loaded:", firestoreCreditedUnits);
+          } else {
+            // console.log("CGPACalc: No CGPA settings found in Firestore for user.");
           }
         } catch (error) {
-          console.error('Error loading CGPA settings:', error);
+          console.error('Error loading CGPA settings from Firestore:', error);
         }
-      } else {
-        // For anonymous users, load from sessionStorage
-        try {
-          const anonymousSettings = sessionStorage.getItem('cgpa_settings');
-          if (anonymousSettings) {
-            const parsedSettings = JSON.parse(anonymousSettings);
-            if (parsedSettings && typeof parsedSettings.creditedUnits === 'number') {
-              setCreditedUnits(parsedSettings.creditedUnits);
-              setCreditedUnitsInput(parsedSettings.creditedUnits.toString());
+
+        // Not a new login (or newLogin flag already cleared) - attempt migration or load from Firestore
+        const firestoreIsDefault = firestoreCreditedUnits === 0;
+        const anonymousHasDataToMigrate = anonymousCreditedUnits !== null && anonymousCreditedUnits !== 0;
+        // console.log(`CGPACalc: Migration check: Firestore default: ${firestoreIsDefault}, Anonymous has data: ${anonymousHasDataToMigrate}, Anonymous val: ${anonymousCreditedUnits}, Was new login: ${newLoginSession}`);
+
+        if (firestoreIsDefault && anonymousHasDataToMigrate && anonymousCreditedUnits !== null) {
+          // console.log("CGPACalc: MIGRATING anonymous creditedUnits to Firestore.");
+          setCreditedUnits(anonymousCreditedUnits);
+          setCreditedUnitsInput(anonymousCreditedUnits.toString());
+          try {
+            await saveUserCGPASettings(user.uid, { creditedUnits: anonymousCreditedUnits });
+            // console.log("CGPACalc: Anonymous creditedUnits successfully migrated and saved.");
+            sessionStorage.removeItem('cgpa_settings'); // Clear migrated data
+          } catch (saveError) {
+            console.error("CGPACalc: Error saving migrated creditedUnits to Firestore:", saveError);
+          }
+        } else {
+          // No migration needed. Load from Firestore or ensure defaults.
+          // This also handles: was newLogin, but no anon data to migrate.
+          // console.log("CGPACalc: Not migrating creditedUnits. Using Firestore value or default.");
+          if (firestoreSettingsExist) {
+            setCreditedUnits(firestoreCreditedUnits);
+            setCreditedUnitsInput(firestoreCreditedUnits.toString());
+          } else {
+            // Firestore settings don't exist (and no migration happened). Ensure default 0 is set and saved.
+            // console.log("CGPACalc: Firestore settings don't exist, no migration. Ensuring default 0 and saving.");
+            setCreditedUnits(0);
+            setCreditedUnitsInput("0");
+            if (user) { // Ensure user exists before saving
+                try {
+                    await saveUserCGPASettings(user.uid, { creditedUnits: 0 });
+                } catch (e) { console.error("CGPACalc: Failed to save default CGPA settings when Firestore non-existent", e);}
             }
           }
-        } catch (error) {
-          console.error('Error loading anonymous CGPA settings:', error);
+        }
+      } else { // Anonymous user
+        // console.log("CGPACalc: Anonymous user. Loading creditedUnits from sessionStorage if available.");
+        if (anonymousCreditedUnits !== null) {
+          setCreditedUnits(anonymousCreditedUnits);
+          setCreditedUnitsInput(anonymousCreditedUnits.toString());
+        } else {
+          // No anonymous settings, reset to default for UI consistency if needed (though initial state is 0)
+          // console.log("CGPACalc: Anonymous user, no session settings for creditedUnits, ensuring default.");
+          setCreditedUnits(0);
+          setCreditedUnitsInput("0");
         }
       }
     };
     
-    loadSettings();
+    // Run the load and migration logic when authInitialized changes or user logs in/out
+    if (authInitialized) {
+      loadAndMigrateSettings();
+    }
   }, [user, authInitialized]);
 
-  // Save settings for ANONYMOUS users to sessionStorage (immediately)
+  // Save settings for ANONYMOUS users to sessionStorage
   useEffect(() => {
+    // Only run if auth is initialized, user is anonymous, AND component is not in a loading state
     if (isLoading || !authInitialized || user) {
-      // Only run if not loading, auth is initialized, and user is anonymous
       return;
     }
 
+    // If isLoading is true here, it means some data loading might be in progress for other parts of the component (e.g., termsData).
+    // However, for a direct user input like creditedUnits, we save it immediately to sessionStorage
+    // regardless of background loading of *other* data.
     try {
-      // console.log('Saving anonymous CGPA settings to sessionStorage:', { creditedUnits });
+      // console.log('CGPACalculator: Anonymous save for creditedUnits. Value:', creditedUnits);
       sessionStorage.setItem('cgpa_settings', JSON.stringify({ creditedUnits }));
-      // For immediate sessionStorage saves, a persistent "Saving..." indicator isn't usually shown.
-      // A brief confirmation could be added if desired, but often it's silent.
-      // E.g., setSaveStatus('Saved locally'); setTimeout(() => setSaveStatus(null), 1500);
     } catch (error) {
-      console.error('Error saving anonymous CGPA settings to sessionStorage:', error);
+      console.error('Error saving anonymous CGPA settings (creditedUnits) to sessionStorage:', error);
     }
-  }, [creditedUnits, isLoading, authInitialized, user]);
+  }, [creditedUnits, isLoading, authInitialized, user]); // Add isLoading to dependencies and check
 
   // Save settings for LOGGED-IN users to Firestore (debounced)
   useEffect(() => {
@@ -137,15 +205,6 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     const numValue = parseInt(value) || 0;
     setCreditedUnits(Math.max(0, numValue));
   };
-
-  // Add a useEffect to reset the calculator when a user logs out
-  useEffect(() => {
-    // If the auth is initialized but there's no user, this means user has logged out
-    if (authInitialized && !user) {
-      // Clear anonymous session data
-      sessionStorage.removeItem('cgpa_settings');
-    }
-  }, [user, authInitialized]);
 
   // Clear anonymous settings marker when component unmounts if user is not logged in
   useEffect(() => {

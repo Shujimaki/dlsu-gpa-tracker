@@ -7,6 +7,7 @@ import GradeCalculator from './components/GradeCalculator'
 import LoginModal from './components/LoginModal'
 import TabNavigation from './components/TabNavigation'
 import UpdateModal from './components/UpdateModal'
+import TutorialModal from './components/TutorialModal'
 import type { User as FirebaseUser } from 'firebase/auth'
 import { auth } from './config/firebase';
 import { onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
@@ -16,6 +17,7 @@ function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(true) // Always start with true
+  const [showTutorialModal, setShowTutorialModal] = useState(false);
   const [activeTab, setActiveTab] = useState('gpa')
   const [authInitialized, setAuthInitialized] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState(() => {
@@ -195,6 +197,7 @@ function App() {
         onShowUpdateModal={() => setShowUpdateModal(true)}
         showWarningIndicator={showAnonymousWarning && warningDismissed && !user}
         onShowWarning={() => setWarningDismissed(false)}
+        onShowTutorialModal={() => setShowTutorialModal(true)}
       />
       
       {/* Anonymous user warning banner */}
@@ -328,6 +331,11 @@ function App() {
       {/* Update Modal */}
       {showUpdateModal && (
         <UpdateModal isOpen={showUpdateModal} onClose={() => setShowUpdateModal(false)} />
+      )}
+
+      {/* Tutorial Modal */}
+      {showTutorialModal && (
+        <TutorialModal isOpen={showTutorialModal} onClose={() => setShowTutorialModal(false)} />
       )}
     </div>
   );

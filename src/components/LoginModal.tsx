@@ -20,10 +20,20 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
   const [showEmailForm, setShowEmailForm] = useState(false);
 
   const clearSessionData = () => {
-    // Clear any session data
-    for (let i = 1; i <= 20; i++) { // Clear the first 20 terms to be safe
-      sessionStorage.removeItem(`term_${i}`);
-    }
+    // This function is called when a NEW account is created.
+    // Previously, it cleared term_X data, preventing GPA term migration to new accounts.
+    // To ALLOW migration of all data (including GPA terms) to new accounts,
+    // this function should NOT clear session items that are intended for migration.
+    // Each calculator component is responsible for clearing its specific sessionStorage item
+    // AFTER a successful migration to Firestore.
+    // For now, we will make this function do nothing, allowing all calculators to attempt migration.
+    
+    // console.log("LoginModal: clearSessionData called for new account. No items cleared by this function to allow migration.");
+
+    // Example of what NOT to do if migration is desired for these:
+    // for (let i = 1; i <= 20; i++) { // Clear the first 20 terms to be safe
+    //   sessionStorage.removeItem(`term_${i}`);
+    // }
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {

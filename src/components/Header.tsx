@@ -1,4 +1,4 @@
-import { Bell, AlertTriangle } from 'lucide-react';
+import { Bell, AlertTriangle, HelpCircle } from 'lucide-react';
 import type { User } from 'firebase/auth';
 
 interface HeaderProps {
@@ -8,6 +8,7 @@ interface HeaderProps {
   onShowUpdateModal: () => void;
   showWarningIndicator?: boolean;
   onShowWarning?: () => void;
+  onShowTutorialModal: () => void;
 }
 
 const Header = ({ 
@@ -16,7 +17,8 @@ const Header = ({
   onLogout, 
   onShowUpdateModal, 
   showWarningIndicator = false,
-  onShowWarning = () => {}
+  onShowWarning = () => {},
+  onShowTutorialModal
 }: HeaderProps) => {
   // Function to truncate username/email if too long
   const formatUserIdentifier = (user: User) => {
@@ -34,7 +36,7 @@ const Header = ({
             <h1 className="text-xl font-bold">Greendex</h1>
           </div>
           
-            <div className="flex items-center">
+            <div className="flex items-center space-x-1">
               {/* Warning indicator button */}
               {showWarningIndicator && (
                 <button
@@ -47,16 +49,27 @@ const Header = ({
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full"></span>
                 </button>
               )}
+
+              {/* Tutorial button */}
+              <button
+                onClick={onShowTutorialModal}
+                className="p-2 hover:bg-dlsu-light-green rounded-full transition-colors relative"
+                aria-label="Show tutorial"
+                title="How to use Greendex"
+              >
+                <HelpCircle size={24} />
+              </button>
               
               {/* Update notification bell */}
-              <button
-                onClick={onShowUpdateModal}
-                className="p-2 hover:bg-dlsu-light-green rounded-full transition-colors relative"
-                aria-label="Updates"
-              >
-                <Bell size={24} />
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+            <button
+              onClick={onShowUpdateModal}
+              className="p-2 hover:bg-dlsu-light-green rounded-full transition-colors relative"
+              aria-label="Updates"
+                title="View application updates"
+            >
+              <Bell size={24} />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
             </div>
           </div>
 

@@ -93,88 +93,155 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load user data when component mounts
+  // Load user data and handle migration on login
   useEffect(() => {
-    const loadUserData = async () => {
-      if (user && authInitialized) {
+    const loadAndMigrateData = async () => {
+      if (!authInitialized) {
+        // console.log("GradeCalc: Auth not initialized. Aborting load/migrate.");
+        return;
+      }
+      setIsLoading(true);
+      // console.log("GradeCalc: loadAndMigrateData START. User:", user ? user.uid : 'anonymous', "AuthInitialized:", authInitialized);
+
+      let anonymousData = null;
+      const anonymousDataString = sessionStorage.getItem('grade_calculator_data');
+      if (anonymousDataString) {
         try {
-          setIsLoading(true);
-          const userRef = doc(db, 'users', user.uid);
-          const gradeCalcRef = doc(userRef, 'settings', 'gradeCalculator');
-          const gradeCalcDoc = await getDoc(gradeCalcRef);
-          
-          if (gradeCalcDoc.exists()) {
-            const data = gradeCalcDoc.data();
-            if (data.subjects && Array.isArray(data.subjects)) {
-              setSubjects(data.subjects);
-              
-              // Set active subject from saved data or use the first one
-              if (data.activeSubjectId) {
-                // Verify the active subject still exists
-                const subjectExists = data.subjects.some((s: Subject) => s.id === data.activeSubjectId);
-                if (subjectExists) {
-                  setActiveSubjectId(data.activeSubjectId);
-                } else if (data.subjects.length > 0) {
-                  setActiveSubjectId(data.subjects[0].id);
-                }
-              } else if (data.subjects.length > 0) {
-                setActiveSubjectId(data.subjects[0].id);
-              }
-            }
-          }
-        } catch (error) {
-          setIsLoading(false);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        // For anonymous users, treat every page refresh as a new session
-        const isNewAnonymousSession = !sessionStorage.getItem('anonymousSession');
-        
-        if (isNewAnonymousSession) {
-          // Mark this as an active anonymous session
-          sessionStorage.setItem('anonymousSession', 'true');
-          
-          // Clear any existing grade calculator data
-          sessionStorage.removeItem('grade_calculator_data');
-          
-          // Don't try to load data, just use the default state
-          setIsLoading(false);
-          return;
-        }
-        
-        // For continuing anonymous sessions, try to load from session storage
-        try {
-          const savedData = sessionStorage.getItem('grade_calculator_data');
-          if (savedData) {
-            const parsedData = JSON.parse(savedData);
-            if (parsedData.subjects && Array.isArray(parsedData.subjects)) {
-              setSubjects(parsedData.subjects);
-              
-              // Set active subject from saved data or use the first one
-              if (parsedData.activeSubjectId) {
-                // Verify the active subject still exists
-                const subjectExists = parsedData.subjects.some((s: Subject) => s.id === parsedData.activeSubjectId);
-                if (subjectExists) {
-                  setActiveSubjectId(parsedData.activeSubjectId);
-                } else if (parsedData.subjects.length > 0) {
-                  setActiveSubjectId(parsedData.subjects[0].id);
-                }
-              } else if (parsedData.subjects.length > 0) {
-                setActiveSubjectId(parsedData.subjects[0].id);
-              }
-            }
-          }
-        } catch (error) {
-          setIsLoading(false);
-        } finally {
-          setIsLoading(false);
+          anonymousData = JSON.parse(anonymousDataString);
+          // console.log("GradeCalc: Successfully parsed anonymous data:", anonymousData);
+        } catch (e) {
+          console.error("Error parsing anonymous grade_calculator_data from sessionStorage", e);
+          anonymousData = null;
         }
       }
+
+      const newLoginSession = sessionStorage.getItem('newLogin') === 'true';
+      // console.log("GradeCalc: newLogin flag from session:", newLoginSession);
+
+      if (user) { // User is logged in
+        if (newLoginSession) {
+          // console.log("GradeCalc: New login detected. Clearing newLogin flag. Migration will be attempted.");
+          sessionStorage.removeItem('newLogin'); // Clear the flag, but still proceed to check for migration
+        }
+        
+        let firestoreSubjects: Subject[] = [];
+        let firestoreActiveSubjectId: string | null = null;
+        let firestoreDocExists = false;
+
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const gradeCalcRef = doc(userRef, 'settings', 'gradeCalculator');
+          const firestoreDoc = await getDoc(gradeCalcRef);
+
+          if (firestoreDoc.exists()) {
+            firestoreDocExists = true;
+            const data = firestoreDoc.data();
+            // console.log("GradeCalc: Firestore data exists:", data);
+            if (data.subjects && Array.isArray(data.subjects)) {
+              firestoreSubjects = data.subjects;
+            }
+            if (data.activeSubjectId) {
+              const subjectExists = firestoreSubjects.some((s: Subject) => s.id === data.activeSubjectId);
+              firestoreActiveSubjectId = subjectExists ? data.activeSubjectId : (firestoreSubjects.length > 0 ? firestoreSubjects[0].id : null);
+            } else if (firestoreSubjects.length > 0) {
+               firestoreActiveSubjectId = firestoreSubjects[0].id;
+            }
+          } else {
+            // console.log("GradeCalc: No Firestore data document exists for gradeCalculator settings.");
+          }
+        } catch (error) {
+          console.error("GradeCalc: Error loading Firestore data:", error);
+        }
+        
+        // Migration Condition - now happens even if newLoginSession was true, after flag is cleared.
+        const firestoreIsEmptyOrTrulyDefault = firestoreSubjects.length === 0;
+        const anonymousHasDataToMigrate = anonymousData && anonymousData.subjects && anonymousData.subjects.length > 0;
+        // console.log(`GradeCalc: Migration check: Firestore empty: ${firestoreIsEmptyOrTrulyDefault}, Anonymous has data: ${anonymousHasDataToMigrate}, Was new login: ${newLoginSession}`); // Log if it was new
+
+        if (firestoreIsEmptyOrTrulyDefault && anonymousHasDataToMigrate) {
+          // console.log("GradeCalc: MIGRATING anonymous data to Firestore.");
+          const subjectsToMigrate = anonymousData.subjects.slice(0, 8);
+          setSubjects(subjectsToMigrate);
+          let newActiveSubjectId = anonymousData.activeSubjectId;
+          const activeMigratedSubjectExists = subjectsToMigrate.some((s: Subject) => s.id === newActiveSubjectId);
+          newActiveSubjectId = activeMigratedSubjectExists ? newActiveSubjectId : (subjectsToMigrate.length > 0 ? subjectsToMigrate[0].id : null);
+          setActiveSubjectId(newActiveSubjectId);
+
+          try {
+            const userRef = doc(db, 'users', user.uid); // Re-declare for safety within this scope
+            await setDoc(doc(userRef, 'settings', 'gradeCalculator'), { 
+              subjects: subjectsToMigrate,
+              activeSubjectId: newActiveSubjectId
+            }, { merge: true });
+            // console.log("GradeCalc: Anonymous data successfully migrated and saved to Firestore.");
+            sessionStorage.removeItem('grade_calculator_data');
+          } catch (saveError) {
+            console.error("GradeCalc: Error saving migrated data to Firestore:", saveError);
+          }
+          setIsLoading(false);
+          // console.log("GradeCalc: Migration completed, isLoading set to false. Returning.");
+          return; // Migration done
+        }
+
+        // If not migrated, load from Firestore or set defaults
+        // This part now also handles the case where it *was* a newLoginSession but no migration occurred (e.g. no anonymous data)
+        // console.log("GradeCalc: Not migrating or migration already handled. Loading from Firestore or using default.");
+        if (firestoreDocExists && firestoreSubjects.length > 0) {
+          // console.log("GradeCalc: Setting state from existing Firestore data.");
+          setSubjects(firestoreSubjects);
+          setActiveSubjectId(firestoreActiveSubjectId);
+        } else {
+          // Firestore is effectively empty (or doc doesn't exist) and no migration happened.
+          // console.log("GradeCalc: Firestore empty/no doc and no migration. Setting to default initial state.");
+          const defaultInitialSubject = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
+          setSubjects([defaultInitialSubject]);
+          setActiveSubjectId(defaultInitialSubject.id);
+          // If it was a new login session AND Firestore doc didn't exist AND no migration happened, save default state.
+          if (newLoginSession && !firestoreDocExists && !(firestoreIsEmptyOrTrulyDefault && anonymousHasDataToMigrate) && user) { 
+            // console.log("GradeCalc: New login, Firestore doc didn't exist, and no migration occurred. Saving default state to Firestore.");
+            try {
+                const userRef = doc(db, 'users', user.uid);
+                await setDoc(doc(userRef, 'settings', 'gradeCalculator'), { 
+                    subjects: [defaultInitialSubject],
+                    activeSubjectId: defaultInitialSubject.id
+                }, { merge: true });
+            } catch (e) { console.error("GradeCalc: Failed to save default state for new user", e);}
+          }
+        }
+      } else if (!user && authInitialized) { // Anonymous user
+        // console.log("GradeCalc: Anonymous user. Loading from sessionStorage if available.");
+        if (anonymousData && anonymousData.subjects && Array.isArray(anonymousData.subjects)) {
+          setSubjects(anonymousData.subjects);
+          // Set active subject from saved data or use the first one
+          if (anonymousData.activeSubjectId) {
+            const subjectExists = anonymousData.subjects.some((s: Subject) => s.id === anonymousData.activeSubjectId);
+            if (subjectExists) {
+              setActiveSubjectId(anonymousData.activeSubjectId);
+            } else if (anonymousData.subjects.length > 0) {
+              setActiveSubjectId(anonymousData.subjects[0].id);
+            }
+          } else if (anonymousData.subjects.length > 0) {
+            setActiveSubjectId(anonymousData.subjects[0].id);
+          }
+        } else {
+           // No anonymous data, or it's invalid, so set to default initial state
+           const defaultInitialSubject = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
+           setSubjects([defaultInitialSubject]);
+           setActiveSubjectId(defaultInitialSubject.id);
+        }
+      } else {
+        // Auth not initialized yet, or some other state. Usually means isLoading should remain true.
+        // Or, if !authInitialized, we might not want to do anything yet.
+        // For now, this path implies we're waiting for auth.
+        // console.log("GradeCalc: Auth not initialized or user state unclear, will wait.");
+      }
+      setIsLoading(false);
     };
     
-    loadUserData();
-  }, [user, authInitialized]);
+    if(authInitialized) { // Only run if auth has initialized
+      loadAndMigrateData();
+    }
+  }, [user, authInitialized]); // Trigger on user or auth state change
 
   // Save data when subjects or activeSubjectId change
   useEffect(() => {
@@ -364,6 +431,12 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   // Add a new category to the active subject
   const addCategory = () => {
     if (!activeSubject) return;
+
+    // Limit to 8 categories per subject
+    if (activeSubject.categories.length >= 8) {
+      alert("Maximum of 8 categories allowed per subject.");
+      return;
+    }
 
     const newCategory: GradeCategory = {
       id: crypto.randomUUID(),

@@ -76,28 +76,74 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     if (!isAnonymous && wasAnonymous) {
       sessionStorage.setItem('wasAnonymous', 'false');
       
-      // Attempt to migrate session data for currently visible term if needed
-      const migrateCurrentTerm = async () => {
+      const migrateAllAnonymousTerms = async () => {
         if (!user) return;
-        
-        try {
-          // Check if we already have data in Firestore for this term
-          const firestoreData = await loadUserData(user.uid, selectedTerm);
-          
-          // If no cloud data exists, migrate sessionStorage data
-          if (!firestoreData) {
-            const sessionData = sessionStorage.getItem(`term_${selectedTerm}`);
-            if (sessionData) {
-              const parsedData = JSON.parse(sessionData);
-              await saveUserData(user.uid, selectedTerm, parsedData.courses, parsedData.isFlowchartExempt);
+        // console.log(`GPACalc: User ${user.uid} logged in. Attempting to migrate ALL anonymous terms.`);
+
+        let successfullyMigratedAtLeastOneTerm = false;
+
+        for (let termNum = 1; termNum <= 21; termNum++) { // Iterate through a reasonable range of terms
+          const sessionDataString = sessionStorage.getItem(`term_${termNum}`);
+          if (sessionDataString) {
+            // console.log(`GPACalc: Found anonymous data for term ${termNum}`);
+            try {
+              const anonymousTermData = JSON.parse(sessionDataString) as TermData;
+              const firestoreTermData = await loadUserData(user.uid, termNum) as TermData | null;
+
+              const firestoreIsEmpty = !firestoreTermData || (firestoreTermData.courses && firestoreTermData.courses.length === 0);
+              const anonymousHasData = anonymousTermData.courses && anonymousTermData.courses.length > 0;
+
+              if (firestoreIsEmpty && anonymousHasData) {
+                // console.log(`GPACalc: Migrating term ${termNum} from session to Firestore.`);
+                await saveUserData(user.uid, termNum, anonymousTermData.courses, anonymousTermData.isFlowchartExempt);
+                // console.log(`GPACalc: Migration complete for term ${termNum}.`);
+                successfullyMigratedAtLeastOneTerm = true;
+
+                // If this migrated term is the currently selected one, update UI immediately
+                if (termNum === selectedTerm) {
+                  setCourses(anonymousTermData.courses);
+                  setIsFlowchartExempt(anonymousTermData.isFlowchartExempt);
             }
+                // Clear the migrated term from session storage to prevent re-migration attempts
+                sessionStorage.removeItem(`term_${termNum}`);
+              } else {
+                // console.log(`GPACalc: No migration needed for term ${termNum}. Firestore empty: ${firestoreIsEmpty}, Anonymous has data: ${anonymousHasData}`);
           }
         } catch (error) {
-          console.error('Error during data migration:', error);
+              console.error(`Error during data migration for term ${termNum} in GPACalculator:`, error);
+        }
+          }
+        }
+
+        if (successfullyMigratedAtLeastOneTerm) {
+          // console.log("GPACalc: At least one term migrated. Re-fetching available terms and reloading current term data.");
+          // Re-fetch available terms from Firestore as new terms might have been created by migration
+          try {
+            const userTerms = await getUserTerms(user.uid);
+            if (userTerms && userTerms.length > 0) {
+              const highestTerm = Math.min(Math.max(...userTerms), 21);
+              const allTerms = Array.from({ length: Math.max(12, highestTerm) }, (_, i) => i + 1);
+              setAvailableTerms(allTerms);
+            } else {
+              setAvailableTerms([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+            }
+          } catch (error) {
+            console.error('Error re-fetching terms after migration:', error);
+          }
+          // Reload data for the currently selected term to ensure UI is consistent
+          // This is particularly important if the selectedTerm wasn't the one migrated but its existence (or lack thereof)
+          // in availableTerms might have changed.
+          // loadData(); // Calling loadData() here will ensure consistency.
         }
       };
       
-      migrateCurrentTerm();
+      migrateAllAnonymousTerms().then(() => {
+        // After migration attempt (successful or not for all terms), 
+        // ensure the current selected term's data is loaded correctly.
+        // This is crucial if the selectedTerm itself wasn't migrated but other terms were,
+        // or if no migration happened at all.
+        loadData(); 
+      });
     }
     
     // When user logs in (whether new or returning), check for all terms
@@ -653,26 +699,26 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           <div className="flex flex-col md:flex-row gap-6">
             {/* Term selector */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select Term
-              </label>
+          </label>
               <div className="flex gap-2">
-                <select
-                  value={selectedTerm}
+          <select
+            value={selectedTerm}
                   onChange={async (e) => await handleTermChange(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent"
-                >
+          >
                   {availableTerms.map((term) => (
                     <option key={term} value={term} className="bg-white text-gray-900">
-                      Term {term}
-                    </option>
-                  ))}
+                Term {term}
+              </option>
+            ))}
                   {Math.max(...availableTerms) < 21 && (
                     <option value="add" className="text-dlsu-green font-medium bg-white">
                       + Add New Term
-                    </option>
+            </option>
                   )}
-                </select>
+          </select>
                 
                 <button
                   onClick={() => handleDeleteClick(selectedTerm)}
@@ -686,7 +732,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                   )}
                 </button>
               </div>
-            </div>
+        </div>
             
             {/* Flowchart exemption */}
             <div className="flex-1">
@@ -697,36 +743,36 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 htmlFor="flowchartExempt" 
                 className="flex items-center p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 cursor-pointer"
               >
-                <input
-                  type="checkbox"
-                  id="flowchartExempt"
-                  checked={isFlowchartExempt}
-                  onChange={(e) => setIsFlowchartExempt(e.target.checked)}
+          <input
+            type="checkbox"
+            id="flowchartExempt"
+            checked={isFlowchartExempt}
+            onChange={(e) => setIsFlowchartExempt(e.target.checked)}
                   className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded mr-2"
-                />
+          />
                 <span className="text-sm text-gray-700">
                   Flowchart exempts me from 12-unit requirement
                 </span>
-              </label>
-            </div>
+          </label>
+        </div>
           </div>
         </div>
       </div>
 
       {/* Course table - card container */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-4">
-        <div className="overflow-x-auto relative">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-dlsu-light-green text-white">
-                <th className="px-4 py-2 text-left">Course Code</th>
-                <th className="px-4 py-2 text-left">Course Name (Optional)</th>
-                <th className="px-4 py-2 text-center min-w-[80px]">Units</th>
-                <th className="px-4 py-2 text-center min-w-[80px]">Grade</th>
-                <th className="px-4 py-2 text-center">Non-Academic Subject <span title='What is this?'>?</span></th>
-                <th className="px-4 py-2 w-10"></th>
-              </tr>
-            </thead>
+      <div className="overflow-x-auto relative">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-dlsu-light-green text-white">
+              <th className="px-4 py-2 text-left">Course Code</th>
+              <th className="px-4 py-2 text-left">Course Name (Optional)</th>
+              <th className="px-4 py-2 text-center min-w-[80px]">Units</th>
+              <th className="px-4 py-2 text-center min-w-[80px]">Grade</th>
+              <th className="px-4 py-2 text-center">Non-Academic Subject <span title='What is this?'>?</span></th>
+              <th className="px-4 py-2 w-10"></th>
+            </tr>
+          </thead>
             {isInitialLoad ? (
               <tbody>
                 <tr>
@@ -738,116 +784,116 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 </tr>
               </tbody>
             ) : (
-              <tbody>
-                {courses.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-gray-500">
-                      No courses added yet. Click "Add Course" to get started.
-                    </td>
-                  </tr>
-                ) : (
-                  courses.map(course => (
+          <tbody>
+            {courses.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-8 text-gray-500">
+                  No courses added yet. Click "Add Course" to get started.
+                </td>
+              </tr>
+            ) : (
+              courses.map(course => (
                   <tr key={course.id} className={`border-b border-gray-200 hover:bg-gray-50 md:align-middle ${courses.indexOf(course) % 2 === 0 ? '!bg-white' : '!bg-slate-100'}`}>
-                    <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
-                      <input
-                        type="text"
-                        value={course.code}
-                        onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0 bg-white text-gray-900"
-                        maxLength={7}
-                        placeholder="e.g., NUMMETS"
-                      />
-                    </td>
-                    <td className="px-4 py-3 align-middle">
-                      <input
-                        type="text"
-                        value={course.name}
-                        onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
-                          className="w-full p-2 border border-gray-300 rounded text-base bg-white text-gray-900"
-                        placeholder="e.g., Numerical Methods"
-                      />
-                    </td>
-                    <td className="px-4 py-3 align-middle min-w-[80px]">
-                      <select
-                        value={course.units}
-                        onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
-                          className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                      >
-                        {course.nas
-                          ? [0, 1, 2, 3].map(units => (
-                                <option key={units} value={units} className="bg-white text-gray-900">
-                                ({units})
-                              </option>
-                            ))
-                          : [1, 2, 3, 4, 5].map(units => (
-                                <option key={units} value={units} className="bg-white text-gray-900">
-                                {units}
-                              </option>
-                            ))}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3 align-middle min-w-[80px]">
-                      {course.nas && course.units === 0 ? (
-                        <select
-                          value={course.grade === 1 ? 'P' : 'F'}
-                          onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
-                            className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                        >
-                            <option value="P" className="bg-white text-gray-900">P</option>
-                            <option value="F" className="bg-white text-gray-900">F</option>
-                        </select>
-                      ) : (
-                        <select
-                          value={course.grade}
-                          onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                            className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                        >
-                          {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
-                              <option key={grade} value={grade} className="bg-white text-gray-900">
-                              {grade}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 align-middle">
-                      <div className="flex justify-center items-center">
-                        <input
-                          type="checkbox"
-                          checked={course.nas}
-                          onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
-                            className="accent-dlsu-green bg-white border-gray-300"
-                          aria-label="Non-Academic Subject"
-                        />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-middle">
-                      <button
-                        onClick={() => removeCourse(course.id)}
-                          className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
-                      >
-                        <TrashIcon size={20} />
-                      </button>
-                    </td>
-                  </tr>
-                  ))
-                )}
-              </tbody>
-            )}
-            <tfoot>
-              <tr className="border-t-2 border-gray-300 font-medium">
-                <td className="px-4 py-2">Total Units</td>
-                <td></td>
-                <td className="px-4 py-2 text-center" colSpan={1}>
-                  {totalUnits}
-                  {totalNASUnits > 0 && (
-                    <span className="text-gray-500"> ({totalNASUnits})</span>
+                <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
+                  <input
+                    type="text"
+                    value={course.code}
+                    onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0 bg-white text-gray-900"
+                    maxLength={7}
+                    placeholder="e.g., NUMMETS"
+                  />
+                </td>
+                <td className="px-4 py-3 align-middle">
+                  <input
+                    type="text"
+                    value={course.name}
+                    onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-base bg-white text-gray-900"
+                    placeholder="e.g., Numerical Methods"
+                  />
+                </td>
+                <td className="px-4 py-3 align-middle min-w-[80px]">
+                  <select
+                    value={course.units}
+                    onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
+                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
+                  >
+                    {course.nas
+                      ? [0, 1, 2, 3].map(units => (
+                            <option key={units} value={units} className="bg-white text-gray-900">
+                            ({units})
+                          </option>
+                        ))
+                      : [1, 2, 3, 4, 5].map(units => (
+                            <option key={units} value={units} className="bg-white text-gray-900">
+                            {units}
+                          </option>
+                        ))}
+                  </select>
+                </td>
+                <td className="px-4 py-3 align-middle min-w-[80px]">
+                  {course.nas && course.units === 0 ? (
+                    <select
+                      value={course.grade === 1 ? 'P' : 'F'}
+                      onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
+                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
+                    >
+                        <option value="P" className="bg-white text-gray-900">P</option>
+                        <option value="F" className="bg-white text-gray-900">F</option>
+                    </select>
+                  ) : (
+                    <select
+                      value={course.grade}
+                      onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
+                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
+                    >
+                      {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
+                          <option key={grade} value={grade} className="bg-white text-gray-900">
+                          {grade}
+                        </option>
+                      ))}
+                    </select>
                   )}
                 </td>
-                <td colSpan={2}></td>
+                <td className="px-4 py-3 align-middle">
+                  <div className="flex justify-center items-center">
+                    <input
+                      type="checkbox"
+                      checked={course.nas}
+                      onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
+                        className="accent-dlsu-green bg-white border-gray-300"
+                      aria-label="Non-Academic Subject"
+                    />
+                  </div>
+                </td>
+                <td className="px-4 py-3 align-middle">
+                  <button
+                    onClick={() => removeCourse(course.id)}
+                      className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
+                  >
+                    <TrashIcon size={20} />
+                  </button>
+                </td>
               </tr>
-            </tfoot>
-          </table>
+              ))
+            )}
+          </tbody>
+            )}
+          <tfoot>
+            <tr className="border-t-2 border-gray-300 font-medium">
+              <td className="px-4 py-2">Total Units</td>
+              <td></td>
+              <td className="px-4 py-2 text-center" colSpan={1}>
+                {totalUnits}
+                {totalNASUnits > 0 && (
+                  <span className="text-gray-500"> ({totalNASUnits})</span>
+                )}
+              </td>
+              <td colSpan={2}></td>
+            </tr>
+          </tfoot>
+        </table>
         </div>
       </div>
 
@@ -855,37 +901,37 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <button
-              onClick={addCourse}
-              className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
-            >
-              <PlusIcon size={18} className="mr-1" />
-              Add Course
-            </button>
-            
-            <button
-              onClick={() => setShowPrintModal(true)}
+        <button
+          onClick={addCourse}
+          className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
+        >
+          <PlusIcon size={18} className="mr-1" />
+          Add Course
+        </button>
+          
+          <button
+            onClick={() => setShowPrintModal(true)}
               className="flex items-center px-4 py-2 border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors"
-            >
-              <Printer size={18} className="mr-1" />
-              Print Grades
-            </button>
-          </div>
+          >
+            <Printer size={18} className="mr-1" />
+            Print Grades
+          </button>
+        </div>
           
           <div className="text-right w-full md:w-auto">
-            <div className="text-lg font-bold">
+          <div className="text-lg font-bold">
               GPA: <span className="text-xl text-dlsu-green">{gpa}</span>
+          </div>
+          {isFirstHonors && (
+              <div className="text-sm text-dlsu-green font-medium">
+              First Honors Dean's Lister
             </div>
-            {isFirstHonors && (
+          )}
+          {isDeansLister && !isFirstHonors && (
               <div className="text-sm text-dlsu-green font-medium">
-                First Honors Dean's Lister
-              </div>
-            )}
-            {isDeansLister && !isFirstHonors && (
-              <div className="text-sm text-dlsu-green font-medium">
-                Second Honors Dean's Lister
-              </div>
-            )}
+              Second Honors Dean's Lister
+            </div>
+          )}
           </div>
         </div>
       </div>

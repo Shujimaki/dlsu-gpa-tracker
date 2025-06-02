@@ -22,47 +22,118 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
-  // Load user settings (Firestore for logged-in, sessionStorage for anonymous)
+  // Load user settings and handle migration on login
   useEffect(() => {
-    const loadSettings = async () => {
+    const loadAndMigrateSettings = async () => {
       if (!authInitialized) return;
+      setIsLoading(true); // Start loading indicator
 
-      if (user) { // Logged-in user
+      // 1. Try to get current anonymous data first
+      let anonymousSettings: ProjectionSettings | null = null;
+      const anonymousSettingsString = sessionStorage.getItem('projection_settings');
+      if (anonymousSettingsString) {
         try {
-          // console.log('Loading projection settings from Firestore for user:', user.uid);
-          const settings = await loadUserProjectionSettings(user.uid);
-          if (settings) {
-            setTargetCGPA(settings.targetCGPA);
-            setTotalUnits(settings.totalUnits);
-            setTotalUnitsInput(settings.totalUnits.toString());
-          }
-        } catch (err) {
-          console.error('Error loading user projection settings from Firestore:', err);
-          // Optionally set an error state here if critical
-        }
-      } else { // Anonymous user
-        try {
-          // console.log('Loading projection settings from sessionStorage for anonymous user');
-          const anonymousSettings = sessionStorage.getItem('projection_settings');
-          if (anonymousSettings) {
-            const parsedSettings = JSON.parse(anonymousSettings);
-            if (parsedSettings) {
-              if (typeof parsedSettings.targetCGPA === 'number') {
-                setTargetCGPA(parsedSettings.targetCGPA);
-              }
-              if (typeof parsedSettings.totalUnits === 'number') {
-                setTotalUnits(parsedSettings.totalUnits);
-                setTotalUnitsInput(parsedSettings.totalUnits.toString());
-              }
-            }
-          }
-        } catch (err) {
-          console.error('Error loading anonymous projection settings from sessionStorage:', err);
+          anonymousSettings = JSON.parse(anonymousSettingsString) as ProjectionSettings;
+        } catch (e) {
+          console.error("Error parsing anonymous projection_settings from sessionStorage", e);
+          anonymousSettings = null;
         }
       }
-    };
+      // console.log("CGPAProj: Initial anonymous settings snapshot:", anonymousSettings);
+
+      const newLoginSession = sessionStorage.getItem('newLogin') === 'true';
+      // console.log("CGPAProj: newLogin flag from session:", newLoginSession);
+
+      if (user) { // Logged-in user
+        if (newLoginSession) {
+          // console.log("CGPAProj: New login detected. Clearing newLogin flag. Migration will be attempted.");
+          sessionStorage.removeItem('newLogin'); // Clear the flag, but still proceed to check for migration
+        }
+
+        let firestoreSettings: ProjectionSettings | null = null;
+        try {
+          firestoreSettings = await loadUserProjectionSettings(user.uid);
+          // console.log("CGPAProj: Firestore settings loaded:", firestoreSettings);
+        } catch (err) {
+          console.error('Error loading user projection settings from Firestore:', err);
+          // If Firestore load fails, we might still proceed with migration if anonymous data exists
+          // or fall back to defaults. For now, just log and continue.
+        }
+
+        // 2b. Migration Condition
+        // Defaults: targetCGPA: 3.4, totalUnits: 200
+        const firestoreIsDefault = 
+          !firestoreSettings || 
+          (firestoreSettings.targetCGPA === 3.4 && firestoreSettings.totalUnits === 200);
+        
+        const anonymousHasDataToMigrate = 
+          anonymousSettings && 
+          (anonymousSettings.targetCGPA !== 3.4 || anonymousSettings.totalUnits !== 200);
+
+        // console.log(`CGPAProj: Migration check: Firestore default: ${firestoreIsDefault}, Anonymous has data: ${anonymousHasDataToMigrate}, Was new login: ${newLoginSession}`);
+
+        if (firestoreIsDefault && anonymousHasDataToMigrate && anonymousSettings) {
+          // console.log("CGPAProj: MIGRATING anonymous settings to Firestore.");
+          setTargetCGPA(anonymousSettings.targetCGPA);
+          setTotalUnits(anonymousSettings.totalUnits);
+          setTotalUnitsInput(anonymousSettings.totalUnits.toString());
+
+          try {
+            await saveUserProjectionSettings(user.uid, anonymousSettings);
+            // console.log("CGPAProj: Anonymous settings successfully migrated and saved to Firestore.");
+            sessionStorage.removeItem('projection_settings'); // Clear session data after migration
+          } catch (saveError) {
+            console.error("CGPAProj: Error saving migrated settings to Firestore:", saveError);
+          }
+          // Migration done, UI updated, Firestore save attempted.
+        } else if (firestoreSettings) {
+          // Load from Firestore (if not default or no migration needed)
+          // This also handles: was newLogin, but no anon data to migrate, and Firestore data exists.
+          // console.log("CGPAProj: Not migrating. Loading from existing Firestore settings.");
+          setTargetCGPA(firestoreSettings.targetCGPA);
+          setTotalUnits(firestoreSettings.totalUnits);
+          setTotalUnitsInput(firestoreSettings.totalUnits.toString());
+        } else {
+          // No Firestore settings and no migration happened. Ensure defaults and save to Firestore.
+          // This handles: was newLogin, no anon data, no Firestore OR existing user, no anon data, no Firestore.
+          // console.log("CGPAProj: No Firestore settings & no migration. Ensuring default settings and saving to Firestore if user exists.");
+          setTargetCGPA(3.4);
+          setTotalUnits(200);
+          setTotalUnitsInput("200");
+          if (user) { // Ensure user exists before saving default settings for them
+            try {
+              await saveUserProjectionSettings(user.uid, { targetCGPA: 3.4, totalUnits: 200 });
+              // console.log("CGPAProj: Default settings saved to Firestore for user.");
+            } catch (saveError) {
+              console.error("CGPAProj: Error saving default settings to Firestore:", saveError);
+            }
+          }
+        }
+      } else { // Anonymous user
+        // console.log("CGPAProj: Anonymous user. Loading from sessionStorage if available.");
+        if (anonymousSettings) {
+          if (typeof anonymousSettings.targetCGPA === 'number') {
+            setTargetCGPA(anonymousSettings.targetCGPA);
+          }
+          if (typeof anonymousSettings.totalUnits === 'number') {
+            setTotalUnits(anonymousSettings.totalUnits);
+            setTotalUnitsInput(anonymousSettings.totalUnits.toString());
+          }
+        } else {
+          // No anonymous settings, use/retain defaults
+          // console.log("CGPAProj: Anonymous user, no session settings, using defaults.");
+          setTargetCGPA(3.4);
+          setTotalUnits(200);
+          setTotalUnitsInput("200");
+        }
+      }
+    // setIsLoading(false); // Set loading to false after all operations for this effect
+    }; // end of loadAndMigrateSettings
     
-    loadSettings();
+    // Call loadAndMigrateSettings only when auth is initialized
+    if (authInitialized) {
+        loadAndMigrateSettings().finally(() => setIsLoading(false));
+    }
   }, [user, authInitialized]);
 
   // Load CGPA data from sessionStorage
