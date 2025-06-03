@@ -582,11 +582,22 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
               <div 
                 key={term.term} 
                 className={`card h-full ${
-                  term.isActive ? 'border-dlsu-green' : 'opacity-80'
+                  term.isActive 
+                    ? 'border-l-4 border-l-dlsu-green shadow-md' 
+                    : 'bg-gray-50 opacity-75'
                 }`}
               >
-                <div className="card-header flex justify-between items-center py-2.5 px-4">
-                  <h4 className="font-medium text-sm">Term {term.term}</h4>
+                <div className={`card-header flex justify-between items-center py-2.5 px-4 ${
+                  term.isActive ? 'bg-green-50' : 'bg-gray-100'
+                }`}>
+                  <div className="flex items-center">
+                    <h4 className="font-medium text-sm">Term {term.term}</h4>
+                    {!term.isActive && (
+                      <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
                   <button 
                     onClick={() => onEditTerm(term.term)}
                     className="p-1.5 text-gray-500 hover:text-dlsu-green rounded-full hover:bg-gray-100"
@@ -598,7 +609,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
                 
                 <div className="p-4 flex flex-col h-full">
                   <div className="mb-3 text-center">
-                    <div className="text-2xl font-bold text-dlsu-green">
+                    <div className={`text-2xl font-bold ${term.isActive ? 'text-dlsu-green' : 'text-gray-500'}`}>
                       {term.gpa}
                     </div>
                     <div className="text-xs text-gray-500">

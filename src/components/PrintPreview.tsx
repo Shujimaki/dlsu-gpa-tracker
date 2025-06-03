@@ -121,10 +121,11 @@ const PrintPreview = ({
         <div className="flex justify-between items-center h-full">
           <div style={{ width: '40%', flexShrink: 0 }}>
             <h1 
-              className={`${size === 'story' ? 'text-5xl' : 'text-2xl'} font-bold`} 
+              className={`${size === 'story' ? 'text-5xl' : 'text-2xl'} font-bold text-white`} 
               style={{ 
                 whiteSpace: 'nowrap',
-                overflow: 'visible'
+                overflow: 'visible',
+                color: '#ffffff'
               }}
             >
               Term {term} Grades
@@ -134,7 +135,7 @@ const PrintPreview = ({
             <div className="text-right" style={{ width: '60%', maxWidth: '60%' }}>
               {name && (
                 <h2 
-                  className={`${size === 'story' ? 'text-3xl' : 'text-lg'} font-medium`} 
+                  className={`${size === 'story' ? 'text-3xl' : 'text-lg'} font-medium text-white`} 
                   style={{ 
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
@@ -146,7 +147,8 @@ const PrintPreview = ({
                     marginLeft: 'auto',
                     wordBreak: 'break-word',
                     overflowWrap: 'break-word',
-                    whiteSpace: 'normal'
+                    whiteSpace: 'normal',
+                    color: '#ffffff'
                   }}
                 >
                   {name}
@@ -154,7 +156,7 @@ const PrintPreview = ({
               )}
               {degree && (
                 <p 
-                  className={`${size === 'story' ? 'text-xl' : 'text-sm'} opacity-80`}
+                  className={`${size === 'story' ? 'text-xl' : 'text-sm'} opacity-80 text-white`}
                   style={{ 
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
@@ -166,7 +168,8 @@ const PrintPreview = ({
                     marginLeft: 'auto',
                     wordBreak: 'break-word',
                     overflowWrap: 'break-word',
-                    whiteSpace: 'normal'
+                    whiteSpace: 'normal',
+                    color: '#ffffff'
                   }}
                 >
                   {degree}
@@ -224,11 +227,11 @@ const PrintPreview = ({
                     className="w-full rounded-lg p-4 text-center bg-dlsu-green text-white flex flex-col justify-center items-center"
                     style={{ minHeight: '60px', padding: '1rem' }}
                   >
-                    <h3 className="font-bold" style={{ ...styles.deansListerText, margin: '0 auto', maxWidth: '90%', textAlign: 'center' }}>
+                    <h3 className="font-bold text-white" style={{ ...styles.deansListerText, margin: '0 auto', maxWidth: '90%', textAlign: 'center', color: '#ffffff' }}>
                       {isFirstHonors ? "First Honors Dean's Lister" : "Second Honors Dean's Lister"}
                     </h3>
                     {isFlowchartExempt && (
-                      <p className="text-sm opacity-90 mt-1" style={{ maxWidth: '90%', whiteSpace: 'normal', textAlign: 'center' }}>
+                      <p className="text-sm opacity-90 mt-1 text-white" style={{ maxWidth: '90%', whiteSpace: 'normal', textAlign: 'center', color: '#ffffff' }}>
                         * Flowchart exemption from 12-unit requirement applied
                       </p>
                     )}
@@ -281,11 +284,11 @@ const PrintPreview = ({
                   className={`w-full max-w-md mx-auto rounded-lg ${size === 'story' ? 'p-8' : 'p-4'} text-center bg-dlsu-green text-white flex flex-col justify-center items-center`}
                   style={{ minHeight: size === 'story' ? '120px' : '80px', padding: size === 'story' ? '2rem' : '1rem' }}
                 >
-                  <h3 className="font-bold" style={{ ...styles.deansListerText, margin: '0 auto', maxWidth: '90%', textAlign: 'center' }}>
+                  <h3 className="font-bold text-white" style={{ ...styles.deansListerText, margin: '0 auto', maxWidth: '90%', textAlign: 'center', color: '#ffffff' }}>
                     {isFirstHonors ? "First Honors Dean's Lister" : "Second Honors Dean's Lister"}
                   </h3>
                   {isFlowchartExempt && (
-                    <p className={`${size === 'story' ? 'text-lg' : 'text-sm'} opacity-90 mt-1`} style={{ maxWidth: '90%', whiteSpace: 'normal', textAlign: 'center' }}>
+                    <p className={`${size === 'story' ? 'text-lg' : 'text-sm'} opacity-90 mt-1`} style={{ maxWidth: '90%', whiteSpace: 'normal', textAlign: 'center', color: '#ffffff' }}>
                       * Flowchart exemption from 12-unit requirement applied
                     </p>
                   )}
