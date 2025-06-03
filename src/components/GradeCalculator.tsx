@@ -637,9 +637,9 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                     <thead>
                       <tr className="bg-gray-50 text-gray-700 border-b border-gray-200">
                         <th className="px-3 py-2 text-left text-xs font-medium">Category</th>
-                        <th className="px-3 py-2 text-center text-xs font-medium w-20">Weight (%)</th>
-                        <th className="px-3 py-2 text-center text-xs font-medium w-20">Score (%)</th>
-                        <th className="px-3 py-2 text-center text-xs font-medium w-20">Weighted</th>
+                        <th className="px-3 py-2 text-center text-xs font-medium w-24">Weight (%)</th>
+                        <th className="px-3 py-2 text-center text-xs font-medium w-24">Score (%)</th>
+                        <th className="px-3 py-2 text-center text-xs font-medium w-24">Weighted</th>
                         <th className="px-3 py-2 w-10"></th>
                       </tr>
                     </thead>
@@ -669,7 +669,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                                 onChange={(e) => updateCategory(category.id, 'weight', Number(e.target.value))}
                                 min="0"
                                 max="100"
-                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-center"
+                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-center min-w-[90px]"
                               />
                             </td>
                             <td className="px-3 py-2">
@@ -680,7 +680,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                                 min="0"
                                 max="100"
                                 step="0.01"
-                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-center"
+                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-center min-w-[90px]"
                               />
                             </td>
                             <td className="px-3 py-2 text-center text-sm">

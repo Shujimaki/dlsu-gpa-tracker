@@ -416,7 +416,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       code: '',
       name: '',
       units: defaultUnits,
-      grade: 0,
+      grade: 4.0,
       nas: false,
     }]);
     logUserAction('add_course');
@@ -813,9 +813,9 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                           type="text"
                           value={course.code}
                           onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded min-w-[110px]"
+                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
                           maxLength={7}
-                          placeholder="e.g., CSMODEL"
+                          placeholder="e.g., NUMMETS"
                         />
                       </td>
                       <td className="px-3 py-2.5">
@@ -824,14 +824,14 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                           value={course.name}
                           onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
                           className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
-                          placeholder="e.g., Modeling and Simulation"
+                          placeholder="e.g., Numerical Methods"
                         />
                       </td>
                       <td className="px-3 py-2.5">
                         <select
                           value={course.units}
                           onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
+                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded min-w-[80px]"
                         >
                           {course.nas
                             ? [0, 1, 2, 3].map(units => (
@@ -850,7 +850,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                         <select
                           value={course.grade}
                           onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
+                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded min-w-[80px]"
                         >
                           {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
                               <option key={grade} value={grade} className="bg-white text-gray-900">
