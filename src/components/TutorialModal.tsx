@@ -1,4 +1,4 @@
-import { X, BookOpen, TrendingUp, Calculator, Award, Save } from 'lucide-react';
+import { X, TrendingUp, Calculator, Award, Save } from 'lucide-react';
 
 interface TutorialModalProps {
   isOpen: boolean;
@@ -6,115 +6,107 @@ interface TutorialModalProps {
 }
 
 const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
+  // Don't render anything if not open
   if (!isOpen) return null;
-
+  
   const sections = [
     {
-      title: "GPA Calculator",
+      id: 'gpa-calculator',
+      title: 'GPA Calculator',
       icon: Calculator,
-      id: "gpa-calculator",
       content: [
-        "Input grades for each term to see your term GPA and Dean's List status.",
-        "Use 'Select Term' to switch between terms or 'Add New Term' (up to 21).",
-        "Click 'Add Course' to add subjects. Enter code, name (optional), units, and grade.",
-        "Mark 'Non-Academic Subject' (NAS) if needed; these affect Dean's List but not GPA.",
-        "Check 'Flowchart exempts...' if your course load is below 12 units but still eligible for Dean's List.",
-        "To print term grades: Click 'Print Grades' at the bottom of the GPA Calculator tab.",
-      ],
+        'Enter your courses, units, and grades to calculate your term GPA.',
+        'Use the NAS (Non-Academic Subject) checkbox for subjects that don\'t count toward your GPA.',
+        'Your data is saved automatically when logged in.'
+      ]
     },
     {
-      title: "CGPA Calculator",
+      id: 'grade-calculator',
+      title: 'Grade Calculator',
       icon: Award,
-      id: "cgpa-calculator",
       content: [
-        "View your Cumulative Grade Point Average (CGPA) across all terms.",
-        "Terms are grouped by academic year (3 terms per year).",
-        "Each term card shows the term GPA, total academic units, and a summary of courses.",
-        "Click the pencil icon (Edit) on a term card to jump directly to that term in the GPA Calculator.",
-        "If applicable to you, enter your 'Credited Units' from a previous school or degree. These are added to your total earned units but do not affect CGPA calculation within this app.",
-        "Click 'View CGPA Projections' to plan for your future CGPA.",
-      ],
+        'Calculate your final grade based on assessment components.',
+        'Choose from preset passing grades (50% to 70%).',
+        'Add and remove components as needed.'
+      ]
     },
     {
-      title: "CGPA Projections",
+      id: 'cgpa-calculator',
+      title: 'CGPA Calculator',
       icon: TrendingUp,
-      id: "cgpa-projections",
       content: [
-        "Plan how to achieve your target CGPA.",
-        "Your current CGPA and earned units are automatically pulled from the CGPA Calculator.",
-        "Enter your 'Target CGPA' (e.g., 3.4 for Cum Laude).",
-        "Enter the 'Total Units to Graduate' according to your flowchart.",
-        "The tool will calculate the GPA you need to achieve in your remaining units.",
-        "If the required GPA is above 4.0, it will indicate 'Not achievable'.",
-      ],
+        'View all your terms at once to see your cumulative GPA.',
+        'Click the edit button to modify any term.',
+        'Terms are organized by year for easier viewing.'
+      ]
     },
     {
-      title: "Grade Calculator",
-      icon: BookOpen,
-      id: "grade-calculator",
+      id: 'cgpa-projections',
+      title: 'CGPA Projections',
+      icon: TrendingUp,
       content: [
-        "Calculate final subject grades based on weighted components.",
-        "Manage up to 8 subjects. Click 'Add Subject'.",
-        "For each subject, add up to 8 weighted categories (e.g., Exams, Quizzes).",
-        "Enter your score and total possible score for each item in a category.",
-        "View raw percentage and final transmuted grade (default 50% passing).",
-        "Adjust 'Passing Percentage' if your subject has a different threshold (e.g., 60%).",
-      ],
+        'Simulate future terms to see how they affect your CGPA.',
+        'Helpful for planning what grades you need to reach your target CGPA.'
+      ]
     },
-     {
-      title: "Data Saving & Printing",
+    {
+      id: 'saving-data',
+      title: 'Saving Your Data',
       icon: Save,
-      id: "data-saving-printing",
       content: [
-        "Anonymous Users: Data saves temporarily to your browser. It's lost if you close browser/tab. A warning appears if you have unsaved data.",
-        "Logged-in Users: Data saves securely to your account (Google Firebase) and syncs across devices.",
-        "Migration: If you use the app anonymously then log in, data for the current GPA Calculator term may migrate to your account if no cloud data exists for that term.",
-        "Printing Grades (GPA Tab): In the GPA Calculator, use the 'Print Grades' button to generate a printable summary of the current term's grades.",
-      ],
-    },
+        'Create an account to save your data across devices.',
+        'Without logging in, your data is only saved in this browser session.',
+        'Closing the page or browser will lose unsaved data.'
+      ]
+    }
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
+        className="bg-white rounded-lg shadow-md max-w-2xl w-full max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()} // Prevent click inside modal from closing it
       >
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-dlsu-green">How to Use Greendex</h2>
+        <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-base font-medium text-gray-900">How to Use Greendex</h2>
           <button 
             onClick={onClose} 
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+            className="text-gray-400 hover:text-gray-600"
             aria-label="Close tutorial"
           >
-            <X size={24} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto space-y-6">
-          {sections.map((section) => (
-            <section key={section.id} aria-labelledby={section.id}>
-              <div className="flex items-center mb-2">
-                <section.icon className="w-6 h-6 text-dlsu-green mr-2" />
-                <h3 id={section.id} className="text-lg font-semibold text-dlsu-green">
-                  {section.title}
-                </h3>
-              </div>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 pl-2">
-                {section.content.map((point, index) => (
-                  <li key={index}>{point}</li>
-                ))}
-              </ul>
-            </section>
-          ))}
+        <div className="p-4 overflow-y-auto">
+          <div className="space-y-5">
+            {sections.map((section) => (
+              <section key={section.id} aria-labelledby={section.id}>
+                <div className="flex items-center mb-1.5">
+                  <section.icon className="w-4 h-4 text-dlsu-green mr-2" />
+                  <h3 id={section.id} className="text-sm font-medium text-gray-900">
+                    {section.title}
+                  </h3>
+                </div>
+                <ul className="text-xs text-gray-600 space-y-1 ml-6">
+                  {section.content.map((point, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-dlsu-green mr-2">•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
         </div>
 
-        <div className="p-4 border-t border-gray-200 text-right">
+        <div className="px-4 py-3 border-t border-gray-200 flex justify-end">
           <button
             onClick={onClose}
-            className="bg-dlsu-green text-white px-4 py-2 rounded hover:bg-dlsu-dark-green transition-colors"
+            className="px-3 py-1.5 bg-dlsu-green text-white text-sm rounded hover:bg-dlsu-dark-green transition-colors"
           >
-            Got it!
+            Got it
           </button>
         </div>
       </div>

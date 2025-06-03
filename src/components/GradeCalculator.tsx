@@ -526,55 +526,55 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   return (
     <div className="space-y-6">
       {/* Header with save status */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-2">
-          <h2 className="text-2xl font-bold text-dlsu-green mb-2">Grade Calculator</h2>
+      <div className="card">
+        <div className="card-header flex flex-col sm:flex-row justify-between items-start sm:items-center">
+          <h2 className="text-lg font-medium text-gray-900">Grade Calculator</h2>
           {saveStatus && (
             <div className="text-sm text-green-600">
               {saveStatus}
             </div>
           )}
         </div>
-        <p className="text-gray-600">
-          Calculate your subject grades based on weighted components.
-        </p>
+        <div className="card-body">
+          <p className="text-sm text-gray-500">
+            Calculate your subject grades based on weighted components.
+          </p>
+        </div>
       </div>
 
       {/* Subject Tabs */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="grade-calc-subject-tabs-container flex flex-row overflow-x-auto border-b p-2 bg-gray-50 space-x-2">
+      <div className="card">
+        <div className="overflow-x-auto border-b border-gray-200 p-3 bg-gray-50 flex flex-row items-center gap-2 grade-calc-subject-tabs-container">
           {subjects.map(subject => {
             const isActive = activeSubjectId === subject.id;
             return (
               <button
                 key={subject.id}
                 onClick={() => setActiveSubjectId(subject.id)}
-                className={`grade-calc-subject-button px-3 py-0 rounded-md whitespace-nowrap flex flex-row items-center justify-between min-w-[170px] max-w-[170px] h-10 flex-shrink-0 ${
+                className={`px-3 py-1.5 rounded-md whitespace-nowrap flex items-center justify-between min-w-[150px] max-w-[170px] h-9 flex-shrink-0 text-sm grade-calc-subject-button ${
                   isActive
                     ? 'bg-dlsu-green text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                <span className="flex-grow flex items-center mr-2 truncate" title={subject.name}>
+                <span className="flex-grow truncate mr-1" title={subject.name}>
                   {subject.name}
                 </span>
                 {subjects.length > 1 && (
-                  <div className="flex items-center flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeSubject(subject.id);
-                      }}
-                      className={`p-1 rounded-full flex items-center justify-center transition-colors duration-150 ${
-                        isActive
-                          ? 'text-red-500 hover:bg-red-600 hover:text-white'
-                          : 'text-gray-500 hover:bg-red-100 hover:text-red-500'
-                      }`}
-                      aria-label="Remove subject"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeSubject(subject.id);
+                    }}
+                    className={`p-0.5 rounded-full flex items-center justify-center transition-colors ${
+                      isActive
+                        ? 'text-white hover:text-white bg-dlsu-dark-green/30 hover:bg-dlsu-dark-green/60'
+                        : 'text-gray-400 hover:bg-gray-300 hover:text-gray-700'
+                    }`}
+                    aria-label="Remove subject"
+                  >
+                    <X size={14} />
+                  </button>
                 )}
               </button>
             );
@@ -583,41 +583,41 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
           {subjects.length < 8 ? (
             <button
               onClick={addSubject}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center flex-shrink-0 h-10"
+              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center h-9 flex-shrink-0"
             >
-              <PlusCircle size={16} className="mr-1" />
+              <PlusCircle size={14} className="mr-1" />
               <span>Add Subject</span>
             </button>
           ) : (
-            <div className="px-4 py-2 text-sm text-gray-500 italic flex items-center flex-shrink-0 h-10">
+            <div className="px-3 py-1.5 text-xs text-gray-500 italic flex items-center h-9 flex-shrink-0">
               Max 8 subjects reached
             </div>
           )}
         </div>
 
         {activeSubject && (
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="p-4">
+            <div className="flex flex-col md:flex-row gap-4 mb-5">
               <div className="flex-1">
-                <label className="block text-sm text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Subject Name
                 </label>
                 <input
                   type="text"
                   value={activeSubject.name}
                   onChange={(e) => updateSubjectName(activeSubject.id, e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-sm"
                   maxLength={30}
                 />
               </div>
               <div className="w-full md:w-40">
-                <label className="block text-sm text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                   Passing Grade (%)
                 </label>
                 <select
                   value={activeSubject.passingGrade}
                   onChange={(e) => updatePassingGrade(activeSubject.id, Number(e.target.value))}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-sm"
                 >
                   {PASSING_GRADE_PRESETS.map(preset => (
                     <option key={preset} value={preset}>{preset}%</option>
@@ -627,52 +627,52 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Grade Computations Table */}
-              <div className="md:col-span-2">
-                <h3 className="text-xl font-semibold text-gray-700 mb-4">Grade Computations</h3>
+              <div className="lg:col-span-2">
+                <h3 className="text-base font-medium text-gray-700 mb-3">Grade Computations</h3>
                 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full bg-white border border-gray-200 mb-4">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-700">Category</th>
-                        <th className="py-2 px-4 border-b text-center text-sm font-medium text-gray-700 w-24">Weight (%)</th>
-                        <th className="py-2 px-4 border-b text-center text-sm font-medium text-gray-700 w-24">Score (%)</th>
-                        <th className="py-2 px-4 border-b text-center text-sm font-medium text-gray-700 w-24">Weighted</th>
-                        <th className="py-2 px-4 border-b w-10"></th>
+                  <table className="min-w-full border border-gray-200 mb-4">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-700 border-b border-gray-200">
+                        <th className="px-3 py-2 text-left text-xs font-medium">Category</th>
+                        <th className="px-3 py-2 text-center text-xs font-medium w-20">Weight (%)</th>
+                        <th className="px-3 py-2 text-center text-xs font-medium w-20">Score (%)</th>
+                        <th className="px-3 py-2 text-center text-xs font-medium w-20">Weighted</th>
+                        <th className="px-3 py-2 w-10"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {activeSubject.categories.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-4 px-4 text-center text-gray-500 italic">
+                          <td colSpan={5} className="py-4 px-4 text-center text-sm text-gray-500 italic">
                             No categories added yet
                           </td>
                         </tr>
                       ) : (
                         activeSubject.categories.map(category => (
-                          <tr key={category.id} className={`border-b hover:bg-gray-50 ${activeSubject.categories.indexOf(category) % 2 === 0 ? '!bg-white' : '!bg-slate-100'}`}>
-                            <td className="py-2 px-4">
+                          <tr key={category.id} className={`border-b hover:bg-gray-50 ${activeSubject.categories.indexOf(category) % 2 === 0 ? '!bg-white' : '!bg-slate-50'}`}>
+                            <td className="px-3 py-2">
                               <input
                                 type="text"
                                 value={category.name}
                                 onChange={(e) => updateCategory(category.id, 'name', e.target.value)}
                                 placeholder="Category name"
-                                className="w-full p-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent"
+                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green"
                               />
                             </td>
-                            <td className="py-2 px-4">
+                            <td className="px-3 py-2">
                               <input
                                 type="number"
                                 value={category.weight}
                                 onChange={(e) => updateCategory(category.id, 'weight', Number(e.target.value))}
                                 min="0"
                                 max="100"
-                                className="w-full p-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent text-center"
+                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-center"
                               />
                             </td>
-                            <td className="py-2 px-4">
+                            <td className="px-3 py-2">
                               <input
                                 type="number"
                                 value={category.score}
@@ -680,29 +680,30 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                                 min="0"
                                 max="100"
                                 step="0.01"
-                                className="w-full p-1.5 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent text-center"
+                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-center"
                               />
                             </td>
-                            <td className="py-2 px-4 text-center">
+                            <td className="px-3 py-2 text-center text-sm">
                               {((category.score / 100) * category.weight).toFixed(2)}
                             </td>
-                            <td className="py-2 px-4 text-center">
+                            <td className="px-3 py-2 text-center">
                               <button
                                 onClick={() => removeCategory(category.id)}
-                                className="p-1.5 hover:bg-red-100 rounded-full"
+                                className="p-1 hover:bg-red-50 rounded-full"
+                                aria-label="Remove category"
                               >
-                                <TrashIcon size={16} className="text-gray-400 hover:text-red-500" />
+                                <TrashIcon size={14} className="text-gray-400 hover:text-red-500" />
                               </button>
                             </td>
                           </tr>
                         ))
                       )}
-                      <tr className="bg-gray-50 font-medium">
-                        <td className="py-2 px-4 text-right">Total</td>
-                        <td className="py-2 px-4 text-center">{totalWeight.toFixed(2)}%</td>
-                        <td className="py-2 px-4"></td>
-                        <td className="py-2 px-4 text-center">{finalGrade.toFixed(2)}%</td>
-                        <td className="py-2 px-4"></td>
+                      <tr className="bg-gray-50 font-medium text-sm">
+                        <td className="py-2 px-3 text-right">Total</td>
+                        <td className="py-2 px-3 text-center">{totalWeight.toFixed(2)}%</td>
+                        <td className="py-2 px-3"></td>
+                        <td className="py-2 px-3 text-center">{finalGrade.toFixed(2)}%</td>
+                        <td className="py-2 px-3"></td>
                       </tr>
                     </tbody>
                   </table>
@@ -710,43 +711,43 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                 
                 <button
                   onClick={addCategory}
-                  className="mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center"
+                  className="px-3 py-1.5 text-sm bg-dlsu-green text-white rounded hover:bg-dlsu-dark-green transition-colors flex items-center grade-calc-button"
                 >
-                  <PlusCircle size={16} className="mr-1" />
+                  <PlusCircle size={14} className="mr-1" />
                   <span>Add Category</span>
                 </button>
               </div>
 
               {/* Grade Transmutation Table */}
-              <div className="md:col-span-1">
-                <h3 className="text-xl font-semibold text-gray-700 mb-4">Grade Transmutation</h3>
+              <div className="lg:col-span-1">
+                <h3 className="text-base font-medium text-gray-700 mb-3">Grade Transmutation</h3>
                 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full bg-white border border-gray-200 mb-4">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-700">Percentage Range</th>
-                        <th className="py-2 px-4 border-b text-center text-sm font-medium text-gray-700">Grade</th>
+                  <table className="min-w-full border border-gray-200 mb-4">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-700 border-b border-gray-200">
+                        <th className="px-3 py-2 text-left text-xs font-medium">Percentage Range</th>
+                        <th className="px-3 py-2 text-center text-xs font-medium">Grade</th>
                       </tr>
                     </thead>
                     <tbody>
                       {transmutationTable.map((row, index) => (
-                        <tr key={index} className={`border-b hover:bg-gray-50 ${
+                        <tr key={index} className={`border-b text-sm ${
                           finalGrade >= row.range[0] && finalGrade <= row.range[1] ? 'bg-green-50 font-medium' : 
-                          index % 2 === 0 ? '!bg-white' : '!bg-slate-100'
+                          index % 2 === 0 ? '!bg-white' : '!bg-slate-50'
                         }`}>
-                          <td className="py-2 px-4">
+                          <td className="px-3 py-1.5">
                             {row.range[0].toFixed(2)}% - {row.range[1].toFixed(2)}%
                           </td>
-                          <td className="py-2 px-4 text-center">{row.grade.toFixed(1)}</td>
+                          <td className="px-3 py-1.5 text-center">{row.grade.toFixed(1)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                <div className="bg-gray-100 p-4 rounded-lg text-center mt-4">
-                  <p className="text-sm text-gray-600 mb-1">Final Grade</p>
+                <div className="bg-gray-50 p-4 rounded-lg text-center mt-4">
+                  <p className="text-xs text-gray-600 mb-1">Final Grade</p>
                   <p className="text-3xl font-bold text-dlsu-green">{transmutedGrade.toFixed(1)}</p>
                   <p className="text-sm text-gray-500 mt-1">Raw score: {finalGrade.toFixed(2)}%</p>
                   <p className="text-xs text-gray-500 mt-2">

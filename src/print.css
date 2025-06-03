@@ -21,6 +21,43 @@
     box-shadow: none !important;
     transform: scale(1) !important;
     transform-origin: top left !important;
+    color: #000000 !important; /* Ensure text is black for better printing */
+  }
+  
+  /* Ensure headers always have white text */
+  #print-preview .bg-dlsu-green {
+    background-color: #006f51 !important;
+  }
+  
+  /* Ensure all text in green background elements is white */
+  #print-preview .bg-dlsu-green * {
+    color: #ffffff !important;
+  }
+  
+  /* Term X Grades header - explicitly target it */
+  #print-preview .bg-dlsu-green h1 {
+    color: #ffffff !important;
+  }
+  
+  /* Student name */
+  #print-preview .bg-dlsu-green h2 {
+    color: #ffffff !important;
+  }
+  
+  /* Student degree */
+  #print-preview .bg-dlsu-green p {
+    color: #ffffff !important;
+  }
+  
+  /* Dean's Lister Badge text */
+  #print-preview .bg-dlsu-green h3,
+  #print-preview .bg-dlsu-green:not(:first-child) p {
+    color: #ffffff !important;
+  }
+  
+  /* Ensure DLSU green prints properly for regular text */
+  .text-dlsu-green {
+    color: #006f51 !important;
   }
   
   /* Hide UI elements when printing */

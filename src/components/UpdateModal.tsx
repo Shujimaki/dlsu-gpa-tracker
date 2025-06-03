@@ -16,49 +16,63 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-dlsu-green">Major App Update 🎉</h2>
-          <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
-            <X size={24} />
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-md max-w-md w-full">
+        <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-base font-medium text-gray-900">App Updates</h2>
+          <button 
+            onClick={handleClose} 
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="Close"
+          >
+            <X size={18} />
           </button>
         </div>
-        <div className="space-y-4">
-          <p className="text-gray-600">June 1, 2025</p>
-          <div className="space-y-4">
+        
+        <div className="p-4">
+          <p className="text-xs text-gray-500 mb-2">June 1, 2025</p>
           
-            
-            <div>
-              <h3 className="font-medium text-dlsu-green">New & Improved Grade Calculator:</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>Calculate grades per subject with weighted categories.</li>
-                <li>Choose from preset passing grades (50% to 70%) with automatic transmutation.</li>
-                <li>Manage up to 8 subjects, with names and categories saved to your account.</li>
-                <li>See your raw percentage and final transmuted grade for each subject.</li>
-                <li>Disclaimer: Official grades are always from MLS.</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-medium text-dlsu-green">CGPA Calculator Improvements:</h3>
-              <ul className="list-disc list-inside space-y-1 text-gray-700 mt-1">
-                <li>View all your terms in one place with a comprehensive overview</li>
-                <li>Automatically calculate your cumulative GPA across all terms</li>
-                <li>Terms are grouped by year for better organization</li>
-                <li>Click the edit button to quickly jump to any term in the GPA Calculator</li>
-              </ul>
-            </div>
-            
+          <h3 className="text-sm font-medium text-dlsu-green mb-2">
+            New Features
+          </h3>
           
-          </div>
+          <ul className="text-sm text-gray-700 space-y-2 mb-4">
+            <li className="flex items-start">
+              <span className="text-dlsu-green mr-2">•</span>
+              <span>Added CGPA Projections calculator to help you plan future terms</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-dlsu-green mr-2">•</span>
+              <span>Improved mobile experience with better layouts and controls</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-dlsu-green mr-2">•</span>
+              <span>Added data synchronization across devices when logged in</span>
+            </li>
+          </ul>
+          
+          <h3 className="text-sm font-medium text-dlsu-green mb-2">
+            Improvements
+          </h3>
+          
+          <ul className="text-sm text-gray-700 space-y-2">
+            <li className="flex items-start">
+              <span className="text-dlsu-green mr-2">•</span>
+              <span>Redesigned the interface for a cleaner, more focused experience</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-dlsu-green mr-2">•</span>
+              <span>Fixed several bugs related to term management</span>
+            </li>
+          </ul>
         </div>
-        <div className="mt-6 flex justify-end">
+        
+        <div className="px-4 py-3 border-t border-gray-200 flex justify-end">
           <button
             onClick={handleClose}
-            className="bg-dlsu-green text-white px-4 py-2 rounded hover:bg-dlsu-green/90 transition-colors"
+            className="px-3 py-1.5 bg-dlsu-green text-white text-sm rounded hover:bg-dlsu-dark-green transition-colors"
           >
-            Got it!
+            Got it
           </button>
         </div>
       </div>

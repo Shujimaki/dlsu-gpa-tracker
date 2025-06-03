@@ -290,6 +290,7 @@ const PrintGradesModal = ({
       headerArea.style.outline = 'none';
       headerArea.style.boxShadow = 'none';
       headerArea.style.minHeight = '80px';
+      headerArea.style.backgroundColor = '#006f51'; // Ensure green background
       
       const headerContentWrapper = headerArea.children[0] as HTMLElement;
       if (headerContentWrapper) {
@@ -324,6 +325,7 @@ const PrintGradesModal = ({
             headerLeftH1.style.overflow = 'hidden';
             headerLeftH1.style.textOverflow = 'ellipsis';
             headerLeftH1.style.fontSize = size === 'story' ? '2.5rem' : '1.5rem';
+            headerLeftH1.style.color = '#ffffff'; // Ensure white text
           }
         }
         
@@ -354,6 +356,7 @@ const PrintGradesModal = ({
             headerRightH2.style.overflow = 'hidden';
             headerRightH2.style.textOverflow = 'ellipsis';
             headerRightH2.style.fontSize = size === 'story' ? '2rem' : '1.25rem';
+            headerRightH2.style.color = '#ffffff'; // Ensure white text
           }
           
           const headerRightP = headerRight.querySelector('p') as HTMLElement;
@@ -371,6 +374,7 @@ const PrintGradesModal = ({
             headerRightP.style.overflow = 'hidden';
             headerRightP.style.textOverflow = 'ellipsis';
             headerRightP.style.fontSize = size === 'story' ? '1.5rem' : '1rem';
+            headerRightP.style.color = '#ffffff'; // Ensure white text
           }
         }
       }
@@ -424,6 +428,7 @@ const PrintGradesModal = ({
       badge.style.outline = 'none';
       badge.style.boxShadow = 'none';
       badge.style.padding = size === 'story' ? '2rem' : '1rem';
+      badge.style.backgroundColor = '#006f51'; // Ensure green background
       
       const badgeH3 = badge.querySelector('h3') as HTMLElement;
       if (badgeH3) {
@@ -435,6 +440,7 @@ const PrintGradesModal = ({
         badgeH3.style.padding = '0';
         badgeH3.style.textAlign = 'center';
         badgeH3.style.fontSize = size === 'story' ? '2.5rem' : '1.25rem';
+        badgeH3.style.color = '#ffffff'; // Ensure white text
       }
       
       const badgeP = badge.querySelector('p') as HTMLElement;
@@ -444,6 +450,7 @@ const PrintGradesModal = ({
         badgeP.style.maxWidth = '90%';
         badgeP.style.textAlign = 'center';
         badgeP.style.fontSize = size === 'story' ? '1.5rem' : '1rem';
+        badgeP.style.color = '#ffffff'; // Ensure white text
       }
     });
   

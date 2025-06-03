@@ -60,7 +60,8 @@
 }
 
 /* Dean's Lister badge styling - ensure vertical centering */
-.bg-dlsu-green.text-white:not(:first-child) {
+/* Make selectors more specific to only target print preview elements */
+#print-preview .bg-dlsu-green.text-white:not(:first-child) {
   margin: 0 auto;
   text-align: center;
   display: flex !important;
@@ -70,11 +71,11 @@
   min-height: 80px;
 }
 
-.print-story .bg-dlsu-green.text-white:not(:first-child) {
+.print-story #print-preview .bg-dlsu-green.text-white:not(:first-child) {
   min-height: 120px;
 }
 
-.bg-dlsu-green.text-white h3 {
+#print-preview .bg-dlsu-green.text-white h3 {
   text-align: center;
   width: 100%;
   margin: 0 auto;

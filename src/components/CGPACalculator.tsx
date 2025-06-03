@@ -323,8 +323,8 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         const isAnonymous = !user;
         
         // Start with standard terms 1-12
-        const standardTerms = Array.from({ length: 12 }, (_, i) => i + 1);
-        let availableTerms = [...standardTerms];
+        const standardTerms = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        const availableTerms = [...standardTerms];
         
         // If user is logged in, get their terms from Firestore
         if (!isAnonymous && user) {
@@ -485,7 +485,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-md">
         <p className="text-red-700">{error}</p>
         <button 
           onClick={() => window.location.reload()} 
@@ -499,9 +499,17 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
 
   if (termsData.length === 0) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-xl font-medium text-gray-700 mb-4">No Term Data Available</h3>
-        <p className="text-gray-500 mb-6">Add courses in the GPA Calculator tab to get started.</p>
+      <div className="card">
+        <div className="card-body flex flex-col items-center justify-center py-10">
+          <h3 className="text-xl font-medium text-gray-700 mb-3">No Term Data Available</h3>
+          <p className="text-gray-500 mb-4">Add courses in the GPA Calculator tab to get started.</p>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('switchTab', { detail: 'gpa' }))}
+            className="px-4 py-2 bg-dlsu-green text-white rounded hover:bg-dlsu-dark-green transition-colors"
+          >
+            Go to GPA Calculator
+          </button>
+        </div>
       </div>
     );
   }
@@ -509,103 +517,91 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   return (
     <div className="space-y-6">
       {/* CGPA Summary */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-dlsu-green mb-4 md:mb-0">Cumulative GPA</h2>
-          <div className="flex items-center space-x-6">
+      <div className="card">
+        <div className="card-header flex flex-col sm:flex-row justify-between items-center">
+          <h2 className="text-lg font-medium text-gray-900">Cumulative GPA Calculator</h2>
+        </div>
+        <div className="card-body">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
             <div className="text-center">
-              <p className="text-sm text-gray-500">Active Terms</p>
+              <p className="text-xs text-gray-500 mb-1">Active Terms</p>
               <p className="text-xl font-semibold">{totalTerms}</p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-500">Academic Units</p>
+              <p className="text-xs text-gray-500 mb-1">Academic Units</p>
               <p className="text-xl font-semibold">{totalUnits}</p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-500">Total Units</p>
+              <p className="text-xs text-gray-500 mb-1">Total Units</p>
               <p className="text-xl font-semibold">{totalWithCredited}</p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-500">CGPA</p>
+              <p className="text-xs text-gray-500 mb-1">CGPA</p>
               <p className="text-3xl font-bold text-dlsu-green">{cgpa}</p>
             </div>
           </div>
-        </div>
-        
-        <div className="flex flex-col space-y-4">
-          {/* Credited Units Input */}
-          <div className="relative group">
-            <label htmlFor="creditedUnits" className="block text-sm font-medium text-gray-700">
-              Credited Units (from previous school/degree)
-              <span className="ml-1 text-gray-400 cursor-help text-xs">
-                (?)
-              </span>
-            </label>
-            <input
-              type="number"
-              id="creditedUnits"
-              value={creditedUnitsInput}
-              onChange={(e) => handleCreditedUnitsChange(e.target.value)}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-dlsu-green focus:border-dlsu-green sm:text-sm"
-              min="0"
-            />
-            <div
-              className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-xs p-2 
-                         bg-gray-800 text-white text-xs rounded-md shadow-lg 
-                         opacity-0 group-hover:opacity-100 transition-opacity duration-300 
-                         pointer-events-none whitespace-normal z-10"
-            >
-              Enter the total number of academic units you've earned from a previous school or degree that are credited towards your current DLSU degree. These units contribute to your total earned units but NOT to the CGPA calculation in this app.
-            </div>
-          </div>
           
-          {saveStatus && (
-            <div className="text-sm text-green-600 mt-1">
-              {saveStatus}
+          <div className="pt-4 border-t border-gray-200">
+            {/* Credited Units Input */}
+            <div className="relative group max-w-md">
+              <label htmlFor="creditedUnits" className="block text-xs font-medium text-gray-700 mb-1.5">
+                Credited Units
+                <span className="ml-1 text-gray-400 cursor-help text-xs">(?)</span>
+              </label>
+              <div className="flex">
+                <input
+                  type="number"
+                  id="creditedUnits"
+                  value={creditedUnitsInput}
+                  onChange={(e) => handleCreditedUnitsChange(e.target.value)}
+                  className="w-24 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green"
+                  min="0"
+                />
+                <div className="ml-2 text-xs text-gray-500 flex items-center">
+                  Units from previous school/degree (not counted in CGPA)
+                </div>
+              </div>
+              
+              {saveStatus && (
+                <div className="text-xs text-green-600 mt-1">
+                  {saveStatus}
+                </div>
+              )}
             </div>
-          )}
-        
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('switchTab', { detail: 'projections' }))}
-              className="px-4 py-2 h-10 bg-dlsu-green text-white rounded hover:bg-green-700 transition-colors"
-          >
-            View CGPA Projections
-          </button>
           </div>
         </div>
       </div>
 
       {/* Terms by Year */}
       {Object.entries(termsByYear).map(([year, terms]) => (
-        <div key={year} className="space-y-4">
-          <h3 className="text-xl font-semibold text-gray-700">{year}</h3>
+        <div key={year} className="space-y-3">
+          <h3 className="text-base font-medium text-gray-700 px-1">{year}</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {terms.map(term => (
               <div 
                 key={term.term} 
-                className={`bg-white border rounded-lg shadow-sm overflow-hidden h-full ${
-                  term.isActive ? 'border-dlsu-green' : 'border-gray-200 opacity-75'
+                className={`card h-full ${
+                  term.isActive ? 'border-dlsu-green' : 'opacity-80'
                 }`}
               >
-                <div className="flex justify-between items-center bg-gray-50 px-4 py-3 border-b">
-                  <h4 className="font-medium">Term {term.term}</h4>
+                <div className="card-header flex justify-between items-center py-2.5 px-4">
+                  <h4 className="font-medium text-sm">Term {term.term}</h4>
                   <button 
                     onClick={() => onEditTerm(term.term)}
-                    className="p-1.5 text-gray-500 hover:text-dlsu-green rounded-full hover:bg-gray-100 bg-white"
+                    className="p-1.5 text-gray-500 hover:text-dlsu-green rounded-full hover:bg-gray-100"
                     title="Edit Term"
                   >
-                    <Edit size={16} />
+                    <Edit size={14} />
                   </button>
                 </div>
                 
                 <div className="p-4 flex flex-col h-full">
-                  <div className="mb-4">
-                    <div className="text-2xl font-bold text-center text-dlsu-green">
+                  <div className="mb-3 text-center">
+                    <div className="text-2xl font-bold text-dlsu-green">
                       {term.gpa}
                     </div>
-                    <div className="text-sm text-center text-gray-500">
+                    <div className="text-xs text-gray-500">
                       Total Units: {term.totalUnits}
                       {term.totalNASUnits > 0 && ` (${term.totalNASUnits} NAS)`}
                     </div>
@@ -620,17 +616,17 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
                           <th className="px-2 py-1.5 text-center text-gray-500 w-12">Grade</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 text-sm">
+                      <tbody className="divide-y divide-gray-100 text-xs">
                         {term.courses.length === 0 ? (
                           <tr>
-                            <td colSpan={3} className="px-2 py-4 text-center text-gray-400 italic">
+                            <td colSpan={3} className="px-2 py-4 text-center text-gray-400 italic text-xs">
                               No courses yet
                             </td>
                           </tr>
                         ) : (
                           term.courses.map((course, index) => (
-                            <tr key={course.id} className={`hover:bg-gray-50 ${index % 2 === 0 ? '!bg-white' : '!bg-slate-100'}`}>
-                              <td className="px-2 py-1.5 font-medium">
+                            <tr key={course.id} className={`hover:bg-gray-50 ${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
+                              <td className="px-2 py-1.5 font-medium truncate max-w-[100px]" title={course.code}>
                                 {course.code || '-'}
                               </td>
                               <td className="px-2 py-1.5 text-center">

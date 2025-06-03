@@ -11,7 +11,7 @@ import TutorialModal from './components/TutorialModal'
 import type { User as FirebaseUser } from 'firebase/auth'
 import { auth } from './config/firebase';
 import { onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
-import { Github, Mail, AlertTriangle } from 'lucide-react';
+import { Mail, AlertTriangle } from 'lucide-react';
 
 function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null)
@@ -189,7 +189,7 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-white">
       <Header 
         user={user} 
         onLoginClick={() => setShowLoginModal(true)} 
@@ -202,31 +202,26 @@ function App() {
       
       {/* Anonymous user warning banner */}
       {showAnonymousWarning && !warningDismissed && (
-        <div className="bg-dlsu-green bg-opacity-10 border-b border-dlsu-green border-opacity-30 p-3 transition-all duration-300">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-start">
-                <AlertTriangle className="h-5 w-5 text-dlsu-green mr-2 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-dlsu-green font-medium">
-                    Your data is only saved temporarily
-                  </p>
-                  <p className="text-gray-600 text-sm mt-1">
-                    You're using Greendex without logging in. Your data will be lost if you close or refresh this page.
-                  </p>
-                </div>
+        <div className="bg-amber-50 border-b border-amber-200 py-2">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+              <div className="flex items-center">
+                <AlertTriangle className="h-4 w-4 text-amber-500 mr-2 flex-shrink-0" />
+                <p className="text-amber-700 text-sm">
+                  Your data is only saved temporarily. <span className="hidden sm:inline">Data will be lost if you close or refresh this page.</span>
+                </p>
               </div>
               <div className="flex items-center gap-2 sm:flex-shrink-0">
                 <button 
                   onClick={() => setWarningDismissed(true)}
-                  className="text-gray-600 hover:text-dlsu-green text-sm py-1.5 px-3 h-8 rounded whitespace-nowrap"
+                  className="text-gray-500 hover:text-gray-700 text-xs py-1 px-2 rounded"
                   aria-label="Hide warning"
                 >
                   Hide
                 </button>
                 <button 
                   onClick={() => setShowLoginModal(true)}
-                  className="warning-login-btn px-3 py-1.5 rounded text-sm h-8"
+                  className="bg-amber-100 text-amber-700 hover:bg-amber-200 text-xs py-1 px-2 rounded"
                 >
                   Login
                 </button>
@@ -238,7 +233,7 @@ function App() {
       
       <main className="flex-1 flex flex-col w-full">
         <TabNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="flex-1 w-full px-6 py-8">
+        <div className="container mx-auto flex-1 px-4 py-6">
           {/* Keep GPACalculator always mounted but hidden when not active */}
           <div style={{ display: activeTab === 'gpa' ? 'block' : 'none' }}>
             <GPACalculator 
@@ -274,42 +269,28 @@ function App() {
       </main>
 
       <footer className="bg-dlsu-green text-white py-4 text-sm w-full">
-        <div className="w-full px-6">
+        <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-left">
               <p>© {new Date().getFullYear()} Greendex</p>
-              <p className="mt-1 text-gray-200">
+              <p className="mt-1 text-gray-200 text-xs">
                 Calculator logic and inspiration based on the original 
-                <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-dlsu-light-green">
-                  DLSU GPA & Grade Calculator by Renz Kristofer Cheng (A Not-So-Popular Kid, 2012)
+                <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="underline ml-1 text-white hover:text-gray-200">
+                  DLSU GPA & Grade Calculator
                 </a>.
               </p>
             </div>
-            <div className="flex flex-col items-end">
+            <div className="flex flex-col items-center md:items-end">
               <p className="font-medium mb-1">Contact Us</p>
-              <div className="flex gap-3 items-center">
-                <a
-                  href="mailto:contactgreendex@gmail.com"
-                  className="text-white hover:text-gray-200 transition-colors flex items-center gap-1"
-                  aria-label="Email"
-                >
-                  <Mail size={16} />
-                  <span>contactgreendex@gmail.com</span>
-                </a>
-              </div>
-              <div className="flex gap-3 items-center mt-1">
-                <a
-                  href="https://github.com/Shujimaki"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-white hover:text-gray-200 transition-colors flex items-center gap-1"
-                  aria-label="GitHub"
-                >
-                  <Github size={16} />
-                  <span>@Shujimaki</span>
-                </a>
-              </div>
-              <p className="text-xs text-gray-300 mt-2">For suggestions, bug reports, or feedback</p>
+              <a
+                href="mailto:contactgreendex@gmail.com"
+                className="text-white hover:text-gray-200 transition-colors flex items-center gap-1"
+                aria-label="Email"
+              >
+                <Mail size={16} />
+                <span>contactgreendex@gmail.com</span>
+              </a>
+              <p className="text-xs text-gray-300 mt-1">For suggestions, bug reports, or feedback</p>
             </div>
           </div>
         </div>

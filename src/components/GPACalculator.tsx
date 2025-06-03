@@ -442,7 +442,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       const updatedCourse = { ...course, [field]: value };
       
       // Calculate what the new total academic units would be
-      let newTotalAcademicUnits = calculateTotalAcademicUnits(
+      const newTotalAcademicUnits = calculateTotalAcademicUnits(
         updatedCourses.map((c, idx) => idx === courseIndex ? updatedCourse : c)
       );
       
@@ -647,291 +647,291 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
   return (
     <div>
-      {/* Header Card - updated to match other calculator components */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-2">
-          <h2 className="text-2xl font-bold text-dlsu-green mb-2">
-            GPA Calculator
-          </h2>
-          <div className="flex items-center gap-2">
-            {saveStatus === 'saving' && (
-              <div className="flex items-center text-gray-600">
-                <Loader2 size={16} className="animate-spin mr-1" />
-                Saving...
-              </div>
-            )}
-            {saveStatus === 'saved' && (
-              <div className="text-green-600">
-                Saved
-              </div>
-            )}
-            {saveStatus === 'error' && (
-              <div className="text-red-600">
-                Error saving
-              </div>
-            )}
+      {/* Header Card */}
+      <div className="card mb-4">
+        <div className="card-header">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <h2 className="text-lg font-medium text-gray-900">
+              GPA Calculator
+            </h2>
+            <div className="flex items-center text-sm">
+              {saveStatus === 'saving' && (
+                <div className="flex items-center text-gray-500">
+                  <Loader2 size={14} className="animate-spin mr-1" />
+                  <span>Saving</span>
+                </div>
+              )}
+              {saveStatus === 'saved' && (
+                <div className="text-green-600">
+                  Saved
+                </div>
+              )}
+              {saveStatus === 'error' && (
+                <div className="text-red-500">
+                  Error saving
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        <p className="text-gray-600 mb-4">
-          Enter your courses, units, and grades to calculate your GPA.
-        </p>
-        <div className="flex gap-4">
-          <button
-            onClick={() => setShowDeansListModal(true)}
-            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
-          >
-            <InfoIcon size={16} />
-            Dean's List Rules
-          </button>
-          <button
-            onClick={() => setShowGPAModal(true)}
-            className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
-          >
-            <InfoIcon size={16} />
-            How GPA is Calculated
-          </button>
+        <div className="card-body">
+          <p className="text-sm text-gray-500 mb-3">
+            Enter your courses, units, and grades to calculate your GPA.
+          </p>
+          <div className="flex flex-wrap gap-3 text-xs">
+            <button
+              onClick={() => setShowDeansListModal(true)}
+              className="text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
+            >
+              <InfoIcon size={14} />
+              Dean's List Rules
+            </button>
+            <button
+              onClick={() => setShowGPAModal(true)}
+              className="text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
+            >
+              <InfoIcon size={14} />
+              How GPA is Calculated
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="mb-4 flex flex-col gap-4">
-        {/* Term selection & options - card container */}
-        <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Term selector */}
-            <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Term
-          </label>
-              <div className="flex gap-2">
-          <select
-            value={selectedTerm}
-                  onChange={async (e) => await handleTermChange(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-dlsu-green focus:border-transparent"
-          >
-                  {availableTerms.map((term) => (
-                    <option key={term} value={term} className="bg-white text-gray-900">
-                Term {term}
-              </option>
-            ))}
-                  {Math.max(...availableTerms) < 21 && (
-                    <option value="add" className="text-dlsu-green font-medium bg-white">
-                      + Add New Term
-            </option>
-                  )}
-          </select>
-                
-                <button
-                  onClick={() => handleDeleteClick(selectedTerm)}
-                  className={`p-2 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center`}
-                  title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
+      <div className="mb-4">
+        {/* Term selection & options */}
+        <div className="card">
+          <div className="card-body">
+            <div className="grid sm:grid-cols-2 gap-4">
+              {/* Term selector */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                  Select Term
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedTerm}
+                    onChange={async (e) => await handleTermChange(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green"
+                  >
+                    {availableTerms.map((term) => (
+                      <option key={term} value={term}>
+                        Term {term}
+                      </option>
+                    ))}
+                    {Math.max(...availableTerms) < 21 && (
+                      <option value="add" className="text-dlsu-green font-medium">
+                        + Add New Term
+                      </option>
+                    )}
+                  </select>
+                  
+                  <button
+                    onClick={() => handleDeleteClick(selectedTerm)}
+                    className={`px-2.5 py-1.5 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center`}
+                    title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
+                  >
+                    {selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? (
+                      <TrashIcon size={16} />
+                    ) : (
+                      <span className="text-sm">Clear</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* Flowchart exemption */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                  Term Options
+                </label>
+                <label 
+                  htmlFor="flowchartExempt" 
+                  className="flex items-center px-2.5 py-1.5 border border-gray-300 rounded hover:bg-gray-50 cursor-pointer"
                 >
-                  {selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? (
-                    <TrashIcon size={20} />
-                  ) : (
-                    <span className="text-sm px-1">Clear</span>
-                  )}
-                </button>
+                  <input
+                    type="checkbox"
+                    id="flowchartExempt"
+                    checked={isFlowchartExempt}
+                    onChange={(e) => setIsFlowchartExempt(e.target.checked)}
+                    className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded mr-2"
+                  />
+                  <span className="text-sm text-gray-700">
+                    Flowchart exempts me from 12-unit requirement
+                  </span>
+                </label>
               </div>
-        </div>
-            
-            {/* Flowchart exemption */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Term Options
-              </label>
-              <label 
-                htmlFor="flowchartExempt" 
-                className="flex items-center p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 cursor-pointer"
-              >
-          <input
-            type="checkbox"
-            id="flowchartExempt"
-            checked={isFlowchartExempt}
-            onChange={(e) => setIsFlowchartExempt(e.target.checked)}
-                  className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded mr-2"
-          />
-                <span className="text-sm text-gray-700">
-                  Flowchart exempts me from 12-unit requirement
-                </span>
-          </label>
-        </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Course table - card container */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-4">
-      <div className="overflow-x-auto relative">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-dlsu-light-green text-white">
-              <th className="px-4 py-2 text-left">Course Code</th>
-              <th className="px-4 py-2 text-left">Course Name (Optional)</th>
-              <th className="px-4 py-2 text-center min-w-[80px]">Units</th>
-              <th className="px-4 py-2 text-center min-w-[80px]">Grade</th>
-              <th className="px-4 py-2 text-center">Non-Academic Subject <span title='What is this?'>?</span></th>
-              <th className="px-4 py-2 w-10"></th>
-            </tr>
-          </thead>
+      {/* Course table */}
+      <div className="card mb-4">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 text-gray-700 border-b border-gray-200">
+                <th className="px-3 py-2 text-left text-xs font-medium">Course Code</th>
+                <th className="px-3 py-2 text-left text-xs font-medium">Course Name (Optional)</th>
+                <th className="px-3 py-2 text-center text-xs font-medium min-w-[70px]">Units</th>
+                <th className="px-3 py-2 text-center text-xs font-medium min-w-[70px]">Grade</th>
+                <th className="px-3 py-2 text-center text-xs font-medium group relative">
+                  <div className="flex items-center justify-center">
+                    <span>NAS</span>
+                    <span className="ml-0.5 w-3 h-3 inline-flex items-center justify-center text-xs rounded-full bg-gray-200 text-gray-600 cursor-help">?</span>
+                  </div>
+                  <span className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1.5 px-2.5 w-48 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-md border border-gray-700">
+                    Non-Academic Subject<br/>(Not counted in GPA)
+                  </span>
+                </th>
+                <th className="px-3 py-2 w-10"></th>
+              </tr>
+            </thead>
             {isInitialLoad ? (
               <tbody>
                 <tr>
-                  <td colSpan={6} className="py-12">
+                  <td colSpan={6} className="py-8">
                     <div className="flex justify-center items-center">
-                      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-dlsu-green"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-dlsu-green"></div>
                     </div>
                   </td>
                 </tr>
               </tbody>
             ) : (
-          <tbody>
-            {courses.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-500">
-                  No courses added yet. Click "Add Course" to get started.
-                </td>
-              </tr>
-            ) : (
-              courses.map(course => (
-                  <tr key={course.id} className={`border-b border-gray-200 hover:bg-gray-50 md:align-middle ${courses.indexOf(course) % 2 === 0 ? '!bg-white' : '!bg-slate-100'}`}>
-                <td className="px-4 py-3 align-middle min-w-[110px] flex-shrink-0">
-                  <input
-                    type="text"
-                    value={course.code}
-                    onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-base min-w-[110px] flex-shrink-0 bg-white text-gray-900"
-                    maxLength={7}
-                    placeholder="e.g., NUMMETS"
-                  />
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <input
-                    type="text"
-                    value={course.name}
-                    onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-base bg-white text-gray-900"
-                    placeholder="e.g., Numerical Methods"
-                  />
-                </td>
-                <td className="px-4 py-3 align-middle min-w-[80px]">
-                  <select
-                    value={course.units}
-                    onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
-                      className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                  >
-                    {course.nas
-                      ? [0, 1, 2, 3].map(units => (
-                            <option key={units} value={units} className="bg-white text-gray-900">
-                            ({units})
-                          </option>
-                        ))
-                      : [1, 2, 3, 4, 5].map(units => (
-                            <option key={units} value={units} className="bg-white text-gray-900">
-                            {units}
-                          </option>
-                        ))}
-                  </select>
-                </td>
-                <td className="px-4 py-3 align-middle min-w-[80px]">
-                  {course.nas && course.units === 0 ? (
-                    <select
-                      value={course.grade === 1 ? 'P' : 'F'}
-                      onChange={e => updateCourse(course.id, 'grade', e.target.value === 'P' ? 1 : 0)}
-                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                    >
-                        <option value="P" className="bg-white text-gray-900">P</option>
-                        <option value="F" className="bg-white text-gray-900">F</option>
-                    </select>
-                  ) : (
-                    <select
-                      value={course.grade}
-                      onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                        className="w-full p-2 pr-8 border border-gray-300 rounded text-base min-w-[80px] bg-white text-gray-900"
-                    >
-                      {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
-                          <option key={grade} value={grade} className="bg-white text-gray-900">
-                          {grade}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <div className="flex justify-center items-center">
-                    <input
-                      type="checkbox"
-                      checked={course.nas}
-                      onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
-                        className="accent-dlsu-green bg-white border-gray-300"
-                      aria-label="Non-Academic Subject"
-                    />
-                  </div>
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <button
-                    onClick={() => removeCourse(course.id)}
-                      className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
-                  >
-                    <TrashIcon size={20} />
-                  </button>
-                </td>
-              </tr>
-              ))
-            )}
-          </tbody>
-            )}
-          <tfoot>
-            <tr className="border-t-2 border-gray-300 font-medium">
-              <td className="px-4 py-2">Total Units</td>
-              <td></td>
-              <td className="px-4 py-2 text-center" colSpan={1}>
-                {totalUnits}
-                {totalNASUnits > 0 && (
-                  <span className="text-gray-500"> ({totalNASUnits})</span>
+              <tbody>
+                {courses.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-6 text-sm text-gray-500">
+                      No courses added yet. Click "Add Course" to get started.
+                    </td>
+                  </tr>
+                ) : (
+                  courses.map(course => (
+                    <tr key={course.id} className={`border-b border-gray-200 hover:bg-gray-50 ${courses.indexOf(course) % 2 === 0 ? '' : 'bg-gray-50'}`}>
+                      <td className="px-3 py-2.5 min-w-[110px]">
+                        <input
+                          type="text"
+                          value={course.code}
+                          onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded min-w-[110px]"
+                          maxLength={7}
+                          placeholder="e.g., CSMODEL"
+                        />
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <input
+                          type="text"
+                          value={course.name}
+                          onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
+                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
+                          placeholder="e.g., Modeling and Simulation"
+                        />
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <select
+                          value={course.units}
+                          onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
+                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
+                        >
+                          {course.nas
+                            ? [0, 1, 2, 3].map(units => (
+                                <option key={units} value={units} className="bg-white text-gray-900">
+                                ({units})
+                              </option>
+                            ))
+                            : [1, 2, 3, 4, 5].map(units => (
+                                <option key={units} value={units} className="bg-white text-gray-900">
+                                {units}
+                              </option>
+                            ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <select
+                          value={course.grade}
+                          onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
+                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
+                        >
+                          {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
+                              <option key={grade} value={grade} className="bg-white text-gray-900">
+                              {grade}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex justify-center items-center">
+                          <input
+                            type="checkbox"
+                            checked={course.nas}
+                            onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
+                            className="accent-dlsu-green bg-white border-gray-300"
+                            aria-label="Non-Academic Subject"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <button
+                          onClick={() => removeCourse(course.id)}
+                          className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
+                        >
+                          <TrashIcon size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
                 )}
-              </td>
-              <td colSpan={2}></td>
-            </tr>
-          </tfoot>
-        </table>
+              </tbody>
+            )}
+          </table>
+          {!isInitialLoad && courses.length > 0 && (
+            <div className="border-t border-gray-200 px-3 py-2.5 flex justify-between items-center">
+              <div className="text-sm font-medium">
+                Total Units: {totalUnits}
+                {totalNASUnits > 0 && (
+                  <span className="text-gray-500 ml-1">({totalNASUnits} NAS)</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Bottom controls - Add course, Print grades, GPA display */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2 w-full md:w-auto">
-        <button
-          onClick={addCourse}
-          className="flex items-center px-4 py-2 bg-dlsu-light-green text-white rounded hover:bg-dlsu-green transition-colors"
-        >
-          <PlusIcon size={18} className="mr-1" />
-          Add Course
-        </button>
-          
-          <button
-            onClick={() => setShowPrintModal(true)}
-              className="flex items-center px-4 py-2 border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors"
-          >
-            <Printer size={18} className="mr-1" />
-            Print Grades
-          </button>
-        </div>
-          
-          <div className="text-right w-full md:w-auto">
-          <div className="text-lg font-bold">
-              GPA: <span className="text-xl text-dlsu-green">{gpa}</span>
-          </div>
-          {isFirstHonors && (
-              <div className="text-sm text-dlsu-green font-medium">
-              First Honors Dean's Lister
+      {/* Results and Actions */}
+      <div className="card mb-4">
+        <div className="card-body">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={addCourse}
+                className="flex items-center px-3 py-1.5 text-sm bg-dlsu-green text-white rounded hover:bg-dlsu-dark-green transition-colors"
+              >
+                <PlusIcon size={16} className="mr-1" />
+                Add Course
+              </button>
+              
+              <button
+                onClick={() => setShowPrintModal(true)}
+                className="flex items-center px-3 py-1.5 text-sm border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors"
+              >
+                <Printer size={16} className="mr-1" />
+                Print
+              </button>
             </div>
-          )}
-          {isDeansLister && !isFirstHonors && (
-              <div className="text-sm text-dlsu-green font-medium">
-              Second Honors Dean's Lister
+            
+            <div className="text-right w-full sm:w-auto">
+              <div className="font-medium flex items-center justify-end gap-2">
+                <span className="text-gray-700">GPA:</span> 
+                <span className="text-3xl font-bold text-dlsu-green">{gpa}</span>
+              </div>
+              {(isDeansLister || isFirstHonors) && (
+                <div className="mt-1 py-1 px-2 bg-dlsu-green/10 rounded text-center">
+                  <span className="text-sm font-medium text-dlsu-green">
+                    {isFirstHonors ? 'First Honors Dean\'s Lister' : 'Second Honors Dean\'s Lister'}
+                  </span>
+                </div>
+              )}
             </div>
-          )}
           </div>
         </div>
       </div>

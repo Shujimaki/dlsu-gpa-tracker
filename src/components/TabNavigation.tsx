@@ -16,41 +16,31 @@ const TabNavigation = ({ activeTab, setActiveTab }: TabNavigationProps) => {
     {
       id: 'cgpa',
       label: 'CGPA Calculator'
+    },
+    {
+      id: 'projections',
+      label: 'CGPA Projections'
     }
   ];
 
   return (
-    <div className="flex border-b border-gray-200 bg-gray-50 px-4 overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-      {tabs.map((tab, idx) => (
-        <button
-          key={tab.id}
-          className={`px-4 py-3 font-medium text-sm md:text-base transition-colors duration-200 focus:outline-none
-            border-t border-l border-r
-            ${idx === 0 ? 'rounded-tl-lg' : ''}
-            ${idx === tabs.length - 1 ? 'rounded-tr-lg' : ''}
-            ${activeTab === tab.id
-              ? 'bg-gray-50 border-b-0 text-dlsu-green z-10'
-              : 'bg-gray-100 border-b border-gray-300 text-gray-600 hover:bg-gray-200'}
-            ${idx !== 0 ? 'ml-2' : ''}
-          `}
-          style={{ position: 'relative', top: activeTab === tab.id ? '2px' : '0' }}
-          onClick={() => setActiveTab(tab.id)}
-        >
-          {tab.label}
-        </button>
-      ))}
-      {activeTab === 'projections' && (
-        <button
-          className={`px-4 py-3 font-medium text-sm md:text-base transition-colors duration-200 focus:outline-none
-            border-t border-l border-r ml-2
-            bg-gray-50 border-b-0 text-dlsu-green z-10
-          `}
-          style={{ position: 'relative', top: '2px' }}
-          onClick={() => setActiveTab('projections')}
-        >
-          CGPA Projections
-        </button>
-      )}
+    <div className="bg-white border-b border-gray-200 overflow-x-auto scrollbar-hide">
+      <div className="container mx-auto flex px-4">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none relative
+              ${activeTab === tab.id 
+                ? 'text-dlsu-green border-b-2 border-dlsu-green' 
+                : 'text-gray-500 hover:text-gray-700 hover:border-b-2 hover:border-gray-300'
+              }
+            `}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
