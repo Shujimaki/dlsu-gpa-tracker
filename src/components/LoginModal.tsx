@@ -9,9 +9,15 @@ import {
   sendEmailVerification,
   sendPasswordResetEmail,
   onAuthStateChanged,
-  signOut
+  signOut,
+  setPersistence,
+  browserSessionPersistence,
+  deleteUser
 } from 'firebase/auth';
 import type { User, AuthError } from 'firebase/auth';
+
+// Maximum time (in minutes) allowed for email verification before account is deleted
+const VERIFICATION_TIMEOUT_MINUTES = 30;
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -32,17 +38,137 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationUser, setVerificationUser] = useState<User | null>(null);
   
+  // Set session persistence when component mounts
+  useEffect(() => {
+    // Use session persistence to ensure auth state is cleared when tab is closed
+    setPersistence(auth, browserSessionPersistence)
+      .catch(error => {
+        console.error("Error setting auth persistence:", error);
+      });
+  }, []);
+  
+  // Handle unverified accounts on application start
+  useEffect(() => {
+    const handleUnverifiedAccounts = async () => {
+      const user = auth.currentUser;
+      
+      if (user) {
+        // Force refresh to get the latest verification status
+        try {
+          await user.reload();
+          
+          // Check if this is an unverified account
+          if (!user.emailVerified) {
+            const pendingVerificationEmail = sessionStorage.getItem('pendingVerificationEmail');
+            const verificationTimestamp = sessionStorage.getItem('verificationTimestamp');
+            
+            if (pendingVerificationEmail && verificationTimestamp) {
+              // Check if verification has timed out
+              const timestamp = parseInt(verificationTimestamp, 10);
+              const now = Date.now();
+              const minutesPassed = (now - timestamp) / (1000 * 60);
+              
+              if (minutesPassed > VERIFICATION_TIMEOUT_MINUTES) {
+                console.log(`Verification timed out after ${VERIFICATION_TIMEOUT_MINUTES} minutes. Deleting unverified account.`);
+                
+                // Delete the unverified account
+                try {
+                  await deleteUser(user);
+                  console.log('Unverified account deleted due to timeout');
+                } catch (deleteError) {
+                  console.error('Error deleting unverified account:', deleteError);
+                }
+                
+                // Sign out and clear session storage
+                await signOut(auth);
+                sessionStorage.removeItem('pendingVerificationEmail');
+                sessionStorage.removeItem('isNewSignUp');
+                sessionStorage.removeItem('verificationTimestamp');
+                return;
+              }
+              
+              // If the account is still within verification window, restore verification UI
+              setVerificationSent(true);
+              setEmail(pendingVerificationEmail);
+              setIsSignUp(sessionStorage.getItem('isNewSignUp') === 'true');
+              setVerificationUser(user);
+            } else {
+              // If we have an unverified user without proper session data, sign them out
+              console.log('Unverified user detected without session data. Signing out.');
+              await signOut(auth);
+            }
+          } else {
+            // User is verified, clear verification session data
+            sessionStorage.removeItem('pendingVerificationEmail');
+            sessionStorage.removeItem('isNewSignUp');
+            sessionStorage.removeItem('verificationTimestamp');
+            
+            // Only automatically log in if the modal is not open
+            // This prevents auto-login when the user is actively using the login modal
+            if (!isOpen) {
+              onLogin(user);
+            }
+          }
+        } catch (error) {
+          console.error('Error handling unverified account:', error);
+        }
+      }
+    };
+    
+    // Run once on component mount
+    handleUnverifiedAccounts();
+    
+    // Also set up auth state listener for changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user && !verificationSent) {
+        handleUnverifiedAccounts();
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [onLogin, isOpen, verificationSent]);
+  
+  // Add beforeunload event listener when verification is in progress
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (verificationSent && verificationUser && isSignUp) {
+        // Show confirmation dialog
+        e.preventDefault();
+        e.returnValue = 'You have not verified your email yet. If you leave, you will need to verify your email before logging in.';
+        return e.returnValue;
+      }
+    };
+    
+    if (verificationSent && verificationUser) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    }
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [verificationSent, verificationUser, isSignUp]);
+  
   // Check if verification is completed on auth state change
   useEffect(() => {
     if (!verificationUser) return;
     
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user && user.uid === verificationUser.uid && user.emailVerified) {
-        // User has verified their email
-        setVerificationSent(false);
-        setVerificationUser(null);
-        onLogin(user);
-        onClose();
+      if (user && user.uid === verificationUser.uid) {
+        // Force refresh to get the latest verification status
+        user.reload().then(() => {
+          if (user.emailVerified) {
+            // User has verified their email
+            sessionStorage.removeItem('pendingVerificationEmail');
+            sessionStorage.removeItem('isNewSignUp');
+            sessionStorage.removeItem('verificationTimestamp');
+            setVerificationSent(false);
+            setVerificationUser(null);
+            onLogin(user);
+            onClose();
+          }
+        }).catch(error => {
+          console.error('Error refreshing user:', error);
+        });
       }
     });
     
@@ -98,6 +224,11 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
         setVerificationSent(true);
         setVerificationUser(result.user);
         
+        // Store verification state in session storage with timestamp
+        sessionStorage.setItem('pendingVerificationEmail', email);
+        sessionStorage.setItem('isNewSignUp', 'true');
+        sessionStorage.setItem('verificationTimestamp', Date.now().toString());
+        
         // Set flag for new account creation but don't consider them fully logged in yet
         // We'll wait for email verification before considering the account fully active
         setSuccessMessage('Account created! Please check your email to verify your account.');
@@ -114,6 +245,12 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
           await sendEmailVerification(result.user);
           setVerificationSent(true);
           setVerificationUser(result.user);
+          
+          // Store verification state in session storage with timestamp
+          sessionStorage.setItem('pendingVerificationEmail', email);
+          sessionStorage.setItem('isNewSignUp', 'false');
+          sessionStorage.setItem('verificationTimestamp', Date.now().toString());
+          
           setError('Please verify your email before logging in.');
           setIsLoading(false);
           return;
@@ -158,6 +295,11 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
         const result = await signInWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(result.user);
         setVerificationUser(result.user);
+        
+        // Update session storage with new timestamp
+        sessionStorage.setItem('pendingVerificationEmail', email);
+        sessionStorage.setItem('isNewSignUp', isSignUp.toString());
+        sessionStorage.setItem('verificationTimestamp', Date.now().toString());
       }
       
       setSuccessMessage('Verification email sent! Please check your inbox.');
@@ -169,7 +311,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
     }
   };
 
-  // New function to check verification status
+  // Function to check verification status
   const handleCheckVerification = async () => {
     if (!verificationUser) return;
     
@@ -178,31 +320,94 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
     setSuccessMessage(null);
     
     try {
+      // Sign out and sign back in to get a fresh auth token
+      // This ensures we have the most up-to-date verification status
+      const userEmail = verificationUser.email;
+      const currentPassword = password;
+      
+      if (!userEmail) {
+        setError('Unable to verify email status. Please try again later.');
+        setIsLoading(false);
+        return;
+      }
+      
       // Force refresh the user to get the latest verification status
       await verificationUser.reload();
-      const refreshedUser = auth.currentUser;
+      let refreshedUser = auth.currentUser;
       
+      // Check if already verified after reload
       if (refreshedUser && refreshedUser.emailVerified) {
-        // User has verified their email
-        setSuccessMessage('Email verified successfully!');
-        
-        // Short timeout to show success message before proceeding
-        setTimeout(() => {
-          setVerificationSent(false);
-          setVerificationUser(null);
-          onLogin(refreshedUser);
-          onClose();
-        }, 1500);
-      } else {
-        // User has not verified their email yet
-        setError('Email not verified yet. Please check your inbox and click the verification link.');
-        setIsLoading(false);
+        handleVerificationSuccess(refreshedUser);
+        return;
       }
+      
+      // If not verified yet, try signing out and back in to get a fresh token
+      // This is often necessary as Firebase may cache the verification status
+      if (currentPassword && isSignUp) {
+        try {
+          await signOut(auth);
+          const result = await signInWithEmailAndPassword(auth, userEmail, currentPassword);
+          refreshedUser = result.user;
+          
+          if (refreshedUser.emailVerified) {
+            handleVerificationSuccess(refreshedUser);
+            return;
+          }
+        } catch (signInError) {
+          console.error('Error during re-authentication:', signInError);
+          // Continue with the process even if re-auth fails
+        }
+      }
+      
+      // If still not verified, make one more attempt with a delay
+      // Sometimes Firebase needs a moment to propagate the verification status
+      setSuccessMessage('Checking verification status...');
+      
+      setTimeout(async () => {
+        try {
+          if (refreshedUser) {
+            await refreshedUser.reload();
+            
+            if (refreshedUser.emailVerified) {
+              handleVerificationSuccess(refreshedUser);
+              return;
+            }
+          }
+          
+          // If we still can't confirm verification
+          setError('Email not verified yet. Please check your inbox and click the verification link. After clicking the link, wait a moment and try again.');
+          setSuccessMessage(null);
+          setIsLoading(false);
+        } catch (finalError) {
+          console.error('Error in final verification check:', finalError);
+          setError('Unable to verify email status. Please try again later.');
+          setIsLoading(false);
+        }
+      }, 2000); // Wait 2 seconds before final check
     } catch (error) {
       console.error('Error checking verification status:', error);
       setError('Failed to check verification status. Please try again.');
       setIsLoading(false);
     }
+  };
+  
+  // Helper function to handle successful verification
+  const handleVerificationSuccess = (user: User) => {
+    // User has verified their email
+    setSuccessMessage('Email verified successfully!');
+    
+    // Clear session storage
+    sessionStorage.removeItem('pendingVerificationEmail');
+    sessionStorage.removeItem('isNewSignUp');
+    sessionStorage.removeItem('verificationTimestamp');
+    
+    // Short timeout to show success message before proceeding
+    setTimeout(() => {
+      setVerificationSent(false);
+      setVerificationUser(null);
+      onLogin(user);
+      onClose();
+    }, 1500);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -241,12 +446,17 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
       // we should delete the unverified account
       if (isSignUp) {
         // Delete the unverified user account
-        await verificationUser.delete();
+        await deleteUser(verificationUser);
         console.log('Unverified account deleted');
       }
       
       // Sign out the unverified user
       await signOut(auth);
+      
+      // Clear session storage
+      sessionStorage.removeItem('pendingVerificationEmail');
+      sessionStorage.removeItem('isNewSignUp');
+      sessionStorage.removeItem('verificationTimestamp');
       
       // Reset states
       setVerificationSent(false);
@@ -274,6 +484,9 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+      sessionStorage.removeItem('pendingVerificationEmail');
+      sessionStorage.removeItem('isNewSignUp');
+      sessionStorage.removeItem('verificationTimestamp');
     }
   };
 
@@ -315,8 +528,15 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                 <div className="p-3 bg-blue-50 border-l-4 border-blue-500 text-blue-700 text-sm rounded">
                   <h4 className="font-medium mb-1">Email Verification Required</h4>
                   <p className="mb-2">We've sent a verification link to <strong>{email}</strong>.</p>
-                  <p className="mb-3">Please check your inbox (and spam folder) and click the verification link before logging in.</p>
+                  <p className="mb-2">Please check your inbox (and spam folder) and click the verification link before logging in.</p>
+                  <p className="mb-1"><strong>After clicking the link:</strong></p>
+                  <ol className="list-decimal ml-5 mb-3 text-xs">
+                    <li>Complete any verification steps in your browser</li>
+                    <li>Return to this window</li>
+                    <li>Click the "I've Verified My Email" button below</li>
+                  </ol>
                   <p className="text-xs">Your account will not be fully activated until you verify your email.</p>
+                  <p className="text-xs mt-2 text-blue-600">Note: You have {VERIFICATION_TIMEOUT_MINUTES} minutes to verify your email before the verification link expires.</p>
                 </div>
                 
                 {error && (
