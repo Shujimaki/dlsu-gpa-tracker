@@ -7,8 +7,8 @@ interface UpdateModalProps {
 
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   const handleClose = () => {
-    // Save that the user has seen this update
-    sessionStorage.setItem('lastUpdateSeen', '2025-06-01');
+  // Save that the user has seen this update
+  sessionStorage.setItem('lastUpdateSeen', '2025-08-16');
     onClose();
   };
 
@@ -30,39 +30,26 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
         </div>
         
         <div className="p-4">
-          <p className="text-xs text-gray-500 mb-2">June 1, 2025</p>
-          
-          <h3 className="text-sm font-medium text-dlsu-green mb-2">
-            New Features
-          </h3>
-          
+          <p className="text-xs text-gray-500 mb-2">August 16, 2025</p>
+
+          <h3 className="text-sm font-medium text-dlsu-green mb-2">Today's changes (simple)</h3>
+
           <ul className="text-sm text-gray-700 space-y-2 mb-4">
             <li className="flex items-start">
               <span className="text-dlsu-green mr-2">•</span>
-              <span>Added CGPA Projections calculator to help you plan future terms</span>
+              <span>Users who sign in now stay signed in after refresh or closing the browser.</span>
             </li>
             <li className="flex items-start">
               <span className="text-dlsu-green mr-2">•</span>
-              <span>Improved mobile experience with better layouts and controls</span>
+              <span>Sign-in explicitly saves the login method so the app doesn't lose the user session.</span>
             </li>
             <li className="flex items-start">
               <span className="text-dlsu-green mr-2">•</span>
-              <span>Added data synchronization across devices when logged in</span>
-            </li>
-          </ul>
-          
-          <h3 className="text-sm font-medium text-dlsu-green mb-2">
-            Improvements
-          </h3>
-          
-          <ul className="text-sm text-gray-700 space-y-2">
-            <li className="flex items-start">
-              <span className="text-dlsu-green mr-2">•</span>
-              <span>Redesigned the interface for a cleaner, more focused experience</span>
+              <span>Anonymous (not-logged-in) data is cleared when you are not signed in so the app shows default values.</span>
             </li>
             <li className="flex items-start">
               <span className="text-dlsu-green mr-2">•</span>
-              <span>Fixed several bugs related to term management</span>
+              <span>Logging out still clears your data and keeps you signed out on refresh.</span>
             </li>
           </ul>
         </div>

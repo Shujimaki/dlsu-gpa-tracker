@@ -12,6 +12,7 @@ import {
   signOut,
   setPersistence,
   browserSessionPersistence,
+  browserLocalPersistence,
   deleteUser
 } from 'firebase/auth';
 import type { User, AuthError } from 'firebase/auth';
@@ -40,11 +41,14 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
   
   // Set session persistence when component mounts
   useEffect(() => {
-    // Use session persistence to ensure auth state is cleared when tab is closed
-    setPersistence(auth, browserSessionPersistence)
-      .catch(error => {
-        console.error("Error setting auth persistence:", error);
+    // Prefer local persistence so users remain signed in across refreshes and browser restarts.
+    // Fall back to session persistence if local persistence fails (e.g., restricted browsers).
+    setPersistence(auth, browserLocalPersistence).catch(err => {
+      console.error('Error setting local auth persistence, falling back to session:', err);
+      setPersistence(auth, browserSessionPersistence).catch(e => {
+        console.error('Error setting session persistence as fallback:', e);
       });
+    });
   }, []);
   
   // Handle unverified accounts on application start
@@ -180,6 +184,13 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
     setError(null);
     
     try {
+      // Ensure the sign-in uses local persistence
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch (pErr) {
+        console.error('Failed to set local persistence before Google sign-in, falling back to session:', pErr);
+        await setPersistence(auth, browserSessionPersistence);
+      }
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
@@ -206,6 +217,13 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
     setSuccessMessage(null);
     
     try {
+      // Ensure the sign-in/create account uses local persistence
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+      } catch (pErr) {
+        console.error('Failed to set local persistence before email sign-in, falling back to session:', pErr);
+        await setPersistence(auth, browserSessionPersistence);
+      }
       if (isSignUp) {
         // Check if passwords match for sign up
         if (password !== confirmPassword) {

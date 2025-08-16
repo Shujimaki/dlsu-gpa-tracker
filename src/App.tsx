@@ -10,7 +10,7 @@ import UpdateModal from './components/UpdateModal'
 import TutorialModal from './components/TutorialModal'
 import type { User as FirebaseUser } from 'firebase/auth'
 import { auth } from './config/firebase';
-import { onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import { onAuthStateChanged, signOut, setPersistence, browserSessionPersistence, browserLocalPersistence } from 'firebase/auth';
 import { Mail, AlertTriangle } from 'lucide-react';
 
 function App() {
@@ -120,16 +120,21 @@ function App() {
   useEffect(() => {
     const setupAuth = async () => {
       try {
-        // Set auth to use session persistence (clears on browser close)
-        // This solves the auto-login after refresh issue
-        await setPersistence(auth, browserSessionPersistence);
-        console.log("Firebase auth persistence set to session");
-      } catch (error) {
-        console.error("Error setting auth persistence:", error);
+        // Prefer local persistence so users remain signed in across refreshes and browser restarts
+        await setPersistence(auth, browserLocalPersistence);
+        console.log("Firebase auth persistence set to local");
+      } catch (err) {
+        console.error("Error setting local persistence, falling back to session:", err);
+        try {
+          await setPersistence(auth, browserSessionPersistence);
+          console.log("Firebase auth persistence set to session as fallback");
+        } catch (err2) {
+          console.error("Error setting session persistence fallback:", err2);
+        }
       }
-    };
-    
-    setupAuth();
+  }
+
+  setupAuth();
   }, []);
 
   // Listen for authentication state changes
@@ -142,6 +147,14 @@ function App() {
       if (user) {
         setShowAnonymousWarning(false);
         setWarningDismissed(false);
+      }
+      // If there's no logged-in user, clear any anonymous session data so anonymous visitors see default state
+      if (!user) {
+        console.log('No authenticated user detected — clearing anonymous session data to default state');
+        // Preserve lastUpdateSeen so the update modal behavior persists
+        const lastUpdateSeen = sessionStorage.getItem('lastUpdateSeen');
+        sessionStorage.clear();
+        if (lastUpdateSeen) sessionStorage.setItem('lastUpdateSeen', lastUpdateSeen);
       }
       
       console.log("Auth state changed:", user ? `User ${user.uid} logged in` : "No user logged in");
