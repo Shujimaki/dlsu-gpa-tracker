@@ -7,58 +7,51 @@ interface UpdateModalProps {
 
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   const handleClose = () => {
-  // Save that the user has seen this update
-  sessionStorage.setItem('lastUpdateSeen', '2025-08-16');
+    sessionStorage.setItem('lastUpdateSeen', '2025-08-16');
     onClose();
   };
 
-  // Don't render anything if not open
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-md max-w-md w-full">
-        <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-base font-medium text-gray-900">App Updates</h2>
-          <button 
-            onClick={handleClose} 
-            className="text-gray-400 hover:text-gray-600"
+    <div className="modal-overlay" onClick={handleClose}>
+      <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="font-display font-semibold text-base text-dlsu-slate">App Updates</h2>
+          <button
+            onClick={handleClose}
+            className="btn-icon btn-ghost rounded-lg p-1.5 text-gray-400 hover:text-gray-600"
             aria-label="Close"
           >
             <X size={18} />
           </button>
         </div>
-        
-        <div className="p-4">
-          <p className="text-xs text-gray-500 mb-2">August 16, 2025</p>
 
-          <h3 className="text-sm font-medium text-dlsu-green mb-2">Today's changes (simple)</h3>
+        <div className="p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="badge badge-green">v2.1</span>
+            <span className="text-xs text-gray-400">August 16, 2025</span>
+          </div>
 
-          <ul className="text-sm text-gray-700 space-y-2 mb-4">
-            <li className="flex items-start">
-              <span className="text-dlsu-green mr-2">•</span>
-              <span>Users who sign in now stay signed in after refresh or closing the browser.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-dlsu-green mr-2">•</span>
-              <span>Sign-in explicitly saves the login method so the app doesn't lose the user session.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-dlsu-green mr-2">•</span>
-              <span>Anonymous (not-logged-in) data is cleared when you are not signed in so the app shows default values.</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-dlsu-green mr-2">•</span>
-              <span>Logging out still clears your data and keeps you signed out on refresh.</span>
-            </li>
+          <h3 className="text-sm font-display font-semibold text-dlsu-green mb-3">Today's changes</h3>
+
+          <ul className="space-y-2.5">
+            {[
+              'Users who sign in now stay signed in after refresh or closing the browser.',
+              'Sign-in explicitly saves the login method so the app doesn\'t lose the user session.',
+              'Anonymous (not-logged-in) data is cleared when you are not signed in so the app shows default values.',
+              'Logging out still clears your data and keeps you signed out on refresh.',
+            ].map((item, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                <div className="w-1.5 h-1.5 rounded-full bg-dlsu-emerald mt-1.5 flex-shrink-0"></div>
+                <span>{item}</span>
+              </li>
+            ))}
           </ul>
         </div>
-        
-        <div className="px-4 py-3 border-t border-gray-200 flex justify-end">
-          <button
-            onClick={handleClose}
-            className="px-3 py-1.5 bg-dlsu-green text-white text-sm rounded hover:bg-dlsu-dark-green transition-colors"
-          >
+
+        <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
+          <button onClick={handleClose} className="btn btn-primary btn-sm">
             Got it
           </button>
         </div>
@@ -67,4 +60,4 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   );
 };
 
-export default UpdateModal; 
+export default UpdateModal;

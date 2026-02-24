@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { saveUserProjectionSettings, loadUserProjectionSettings } from '../config/firestore';
+import { saveUserProjectionSettings, loadUserProjectionSettings, getUserTerms, loadUserData, loadUserCGPASettings } from '../config/firestore';
 import type { ProjectionSettings } from '../config/firestore';
+import type { Course } from '../types';
 
 
 interface CGPAProjectionsProps {
@@ -14,7 +15,7 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
   const [targetCGPA, setTargetCGPA] = useState<number>(3.4);
   const [totalUnits, setTotalUnits] = useState<number>(200); // Default total units to graduate
   const [totalUnitsInput, setTotalUnitsInput] = useState<string>("200"); // String state for input field
-  
+
   // State for data from CGPA Calculator
   const [currentCGPA, setCurrentCGPA] = useState<number>(0);
   const [earnedUnits, setEarnedUnits] = useState<number>(0);
@@ -62,12 +63,12 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
 
         // 2b. Migration Condition
         // Defaults: targetCGPA: 3.4, totalUnits: 200
-        const firestoreIsDefault = 
-          !firestoreSettings || 
+        const firestoreIsDefault =
+          !firestoreSettings ||
           (firestoreSettings.targetCGPA === 3.4 && firestoreSettings.totalUnits === 200);
-        
-        const anonymousHasDataToMigrate = 
-          anonymousSettings && 
+
+        const anonymousHasDataToMigrate =
+          anonymousSettings &&
           (anonymousSettings.targetCGPA !== 3.4 || anonymousSettings.totalUnits !== 200);
 
         // console.log(`CGPAProj: Migration check: Firestore default: ${firestoreIsDefault}, Anonymous has data: ${anonymousHasDataToMigrate}, Was new login: ${newLoginSession}`);
@@ -127,41 +128,118 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
           setTotalUnitsInput("200");
         }
       }
-    // setIsLoading(false); // Set loading to false after all operations for this effect
+      // setIsLoading(false); // Set loading to false after all operations for this effect
     }; // end of loadAndMigrateSettings
-    
+
     // Call loadAndMigrateSettings only when auth is initialized
     if (authInitialized) {
-        loadAndMigrateSettings().finally(() => setIsLoading(false));
+      loadAndMigrateSettings().finally(() => setIsLoading(false));
     }
   }, [user, authInitialized]);
 
-  // Load CGPA data from sessionStorage
+  // Load CGPA data independently from term data (anonymous: sessionStorage, logged-in: Firestore)
+  // This avoids depending on cgpa_data written only by CGPACalculator
   useEffect(() => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Get CGPA data from session storage
-      const cgpaData = sessionStorage.getItem('cgpa_data');
-      
-      if (cgpaData) {
-        const { cgpa, totalUnits } = JSON.parse(cgpaData);
-        setCurrentCGPA(parseFloat(cgpa) || 0);
-        setEarnedUnits(totalUnits || 0);
-      } else {
-        // If no data in session storage, set defaults
-        setCurrentCGPA(0);
-        setEarnedUnits(0);
-        setError('No CGPA data found. Please visit the CGPA Calculator tab first.');
+    const loadCGPAData = async () => {
+      try {
+        setError(null);
+
+        let totalPoints = 0;
+        let totalUnits = 0;
+        let creditedUnits = 0;
+
+        if (user && authInitialized) {
+          // Logged-in user: load from Firestore
+          try {
+            const termNumbers = await getUserTerms(user.uid);
+
+            for (const termNum of termNumbers) {
+              const termData = await loadUserData(user.uid, termNum);
+              if (termData && termData.courses) {
+                termData.courses.forEach((course: Course) => {
+                  if (!course.nas) {
+                    totalUnits += course.units;
+                    if (course.grade > 0) {
+                      totalPoints += course.grade * course.units;
+                    }
+                  }
+                });
+              }
+            }
+
+            // Load credited units from Firestore
+            const cgpaSettings = await loadUserCGPASettings(user.uid);
+            if (cgpaSettings && typeof cgpaSettings.creditedUnits === 'number') {
+              creditedUnits = cgpaSettings.creditedUnits;
+            }
+          } catch (err) {
+            console.error('Error loading CGPA data from Firestore:', err);
+          }
+        } else if (!user && authInitialized) {
+          // Anonymous user: load from sessionStorage term_* keys
+          const termKeys = Object.keys(sessionStorage).filter(key => key.startsWith('term_'));
+
+          for (const key of termKeys) {
+            try {
+              const termDataStr = sessionStorage.getItem(key);
+              if (termDataStr) {
+                const termData = JSON.parse(termDataStr);
+                const courses: Course[] = termData.courses || termData;
+                if (Array.isArray(courses)) {
+                  courses.forEach((course: Course) => {
+                    if (!course.nas) {
+                      totalUnits += course.units;
+                      if (course.grade > 0) {
+                        totalPoints += course.grade * course.units;
+                      }
+                    }
+                  });
+                }
+              }
+            } catch (e) {
+              console.error(`Error parsing term data for key ${key}:`, e);
+            }
+          }
+
+          // Load credited units from sessionStorage
+          const cgpaSettingsStr = sessionStorage.getItem('cgpa_settings');
+          if (cgpaSettingsStr) {
+            try {
+              const settings = JSON.parse(cgpaSettingsStr);
+              if (typeof settings.creditedUnits === 'number') {
+                creditedUnits = settings.creditedUnits;
+              }
+            } catch (e) {
+              console.error('Error parsing cgpa_settings from sessionStorage:', e);
+            }
+          }
+        }
+
+        const cgpaValue = totalUnits > 0 ? totalPoints / totalUnits : 0;
+        const totalWithCredited = totalUnits + creditedUnits;
+
+        setCurrentCGPA(cgpaValue);
+        setEarnedUnits(totalWithCredited);
+
+        // Also write cgpa_data to sessionStorage for backward compatibility
+        sessionStorage.setItem('cgpa_data', JSON.stringify({
+          cgpa: cgpaValue.toFixed(3),
+          totalUnits: totalWithCredited,
+          totalTerms: 0
+        }));
+
+      } catch (error) {
+        console.error('Error loading CGPA data:', error);
+        setError('Failed to load CGPA data. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading CGPA data:', error);
-      setError('Failed to load CGPA data. Please visit the CGPA Calculator tab first.');
-    } finally {
-      setIsLoading(false);
+    };
+
+    if (authInitialized) {
+      loadCGPAData();
     }
-  }, []);
+  }, [user, authInitialized]);
 
   // Save settings for ANONYMOUS users to sessionStorage (immediately)
   useEffect(() => {
@@ -201,7 +279,7 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
       }
       setTimeout(() => setSaveStatus(null), 2000);
     };
-    
+
     const timeoutId = setTimeout(saveToFirestore, 1000);
     return () => clearTimeout(timeoutId);
   }, [targetCGPA, totalUnits, isLoading, authInitialized, user]); // Added isLoading and authInitialized
@@ -209,7 +287,7 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
   // Handle total units input change
   const handleTotalUnitsChange = (value: string) => {
     setTotalUnitsInput(value);
-    
+
     // Convert to number for calculations
     const numValue = parseInt(value) || 0;
     setTotalUnits(Math.max(0, numValue));
@@ -218,17 +296,17 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
   // Calculate remaining units and projected GPA
   const { remainingUnits, projectedGPA, isAchievable } = useMemo(() => {
     const remaining = Math.max(0, totalUnits - earnedUnits);
-    
+
     // Calculate projected GPA using the formula
     let projected = 0;
     let achievable = false;
-    
+
     if (remaining > 0) {
       projected = (targetCGPA * (earnedUnits + remaining) - currentCGPA * earnedUnits) / remaining;
       // Check if the projected GPA is achievable (between 0.0 and 4.0)
       achievable = projected >= 0 && projected <= 4.0;
     }
-    
+
     return {
       remainingUnits: remaining,
       projectedGPA: projected,
@@ -253,103 +331,116 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dlsu-green"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-dlsu-green/20 border-t-dlsu-green"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-md">
-        <p className="text-red-700">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          Retry
-        </button>
+      <div className="alert alert-error">
+        <div>
+          <p className="font-medium">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn btn-sm mt-2 bg-red-600 text-white hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
+  // Progress percentage toward target
+  const progressPercent = targetCGPA > 0 ? Math.min(100, (currentCGPA / targetCGPA) * 100) : 0;
+
   return (
-    <div className="space-y-6">
-      {/* CGPA Projections Header */}
+    <div className="space-y-5 animate-mount">
+      {/* Header card */}
       <div className="card">
-        <div className="card-header flex flex-col sm:flex-row justify-between items-center">
-          <h2 className="text-lg font-medium text-gray-900">Cumulative GPA Projections</h2>
+        <div className="card-header">
+          <h2 className="font-display font-semibold text-base text-dlsu-slate">CGPA Projections</h2>
         </div>
         <div className="card-body">
           <p className="text-sm text-gray-500">
-            Calculate the GPA you need to achieve in your remaining terms to reach your target CGPA.
+            Calculate the GPA you need in your remaining terms to reach your target CGPA.
           </p>
         </div>
       </div>
 
-      {/* Current Status and Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Stats + Settings grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Current Status */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-base font-medium text-gray-700">Current Status</h3>
+            <h3 className="font-display font-semibold text-sm text-dlsu-slate">Current Status</h3>
           </div>
-          <div className="card-body">
-            <div className="space-y-4">
+          <div className="card-body space-y-5">
+            <div className="flex items-end justify-between">
               <div>
-                <p className="text-xs text-gray-500 mb-1">Current CGPA</p>
-                <p className="text-2xl font-bold text-dlsu-green">{formatGPA(currentCGPA)}</p>
+                <p className="stat-label mb-1">Current CGPA</p>
+                <p className="stat-value text-dlsu-green">{formatGPA(currentCGPA)}</p>
               </div>
-              
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Earned Units</p>
-                <p className="text-xl font-semibold text-gray-700">{earnedUnits}</p>
+              <div className="text-right">
+                <p className="stat-label mb-1">Earned Units</p>
+                <p className="font-display font-bold text-xl text-dlsu-slate">{earnedUnits}</p>
+              </div>
+            </div>
+
+            {/* Progress toward target */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-gray-500">Progress to target</span>
+                <span className="text-xs font-medium text-dlsu-green">{progressPercent.toFixed(0)}%</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${progressPercent}%`,
+                    background: 'linear-gradient(90deg, #006f51, #10b981)',
+                  }}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* User Inputs */}
+        {/* Target Settings */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-base font-medium text-gray-700">Target Settings</h3>
+            <h3 className="font-display font-semibold text-sm text-dlsu-slate">Target Settings</h3>
           </div>
-          <div className="card-body">
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="targetCGPA" className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Target CGPA
-                </label>
-                <input
-                  type="number"
-                  id="targetCGPA"
-                  value={targetCGPA}
-                  onChange={(e) => setTargetCGPA(Math.max(0, Math.min(4, parseFloat(e.target.value) || 0)))}
-                  min="0"
-                  max="4"
-                  step="0.1"
-                  className="w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="totalUnits" className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Total Units to Graduate
-                </label>
-                <input
-                  type="text"
-                  id="totalUnits"
-                  value={totalUnitsInput}
-                  onChange={(e) => handleTotalUnitsChange(e.target.value)}
-                  className="w-full sm:w-auto px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green"
-                />
-              </div>
-              
-              {user && saveStatus && (
-                <div className="text-xs text-green-600">
-                  {saveStatus}
-                </div>
-              )}
+          <div className="card-body space-y-4">
+            <div>
+              <label htmlFor="targetCGPA" className="input-label">Target CGPA</label>
+              <input
+                type="number"
+                id="targetCGPA"
+                value={targetCGPA}
+                onChange={(e) => setTargetCGPA(Math.max(0, Math.min(4, parseFloat(e.target.value) || 0)))}
+                min="0"
+                max="4"
+                step="0.1"
+                className="input w-full sm:w-32"
+              />
             </div>
+
+            <div>
+              <label htmlFor="totalUnits" className="input-label">Total Units to Graduate</label>
+              <input
+                type="text"
+                id="totalUnits"
+                value={totalUnitsInput}
+                onChange={(e) => handleTotalUnitsChange(e.target.value)}
+                className="input w-full sm:w-32"
+              />
+            </div>
+
+            {user && saveStatus && (
+              <p className="text-xs text-dlsu-green font-medium">{saveStatus}</p>
+            )}
           </div>
         </div>
       </div>
@@ -357,36 +448,41 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
       {/* Projection Results */}
       <div className="card">
         <div className="card-header">
-          <h3 className="text-base font-medium text-gray-700">Projection Results</h3>
+          <h3 className="font-display font-semibold text-sm text-dlsu-slate">Projection Results</h3>
         </div>
         <div className="card-body">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <p className="text-xs text-gray-500 mb-1">Remaining Units</p>
-              <p className="text-xl font-semibold text-gray-700">{remainingUnits}</p>
+              <p className="stat-label mb-1">Remaining Units</p>
+              <p className="font-display font-bold text-xl text-dlsu-slate">{remainingUnits}</p>
             </div>
-            
+
             <div>
-              <p className="text-xs text-gray-500 mb-1">Required GPA for Remaining Units</p>
-              <p className={`text-2xl font-bold ${getGPAColorClass(projectedGPA)}`}>
+              <p className="stat-label mb-1">Required GPA for Remaining Units</p>
+              <p className={`stat-value ${getGPAColorClass(projectedGPA)}`}>
                 {isAchievable ? formatGPA(projectedGPA) : 'Not achievable'}
               </p>
+              {!isAchievable && remainingUnits > 0 && (
+                <p className="text-xs text-red-500 mt-1">
+                  The required GPA exceeds 4.0 — consider adjusting your target.
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Formula Explanation */}
+      {/* Formula */}
       <div className="card">
         <div className="card-header">
-          <h3 className="text-base font-medium text-gray-700">How is this calculated?</h3>
+          <h3 className="font-display font-semibold text-sm text-dlsu-slate">How is this calculated?</h3>
         </div>
         <div className="card-body">
-          <p className="text-sm text-gray-600 mb-4">
-            The required GPA for your remaining units is calculated using this formula:
+          <p className="text-sm text-gray-500 mb-3">
+            The required GPA for your remaining units is calculated using:
           </p>
-          <div className="bg-gray-50 p-3 rounded border border-gray-300 font-mono text-sm overflow-x-auto">
-            Required GPA = (Target CGPA × Total Units - Current CGPA × Earned Units) ÷ Remaining Units
+          <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 font-mono text-xs sm:text-sm text-gray-600 overflow-x-auto">
+            Required GPA = (Target × Total Units − Current × Earned Units) ÷ Remaining Units
           </div>
         </div>
       </div>

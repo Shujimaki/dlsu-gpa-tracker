@@ -120,9 +120,9 @@ const PrintPreview = ({
       <div className="bg-dlsu-green text-white w-full" style={{ ...styles.header, flex: '0 0 auto' }}>
         <div className="flex justify-between items-center h-full">
           <div style={{ width: '40%', flexShrink: 0 }}>
-            <h1 
-              className={`${size === 'story' ? 'text-5xl' : 'text-2xl'} font-bold text-white`} 
-              style={{ 
+            <h1
+              className={`${size === 'story' ? 'text-5xl' : 'text-2xl'} font-bold text-white`}
+              style={{
                 whiteSpace: 'nowrap',
                 overflow: 'visible',
                 color: '#ffffff'
@@ -134,9 +134,9 @@ const PrintPreview = ({
           {(name || degree) && (
             <div className="text-right" style={{ width: '60%', maxWidth: '60%' }}>
               {name && (
-                <h2 
-                  className={`${size === 'story' ? 'text-3xl' : 'text-lg'} font-medium text-white`} 
-                  style={{ 
+                <h2
+                  className={`${size === 'story' ? 'text-3xl' : 'text-lg'} font-medium text-white`}
+                  style={{
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
@@ -155,9 +155,9 @@ const PrintPreview = ({
                 </h2>
               )}
               {degree && (
-                <p 
+                <p
                   className={`${size === 'story' ? 'text-xl' : 'text-sm'} opacity-80 text-white`}
-                  style={{ 
+                  style={{
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',

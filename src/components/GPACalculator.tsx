@@ -55,27 +55,27 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   // Handle login/logout transitions
   useEffect(() => {
     if (!authInitialized) return;
-  
+
     const isAnonymous = !user;
     const wasAnonymous = sessionStorage.getItem('wasAnonymous') === 'true';
     const isNewLogin = sessionStorage.getItem('newLogin') === 'true';
-    
+
     // If this is a new account login, clear all flags and reset state
     if (!isAnonymous && isNewLogin) {
       sessionStorage.setItem('newLogin', 'false');
       sessionStorage.setItem('wasAnonymous', 'false'); // Clear anonymous flag to prevent migration
-      
+
       // Reset to default state for fresh accounts
       setCourses([]);
-      
+
       // Skip any other login transition logic
       return;
     }
-    
+
     // If user just logged in (transition from anonymous → authenticated)
     if (!isAnonymous && wasAnonymous) {
       sessionStorage.setItem('wasAnonymous', 'false');
-      
+
       const migrateAllAnonymousTerms = async () => {
         if (!user) return;
         // console.log(`GPACalc: User ${user.uid} logged in. Attempting to migrate ALL anonymous terms.`);
@@ -103,15 +103,15 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 if (termNum === selectedTerm) {
                   setCourses(anonymousTermData.courses);
                   setIsFlowchartExempt(anonymousTermData.isFlowchartExempt);
-            }
+                }
                 // Clear the migrated term from session storage to prevent re-migration attempts
                 sessionStorage.removeItem(`term_${termNum}`);
               } else {
                 // console.log(`GPACalc: No migration needed for term ${termNum}. Firestore empty: ${firestoreIsEmpty}, Anonymous has data: ${anonymousHasData}`);
-          }
-        } catch (error) {
+              }
+            } catch (error) {
               console.error(`Error during data migration for term ${termNum} in GPACalculator:`, error);
-        }
+            }
           }
         }
 
@@ -136,35 +136,35 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           // loadData(); // Calling loadData() here will ensure consistency.
         }
       };
-      
+
       migrateAllAnonymousTerms().then(() => {
         // After migration attempt (successful or not for all terms), 
         // ensure the current selected term's data is loaded correctly.
         // This is crucial if the selectedTerm itself wasn't migrated but other terms were,
         // or if no migration happened at all.
-        loadData(); 
+        loadData();
       });
     }
-    
+
     // When user logs in (whether new or returning), check for all terms
     if (!isAnonymous) {
-      
+
       // Function to check for terms in Firestore
       const checkForFirestoreTerms = async () => {
         if (!user) return;
-        
+
         try {
           // Get all terms from Firestore
           const userTerms = await getUserTerms(user.uid);
-          
+
           if (userTerms && userTerms.length > 0) {
             // Find highest term number (up to 21)
             const highestTerm = Math.min(Math.max(...userTerms), 21);
-            
+
             // Always include terms 1-12, plus any additional terms up to the highest
             // If highestTerm is <= 12, this will just generate terms 1-12
             const allTerms = Array.from({ length: Math.max(12, highestTerm) }, (_, i) => i + 1);
-            
+
             // Update availableTerms
             setAvailableTerms(allTerms);
           } else {
@@ -177,10 +177,10 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           setAvailableTerms([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
         }
       };
-      
+
       checkForFirestoreTerms();
     }
-    
+
     // Track anonymous state for future transitions
     if (isAnonymous) {
       sessionStorage.setItem('wasAnonymous', 'true');
@@ -204,7 +204,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     if (authInitialized) {
       // Store current term in sessionStorage
       sessionStorage.setItem('currentTerm', selectedTerm.toString());
-      
+
       loadData();
     }
   }, [selectedTerm, user, authInitialized]);
@@ -214,9 +214,9 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     try {
       setIsInitialLoad(true);
       const isAnonymous = !user;
-      
+
       let loadedData: TermData | null = null;
-      
+
       // Try to load from Firestore if user is logged in
       if (!isAnonymous) {
         try {
@@ -228,17 +228,17 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           console.error('Error loading from Firestore:', error);
         }
       }
-      
+
       // If no data from Firestore or anonymous user, try sessionStorage
       if (!loadedData) {
         const localKey = `term_${selectedTerm}`;
         const sessionData = loadSessionData(localKey);
-        
+
         if (sessionData) {
           if (typeof sessionData === 'object' && 'courses' in sessionData) {
             // New format with flowchart exemption
             loadedData = sessionData as TermData;
-        } else {
+          } else {
             // Old format (just array of courses)
             loadedData = {
               courses: sessionData as Course[],
@@ -247,7 +247,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           }
         }
       }
-      
+
       // If we found data, use it
       if (loadedData && loadedData.courses.length > 0) {
         setCourses(loadedData.courses);
@@ -257,13 +257,13 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
         setCourses([]);
         setIsFlowchartExempt(false);
       }
-      
+
       setIsInitialLoad(false);
     } catch (error) {
       console.error('Error in loadData:', error);
       setIsInitialLoad(false);
     }
-    };
+  };
 
   // Calculate GPA
   const { gpa, totalUnits, totalNASUnits, isDeansLister, isFirstHonors } = useMemo(() => {
@@ -278,7 +278,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       if (course.grade === 0) {
         hasFailingGrade = true;
       }
-      
+
       // Check for grades below 2.0 in academic subjects
       if (!course.nas && course.grade > 0 && course.grade < 2.0) {
         hasGradeBelow2 = true;
@@ -297,19 +297,19 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     });
 
     const gpaValue = totalUnits > 0 ? (totalPoints / totalUnits).toFixed(3) : '0.000';
-    
+
     // Dean's List calculations
     const hasEnoughUnits = (totalUnits >= 12) || (isFlowchartExempt);
     const meetsGpaRequirement = parseFloat(gpaValue) >= 3.0;
     const isDeansLister = meetsGpaRequirement && hasEnoughUnits && !hasGradeBelow2 && !hasFailingGrade;
     const isFirstHonors = isDeansLister && parseFloat(gpaValue) >= 3.4;
 
-    return { 
-      gpa: gpaValue, 
-      totalUnits, 
-      totalNASUnits, 
-      isDeansLister, 
-      isFirstHonors 
+    return {
+      gpa: gpaValue,
+      totalUnits,
+      totalNASUnits,
+      isDeansLister,
+      isFirstHonors
     };
   }, [courses, isFlowchartExempt]);
 
@@ -319,26 +319,26 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       const saveTimer = setTimeout(() => {
         saveData();
       }, 1000);
-      
+
       return () => clearTimeout(saveTimer);
     }
   }, [courses, selectedTerm, isInitialLoad, authInitialized, user, isFlowchartExempt]);
 
   // Save data function
-    const saveData = async () => {
+  const saveData = async () => {
     try {
       setSaveStatus('saving');
       const isAnonymous = !user;
-      
+
       // Save to sessionStorage (for anonymous users or as backup)
       const termData = {
         courses,
         isFlowchartExempt
       };
-      
+
       const termKey = `term_${selectedTerm}`;
       storeSessionData(termKey, termData);
-      
+
       // Save to Firestore if user is logged in
       if (!isAnonymous) {
         try {
@@ -348,31 +348,31 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           } else {
             setSaveStatus('error');
             return false;
-            }
-          } catch (error) {
-            console.error('Error saving to Firestore:', error);
+          }
+        } catch (error) {
+          console.error('Error saving to Firestore:', error);
           setSaveStatus('error');
           return false;
         }
-        } else {
-          setSaveStatus('saved');
-        }
-        
-        // Reset status after 2 seconds
+      } else {
+        setSaveStatus('saved');
+      }
+
+      // Reset status after 2 seconds
       if (saveTimeout) {
         clearTimeout(saveTimeout);
       }
-        const timeout = setTimeout(() => {
-          setSaveStatus('idle');
-        }, 2000);
-        setSaveTimeout(timeout);
-      
+      const timeout = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+      setSaveTimeout(timeout);
+
       return true;
-      } catch (error) {
+    } catch (error) {
       console.error('Error in saveData:', error);
-        setSaveStatus('error');
-        
-        // Reset error status after 3 seconds
+      setSaveStatus('error');
+
+      // Reset error status after 3 seconds
       if (saveTimeout) {
         clearTimeout(saveTimeout);
       }
@@ -380,7 +380,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
         setSaveStatus('idle');
       }, 3000);
       setSaveTimeout(timeout);
-      
+
       return false;
     }
   };
@@ -401,16 +401,16 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   const addCourse = () => {
     // Calculate current academic units
     const currentAcademicUnits = calculateTotalAcademicUnits(courses);
-    
+
     // Default units for new course
     const defaultUnits = 1;
-    
+
     // Check if adding a new academic course would exceed the limit
     if (currentAcademicUnits + defaultUnits > MAX_ACADEMIC_UNITS) {
       alert(`Cannot add more courses. Maximum of ${MAX_ACADEMIC_UNITS} academic units allowed per term.`);
       return;
     }
-    
+
     setCourses([...courses, {
       id: crypto.randomUUID(),
       code: '',
@@ -433,26 +433,26 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     if ((field === 'units' || field === 'nas') && typeof value !== 'string') {
       const updatedCourses = [...courses];
       const courseIndex = updatedCourses.findIndex(course => course.id === id);
-      
+
       if (courseIndex === -1) return;
-      
+
       const course = updatedCourses[courseIndex];
-      
+
       // Create a temporary updated course to check
       const updatedCourse = { ...course, [field]: value };
-      
+
       // Calculate what the new total academic units would be
       const newTotalAcademicUnits = calculateTotalAcademicUnits(
         updatedCourses.map((c, idx) => idx === courseIndex ? updatedCourse : c)
       );
-      
+
       // If updating would exceed the limit, prevent the update
       if (newTotalAcademicUnits > MAX_ACADEMIC_UNITS) {
         alert(`Cannot update. Maximum of ${MAX_ACADEMIC_UNITS} academic units allowed per term.`);
         return;
       }
     }
-    
+
     setCourses(courses.map((course: Course) =>
       course.id === id ? { ...course, [field]: value } : course
     ));
@@ -465,26 +465,26 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     if (Math.max(...availableTerms) >= 21) {
       return;
     }
-    
+
     // Save current term data first
     await saveData();
-    
+
     // Get the next term number (highest term + 1)
     const nextTerm = Math.max(...availableTerms) + 1;
-    
+
     // Create empty courses for the new term (now an empty array)
     const newCourses: Course[] = [];
-    
+
     // Prepare the new term data
     const newTermData = {
       courses: newCourses,
       isFlowchartExempt: false
     };
-    
+
     // Always save to sessionStorage
     const newTermKey = `term_${nextTerm}`;
     storeSessionData(newTermKey, newTermData);
-    
+
     // If logged in, also save to Firestore
     if (user) {
       try {
@@ -493,17 +493,17 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
         console.error(`Error saving new Term ${nextTerm} to Firestore:`, error);
       }
     }
-    
+
     // First update the available terms array
     setAvailableTerms(prev => {
       const updatedTerms = [...prev, nextTerm].sort((a, b) => a - b);
       return updatedTerms;
     });
-    
+
     // Then update the state to reflect the new term data
     setCourses(newCourses);
     setIsFlowchartExempt(false);
-    
+
     // Finally set the selected term to the newly created term
     setSelectedTerm(nextTerm);
   };
@@ -512,17 +512,17 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   const deleteTerm = async (term: number) => {
     // For terms 1-12, we only clear data, never delete
     const isStandardTerm = term <= 12;
-    
+
     try {
       // Check if this is the last term and it's not a standard term
       const isLastTerm = term === Math.max(...availableTerms) && !isStandardTerm;
-      
+
       // Clear the data for this term
       const emptyTermData = {
         courses: [],
         isFlowchartExempt: false
       };
-      
+
       // Update sessionStorage
       if (isLastTerm) {
         // If it's the last term and not a standard term, remove it completely
@@ -531,7 +531,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
         // Otherwise just clear the data
         storeSessionData(`term_${term}`, emptyTermData);
       }
-      
+
       // If user is logged in, handle Firestore
       if (user) {
         try {
@@ -549,7 +549,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           console.error(`Error handling term ${term} in Firestore:`, error);
         }
       }
-      
+
       // Update availableTerms only if it's the last term and not a standard term
       if (isLastTerm) {
         setAvailableTerms(prev => {
@@ -557,7 +557,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           return updated;
         });
       }
-      
+
       // If currently on the term being processed, update the view
       if (selectedTerm === term) {
         // If it's the last term and we're deleting it, switch to Term 1
@@ -583,7 +583,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       if (!isInitialLoad) {
         await saveData();
       }
-      
+
       // Switch to the selected term
       setSelectedTerm(Number(value));
     }
@@ -593,23 +593,23 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   useEffect(() => {
     // If the auth is initialized but there's no user, this means user has logged out
     if (authInitialized && !user) {
-      
+
       // Clear all session data for terms
       Object.keys(sessionStorage)
         .filter(key => key.startsWith('term_'))
         .forEach(key => {
           sessionStorage.removeItem(key);
         });
-      
+
       // Reset to default state
       setCourses([]);
-      
+
       // Reset to Term 1
       setSelectedTerm(1);
-      
+
       // Reset to default terms (1-12 only)
       setAvailableTerms([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-      
+
       // Reset flowchart exemption
       setIsFlowchartExempt(false);
     }
@@ -629,7 +629,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     setTermToDelete(term);
     setShowDeleteConfirm(true);
   };
-  
+
   // Function to confirm deletion
   const confirmDelete = async () => {
     if (termToDelete !== null) {
@@ -638,7 +638,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       setTermToDelete(null);
     }
   };
-  
+
   // Function to cancel deletion
   const cancelDelete = () => {
     setShowDeleteConfirm(false);
@@ -646,153 +646,135 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   };
 
   return (
-    <div>
+    <div className="space-y-5 animate-mount">
       {/* Header Card */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <h2 className="text-lg font-medium text-gray-900">
-              GPA Calculator
-            </h2>
-            <div className="flex items-center text-sm">
-              {saveStatus === 'saving' && (
-                <div className="flex items-center text-gray-500">
-                  <Loader2 size={14} className="animate-spin mr-1" />
-                  <span>Saving</span>
-                </div>
-              )}
-              {saveStatus === 'saved' && (
-                <div className="text-green-600">
-                  Saved
-                </div>
-              )}
-              {saveStatus === 'error' && (
-                <div className="text-red-500">
-                  Error saving
-                </div>
-              )}
-            </div>
+      <div className="card">
+        <div className="card-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <h2 className="font-display font-semibold text-base text-dlsu-slate">GPA Calculator</h2>
+          <div className="flex items-center text-xs">
+            {saveStatus === 'saving' && (
+              <div className="flex items-center text-gray-400">
+                <Loader2 size={13} className="animate-spin mr-1" />
+                <span>Saving</span>
+              </div>
+            )}
+            {saveStatus === 'saved' && (
+              <span className="text-dlsu-green font-medium">Saved</span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="text-red-500 font-medium">Error saving</span>
+            )}
           </div>
         </div>
         <div className="card-body">
           <p className="text-sm text-gray-500 mb-3">
             Enter your courses, units, and grades to calculate your GPA.
           </p>
-          <div className="flex flex-wrap gap-3 text-xs">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setShowDeansListModal(true)}
-              className="text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
+              className="text-xs text-dlsu-green hover:text-dlsu-dark-green flex items-center gap-1 transition-colors"
             >
-              <InfoIcon size={14} />
+              <InfoIcon size={13} />
               Dean's List Rules
             </button>
             <button
               onClick={() => setShowGPAModal(true)}
-              className="text-dlsu-green hover:text-dlsu-light-green flex items-center gap-1"
+              className="text-xs text-dlsu-green hover:text-dlsu-dark-green flex items-center gap-1 transition-colors"
             >
-              <InfoIcon size={14} />
+              <InfoIcon size={13} />
               How GPA is Calculated
             </button>
           </div>
         </div>
       </div>
 
-      <div className="mb-4">
-        {/* Term selection & options */}
-        <div className="card">
-          <div className="card-body">
-            <div className="grid sm:grid-cols-2 gap-4">
-              {/* Term selector */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Select Term
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedTerm}
-                    onChange={async (e) => await handleTermChange(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green"
-                  >
-                    {availableTerms.map((term) => (
-                      <option key={term} value={term}>
-                        Term {term}
-                      </option>
-                    ))}
-                    {Math.max(...availableTerms) < 21 && (
-                      <option value="add" className="text-dlsu-green font-medium">
-                        + Add New Term
-                      </option>
-                    )}
-                  </select>
-                  
-                  <button
-                    onClick={() => handleDeleteClick(selectedTerm)}
-                    className={`px-2.5 py-1.5 ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12 ? 'text-red-500 hover:text-red-700' : 'text-amber-500 hover:text-amber-700'} border border-gray-300 rounded hover:bg-gray-50 flex items-center`}
-                    title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
-                  >
-                    {selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? (
-                      <TrashIcon size={16} />
-                    ) : (
-                      <span className="text-sm">Clear</span>
-                    )}
-                  </button>
-                </div>
-              </div>
-              
-              {/* Flowchart exemption */}
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Term Options
-                </label>
-                <label 
-                  htmlFor="flowchartExempt" 
-                  className="flex items-center px-2.5 py-1.5 border border-gray-300 rounded hover:bg-gray-50 cursor-pointer"
+      {/* Term Selection */}
+      <div className="card">
+        <div className="card-body">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="input-label">Select Term</label>
+              <div className="flex gap-2">
+                <select
+                  value={selectedTerm}
+                  onChange={async (e) => await handleTermChange(e.target.value)}
+                  className="input flex-1"
                 >
-                  <input
-                    type="checkbox"
-                    id="flowchartExempt"
-                    checked={isFlowchartExempt}
-                    onChange={(e) => setIsFlowchartExempt(e.target.checked)}
-                    className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded mr-2"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Flowchart exempts me from 12-unit requirement
-                  </span>
-                </label>
+                  {availableTerms.map((term) => (
+                    <option key={term} value={term}>Term {term}</option>
+                  ))}
+                  {Math.max(...availableTerms) < 21 && (
+                    <option value="add" className="text-dlsu-green font-medium">+ Add New Term</option>
+                  )}
+                </select>
+                <button
+                  onClick={() => handleDeleteClick(selectedTerm)}
+                  className={`btn btn-sm ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12
+                      ? 'text-red-500 hover:bg-red-50'
+                      : 'text-amber-500 hover:bg-amber-50'
+                    } border border-gray-200`}
+                  title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
+                >
+                  {selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? (
+                    <TrashIcon size={15} />
+                  ) : (
+                    <span className="text-xs">Clear</span>
+                  )}
+                </button>
               </div>
+            </div>
+
+            <div>
+              <label className="input-label">Term Options</label>
+              <label
+                htmlFor="flowchartExempt"
+                className="flex items-center px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <input
+                  type="checkbox"
+                  id="flowchartExempt"
+                  checked={isFlowchartExempt}
+                  onChange={(e) => setIsFlowchartExempt(e.target.checked)}
+                  className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded mr-2.5"
+                />
+                <span className="text-sm text-gray-600">
+                  Flowchart exempts me from 12-unit requirement
+                </span>
+              </label>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Course table */}
-      <div className="card mb-4">
+      {/* Course Table */}
+      <div className="card">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="data-table">
             <thead>
-              <tr className="bg-gray-50 text-gray-700 border-b border-gray-200">
-                <th className="px-3 py-2 text-left text-xs font-medium">Course Code</th>
-                <th className="px-3 py-2 text-left text-xs font-medium">Course Name (Optional)</th>
-                <th className="px-3 py-2 text-center text-xs font-medium min-w-[70px]">Units</th>
-                <th className="px-3 py-2 text-center text-xs font-medium min-w-[70px]">Grade</th>
-                <th className="px-3 py-2 text-center text-xs font-medium group relative">
-                  <div className="flex items-center justify-center">
+              <tr>
+                <th>Course Code</th>
+                <th>Course Name (Optional)</th>
+                <th className="text-center min-w-[70px]">Units</th>
+                <th className="text-center min-w-[70px]">Grade</th>
+                <th className="text-center group relative">
+                  <div className="flex items-center justify-center gap-0.5">
                     <span>NAS</span>
-                    <span className="ml-0.5 w-3 h-3 inline-flex items-center justify-center text-xs rounded-full bg-gray-200 text-gray-600 cursor-help">?</span>
+                    <span className="w-3.5 h-3.5 inline-flex items-center justify-center text-[0.6rem] rounded-full bg-gray-200 text-gray-500 cursor-help">?</span>
                   </div>
-                  <span className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1.5 px-2.5 w-48 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-md border border-gray-700">
-                    Non-Academic Subject<br/>(Not counted in GPA)
+                  <span className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg py-1.5 px-2.5 w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                    Non-Academic Subject<br />(Not counted in GPA)
                   </span>
                 </th>
-                <th className="px-3 py-2 w-10"></th>
+                <th className="w-10"></th>
               </tr>
             </thead>
             {isInitialLoad ? (
               <tbody>
                 <tr>
                   <td colSpan={6} className="py-8">
-                    <div className="flex justify-center items-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-dlsu-green"></div>
+                    <div className="flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-dlsu-green/20 border-t-dlsu-green"></div>
                     </div>
                   </td>
                 </tr>
@@ -801,81 +783,75 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               <tbody>
                 {courses.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-6 text-sm text-gray-500">
+                    <td colSpan={6} className="text-center py-8 text-sm text-gray-400">
                       No courses added yet. Click "Add Course" to get started.
                     </td>
                   </tr>
                 ) : (
                   courses.map(course => (
-                    <tr key={course.id} className={`border-b border-gray-200 hover:bg-gray-50 ${courses.indexOf(course) % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                      <td className="px-3 py-2.5 min-w-[110px]">
+                    <tr key={course.id}>
+                      <td className="min-w-[110px]">
                         <input
                           type="text"
                           value={course.code}
                           onChange={(e) => updateCourse(course.id, 'code', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
+                          className="input py-1.5"
                           maxLength={7}
                           placeholder="e.g., NUMMETS"
                         />
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td>
                         <input
                           type="text"
                           value={course.name}
                           onChange={(e) => updateCourse(course.id, 'name', e.target.value)}
-                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded"
+                          className="input py-1.5"
                           placeholder="e.g., Numerical Methods"
                         />
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td>
                         <select
                           value={course.units}
                           onChange={e => updateCourse(course.id, 'units', Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded min-w-[80px]"
+                          className="input py-1.5 min-w-[72px]"
                         >
                           {course.nas
                             ? [0, 1, 2, 3].map(units => (
-                                <option key={units} value={units} className="bg-white text-gray-900">
-                                ({units})
-                              </option>
+                              <option key={units} value={units}>({units})</option>
                             ))
                             : [1, 2, 3, 4, 5].map(units => (
-                                <option key={units} value={units} className="bg-white text-gray-900">
-                                {units}
-                              </option>
+                              <option key={units} value={units}>{units}</option>
                             ))}
                         </select>
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td>
                         <select
                           value={course.grade}
                           onChange={e => updateCourse(course.id, 'grade', Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded min-w-[80px]"
+                          className="input py-1.5 min-w-[72px]"
                         >
                           {[4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.0, 0.0].map(grade => (
-                              <option key={grade} value={grade} className="bg-white text-gray-900">
-                              {grade}
-                            </option>
+                            <option key={grade} value={grade}>{grade}</option>
                           ))}
                         </select>
                       </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex justify-center items-center">
+                      <td>
+                        <div className="flex justify-center">
                           <input
                             type="checkbox"
                             checked={course.nas}
                             onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
-                            className="accent-dlsu-green bg-white border-gray-300"
+                            className="h-4 w-4 accent-dlsu-green border-gray-300 rounded"
                             aria-label="Non-Academic Subject"
                           />
                         </div>
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td>
                         <button
                           onClick={() => removeCourse(course.id)}
-                          className="p-2 text-red-500 hover:text-red-700 rounded bg-white"
+                          className="btn-icon p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                         >
-                          <TrashIcon size={16} />
+                          <TrashIcon size={15} />
                         </button>
                       </td>
                     </tr>
@@ -885,49 +861,45 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
             )}
           </table>
           {!isInitialLoad && courses.length > 0 && (
-            <div className="border-t border-gray-200 px-3 py-2.5 flex justify-between items-center">
-              <div className="text-sm font-medium">
-                Total Units: {totalUnits}
+            <div className="border-t border-gray-100 px-3 py-2.5 flex justify-between items-center bg-gray-50/50">
+              <span className="text-xs font-medium text-gray-500">
+                Total Units: <span className="text-dlsu-slate">{totalUnits}</span>
                 {totalNASUnits > 0 && (
-                  <span className="text-gray-500 ml-1">({totalNASUnits} NAS)</span>
+                  <span className="text-gray-400 ml-1">({totalNASUnits} NAS)</span>
                 )}
-              </div>
+              </span>
             </div>
           )}
         </div>
       </div>
 
       {/* Results and Actions */}
-      <div className="card mb-4">
+      <div className="card">
         <div className="card-body">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                onClick={addCourse}
-                className="flex items-center px-3 py-1.5 text-sm bg-dlsu-green text-white rounded hover:bg-dlsu-dark-green transition-colors"
-              >
-                <PlusIcon size={16} className="mr-1" />
+              <button onClick={addCourse} className="btn btn-primary btn-sm gap-1">
+                <PlusIcon size={15} />
                 Add Course
               </button>
-              
               <button
                 onClick={() => setShowPrintModal(true)}
-                className="flex items-center px-3 py-1.5 text-sm border border-dlsu-green text-dlsu-green rounded hover:bg-dlsu-green/10 transition-colors"
+                className="btn btn-secondary btn-sm gap-1"
               >
-                <Printer size={16} className="mr-1" />
+                <Printer size={15} />
                 Print
               </button>
             </div>
-            
+
             <div className="text-right w-full sm:w-auto">
-              <div className="font-medium flex items-center justify-end gap-2">
-                <span className="text-gray-700">GPA:</span> 
-                <span className="text-3xl font-bold text-dlsu-green">{gpa}</span>
+              <div className="flex items-center justify-end gap-2">
+                <span className="stat-label">GPA</span>
+                <span className="stat-value text-dlsu-green">{gpa}</span>
               </div>
               {(isDeansLister || isFirstHonors) && (
-                <div className="mt-1 py-1 px-2 bg-dlsu-green/10 rounded text-center">
-                  <span className="text-sm font-medium text-dlsu-green">
-                    {isFirstHonors ? 'First Honors Dean\'s Lister' : 'Second Honors Dean\'s Lister'}
+                <div className="mt-1.5">
+                  <span className={`badge ${isFirstHonors ? 'badge-gold' : 'badge-green'}`}>
+                    {isFirstHonors ? '🏆 First Honors' : '⭐ Second Honors'}
                   </span>
                 </div>
               )}
@@ -938,56 +910,68 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
       {/* Dean's List Modal */}
       {showDeansListModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md">
-            <h3 className="text-lg font-bold mb-4">Dean's List Requirements</h3>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Must be enrolled in at least 12 academic units</li>
-              <li>No grade below 2.0 in any academic subject</li>
-              <li>No failing grade (0.0 or F) in any subject, including non-academic subjects</li>
-              <li>First Honors: GPA of 3.4 or higher</li>
-              <li>Second Honors: GPA of 3.0 to 3.39</li>
-              <li>Must not have been found guilty of academic dishonesty</li>
-            </ul>
-            <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
-              <strong>Note:</strong> Academic dishonesty includes cheating, plagiarism, and other forms of academic misconduct as defined in the DLSU Student Handbook.
+        <div className="modal-overlay" onClick={() => setShowDeansListModal(false)}>
+          <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="font-display font-semibold text-base text-dlsu-slate">Dean's List Requirements</h3>
             </div>
-            <button
-              style= {{marginTop: '1.5rem', minHeight: '0'}}
-              onClick={() => setShowDeansListModal(false)}
-              className="mt-6 bg-dlsu-green text-white px-4 py-2 rounded hover:bg-dlsu-green/90 transition-colors block"
-            >
-              Close
-            </button>
+            <div className="p-5 space-y-2.5">
+              {[
+                'Must be enrolled in at least 12 academic units',
+                'No grade below 2.0 in any academic subject',
+                'No failing grade (0.0 or F) in any subject, including non-academic subjects',
+                'First Honors: GPA of 3.4 or higher',
+                'Second Honors: GPA of 3.0 to 3.39',
+                'Must not have been found guilty of academic dishonesty',
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                  <div className="w-1.5 h-1.5 rounded-full bg-dlsu-green mt-1.5 flex-shrink-0"></div>
+                  <span>{item}</span>
+                </div>
+              ))}
+              <div className="alert alert-warning mt-4">
+                <span><strong>Note:</strong> Academic dishonesty includes cheating, plagiarism, and other forms of academic misconduct as defined in the DLSU Student Handbook.</span>
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
+              <button onClick={() => setShowDeansListModal(false)} className="btn btn-primary btn-sm">Close</button>
+            </div>
           </div>
         </div>
       )}
 
       {/* GPA Calculation Modal */}
       {showGPAModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md">
-            <h3 className="text-lg font-bold mb-4">How GPA is Calculated</h3>
-            <p className="mb-4">GPA is calculated using the following formula:</p>
-            <div className="bg-gray-50 p-4 rounded mb-4">
-              <p className="font-mono">GPA = Σ(Grade × Units) ÷ Total Units</p>
+        <div className="modal-overlay" onClick={() => setShowGPAModal(false)}>
+          <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="font-display font-semibold text-base text-dlsu-slate">How GPA is Calculated</h3>
             </div>
-            <p className="mb-4">Where:</p>
-            <ul className="list-disc pl-5 space-y-2">
-              <li>Grade: Numerical grade (4.0, 3.5, 3.0, etc.)</li>
-              <li>Units: Number of units for each course</li>
-              <li>Total Units: Sum of all course units</li>
-            </ul>
-            <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
-              <strong>Note:</strong> Non-Academic Subjects (NAS) are <u>not</u> included in GPA calculations, but are considered for Dean's List eligibility.
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-gray-600">GPA is calculated using the following formula:</p>
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 font-mono text-sm text-gray-600">
+                GPA = Σ(Grade × Units) ÷ Total Units
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium text-gray-700">Where:</p>
+                {[
+                  ['Grade', 'Numerical grade (4.0, 3.5, 3.0, etc.)'],
+                  ['Units', 'Number of units for each course'],
+                  ['Total Units', 'Sum of all course units'],
+                ].map(([label, desc], i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <div className="w-1.5 h-1.5 rounded-full bg-dlsu-green mt-1.5 flex-shrink-0"></div>
+                    <span><strong>{label}:</strong> {desc}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="alert alert-warning">
+                <span><strong>Note:</strong> Non-Academic Subjects (NAS) are <u>not</u> included in GPA calculations, but are considered for Dean's List eligibility.</span>
+              </div>
             </div>
-            <button
-              style= {{marginTop: '1.5rem', minHeight: '0'}}
-              onClick={() => setShowGPAModal(false)}
-              className="mt-6 bg-dlsu-green text-white px-4 py-2 rounded hover:bg-dlsu-green/90 transition-colors block"
-            >
-              Close
-            </button>
+            <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
+              <button onClick={() => setShowGPAModal(false)} className="btn btn-primary btn-sm">Close</button>
+            </div>
           </div>
         </div>
       )}
@@ -1008,45 +992,37 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && termToDelete !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <div className="flex items-center mb-4 text-amber-500">
-              <AlertTriangle className="mr-2" />
-              <h3 className="text-lg font-bold">Confirm Action</h3>
+        <div className="modal-overlay" onClick={cancelDelete}>
+          <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+              <AlertTriangle className="text-amber-500" size={18} />
+              <h3 className="font-display font-semibold text-base text-dlsu-slate">Confirm Action</h3>
             </div>
-            
-            {termToDelete > 12 && termToDelete === Math.max(...availableTerms) ? (
-              <p className="mb-4">
-                You are about to delete Term {termToDelete}. This will remove the term from the list.
-                Are you sure you want to continue?
-              </p>
-            ) : (
-              <div className="mb-4">
-                <p className="mb-2">
-                  You are about to clear all data for Term {termToDelete}.
+            <div className="p-5 space-y-3">
+              {termToDelete > 12 && termToDelete === Math.max(...availableTerms) ? (
+                <p className="text-sm text-gray-600">
+                  You are about to delete Term {termToDelete}. This will remove the term from the list. Are you sure?
                 </p>
-                <div className="bg-amber-50 border-l-4 border-amber-400 p-3 text-sm">
-                  {termToDelete <= 12 ? (
-                    <p><strong>Note:</strong> Standard terms (1-12) cannot be removed from the list, only cleared.</p>
-                  ) : (
-                    <p><strong>Note:</strong> Only the last term can be completely removed from the list.</p>
-                  )}
-                  <p>Term {termToDelete} will remain in the list but all its courses will be cleared.</p>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={cancelDelete}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 bg-white text-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600">
+                    You are about to clear all data for Term {termToDelete}.
+                  </p>
+                  <div className="alert alert-warning">
+                    <span>
+                      {termToDelete <= 12
+                        ? <><strong>Note:</strong> Standard terms (1-12) cannot be removed, only cleared.</>
+                        : <><strong>Note:</strong> Only the last term can be completely removed.</>
+                      }<br />
+                      Term {termToDelete} will remain in the list but all courses will be cleared.
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+              <button onClick={cancelDelete} className="btn btn-ghost btn-sm">Cancel</button>
+              <button onClick={confirmDelete} className="btn btn-sm bg-red-600 text-white hover:bg-red-700">
                 {termToDelete > 12 && termToDelete === Math.max(...availableTerms) ? 'Delete Term' : 'Clear Term Data'}
               </button>
             </div>

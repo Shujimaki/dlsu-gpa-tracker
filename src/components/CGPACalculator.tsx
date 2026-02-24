@@ -122,9 +122,9 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
             setCreditedUnits(0);
             setCreditedUnitsInput("0");
             if (user) { // Ensure user exists before saving
-                try {
-                    await saveUserCGPASettings(user.uid, { creditedUnits: 0 });
-                } catch (e) { console.error("CGPACalc: Failed to save default CGPA settings when Firestore non-existent", e);}
+              try {
+                await saveUserCGPASettings(user.uid, { creditedUnits: 0 });
+              } catch (e) { console.error("CGPACalc: Failed to save default CGPA settings when Firestore non-existent", e); }
             }
           }
         }
@@ -141,7 +141,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         }
       }
     };
-    
+
     // Run the load and migration logic when authInitialized changes or user logs in/out
     if (authInitialized) {
       loadAndMigrateSettings();
@@ -182,7 +182,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
           setSaveStatus('Settings saved');
         } else {
           // Assuming saveUserCGPASettings returns false on a non-exception failure
-          setSaveStatus('Error saving'); 
+          setSaveStatus('Error saving');
         }
       } catch (error) {
         console.error('Error saving CGPA settings to Firestore:', error);
@@ -200,7 +200,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   // Handle credited units input change
   const handleCreditedUnitsChange = (value: string) => {
     setCreditedUnitsInput(value);
-    
+
     // Convert to number for calculations
     const numValue = parseInt(value) || 0;
     setCreditedUnits(Math.max(0, numValue));
@@ -228,9 +228,9 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         }
       }
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
@@ -253,10 +253,10 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
 
     // Calculate CGPA without credited units
     const cgpaValue = totalUnits > 0 ? (totalPoints / totalUnits).toFixed(3) : '0.000';
-    
+
     // Add credited units to total units for display purposes only
     const totalWithCreditedValue = totalUnits + creditedUnits;
-    
+
     return {
       cgpa: cgpaValue,
       totalTerms: activeTerms,
@@ -274,7 +274,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         totalUnits: totalWithCredited, // Use total with credited units
         totalTerms
       };
-      
+
       sessionStorage.setItem('cgpa_data', JSON.stringify(cgpaData));
       console.log('CGPA data saved to session storage:', cgpaData);
     } catch (error) {
@@ -283,9 +283,9 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   }, [cgpa, totalUnits, totalWithCredited, totalTerms]);
 
   // Calculate GPA for a single term
-  const calculateTermGPA = (courses: Course[]): { 
-    gpa: string; 
-    totalUnits: number; 
+  const calculateTermGPA = (courses: Course[]): {
+    gpa: string;
+    totalUnits: number;
     totalNASUnits: number;
     isActive: boolean;
   } => {
@@ -305,10 +305,10 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     });
 
     const gpaValue = totalUnits > 0 ? (totalPoints / totalUnits).toFixed(3) : '0.000';
-    
-    return { 
-      gpa: gpaValue, 
-      totalUnits, 
+
+    return {
+      gpa: gpaValue,
+      totalUnits,
       totalNASUnits,
       isActive: totalUnits > 0 // A term is active if it has academic units
     };
@@ -321,11 +321,11 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         setIsLoading(true);
         setError(null);
         const isAnonymous = !user;
-        
+
         // Start with standard terms 1-12
         const standardTerms = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
         const availableTerms = [...standardTerms];
-        
+
         // If user is logged in, get their terms from Firestore
         if (!isAnonymous && user) {
           try {
@@ -349,14 +349,14 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
             }
           }
         }
-        
+
         // Sort terms numerically
         availableTerms.sort((a, b) => a - b);
-        
+
         // Load data for each term
         const termsDataPromises = availableTerms.map(async (term) => {
           let termData: TermData | null = null;
-          
+
           // Try to load from Firestore if user is logged in
           if (!isAnonymous && user) {
             try {
@@ -365,12 +365,12 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
               console.error(`Error loading term ${term} from Firestore:`, error);
             }
           }
-          
+
           // If no data from Firestore or anonymous user, try sessionStorage
           if (!termData) {
             const localKey = `term_${term}`;
             const sessionData = loadSessionData(localKey);
-            
+
             if (sessionData) {
               if (typeof sessionData === 'object' && 'courses' in sessionData) {
                 // New format with flowchart exemption
@@ -384,11 +384,11 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
               }
             }
           }
-          
+
           // If we found data and it has courses
           if (termData && termData.courses && termData.courses.length > 0) {
             const { gpa, totalUnits, totalNASUnits, isActive } = calculateTermGPA(termData.courses);
-            
+
             return {
               term,
               courses: termData.courses,
@@ -398,7 +398,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
               isActive
             };
           }
-          
+
           // Return empty term data if nothing found
           return {
             term,
@@ -409,10 +409,10 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
             isActive: false
           };
         });
-        
+
         // Wait for all term data to be loaded
         const loadedTermsData = await Promise.all(termsDataPromises);
-        
+
         // No longer filter out terms with no courses - we want to show all terms
         setTermsData(loadedTermsData);
       } catch (error) {
@@ -422,7 +422,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         setIsLoading(false);
       }
     };
-    
+
     if (authInitialized) {
       loadAllTermsData();
     }
@@ -431,7 +431,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   // Group terms by year (3 terms per year)
   const termsByYear = useMemo(() => {
     const grouped: { [key: string]: TermSummary[] } = {};
-    
+
     // Create placeholder data for all terms 1-12 plus any custom terms
     const allTerms = Array.from(
       new Set([
@@ -439,16 +439,16 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         ...termsData.map(term => term.term) // Any additional terms with data
       ])
     ).sort((a, b) => a - b);
-    
+
     // Create term summaries for all terms
     const allTermSummaries = allTerms.map(term => {
       // Find existing data for this term
       const existingData = termsData.find(t => t.term === term);
-      
+
       if (existingData) {
         return existingData;
       }
-      
+
       // Create empty term data if none exists
       return {
         term,
@@ -459,53 +459,58 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         isActive: false
       };
     });
-    
+
     // Group by year (3 terms per year)
     allTermSummaries.forEach(term => {
       const year = Math.ceil(term.term / 3);
       const yearKey = `Year ${year}`;
-      
+
       if (!grouped[yearKey]) {
         grouped[yearKey] = [];
       }
-      
+
       grouped[yearKey].push(term);
     });
-    
+
     return grouped;
   }, [termsData]);
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dlsu-green"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-dlsu-green/20 border-t-dlsu-green"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-md">
-        <p className="text-red-700">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          Retry
-        </button>
+      <div className="alert alert-error">
+        <div>
+          <p className="font-medium">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn btn-sm mt-2 bg-red-600 text-white hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
 
   if (termsData.length === 0) {
     return (
-      <div className="card">
-        <div className="card-body flex flex-col items-center justify-center py-10">
-          <h3 className="text-xl font-medium text-gray-700 mb-3">No Term Data Available</h3>
-          <p className="text-gray-500 mb-4">Add courses in the GPA Calculator tab to get started.</p>
+      <div className="card animate-mount">
+        <div className="card-body flex flex-col items-center justify-center py-12">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+            <span className="text-xl">📊</span>
+          </div>
+          <h3 className="font-display font-semibold text-lg text-dlsu-slate mb-2">No Term Data Available</h3>
+          <p className="text-sm text-gray-500 mb-5">Add courses in the GPA Calculator tab to get started.</p>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('switchTab', { detail: 'gpa' }))}
-            className="px-4 py-2 bg-dlsu-green text-white rounded hover:bg-dlsu-dark-green transition-colors"
+            className="btn btn-primary btn-sm"
           >
             Go to GPA Calculator
           </button>
@@ -515,57 +520,51 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 animate-mount">
       {/* CGPA Summary */}
       <div className="card">
-        <div className="card-header flex flex-col sm:flex-row justify-between items-center">
-          <h2 className="text-lg font-medium text-gray-900">Cumulative GPA Calculator</h2>
+        <div className="card-header">
+          <h2 className="font-display font-semibold text-base text-dlsu-slate">Cumulative GPA</h2>
         </div>
         <div className="card-body">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">Active Terms</p>
-              <p className="text-xl font-semibold">{totalTerms}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">Academic Units</p>
-              <p className="text-xl font-semibold">{totalUnits}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">Total Units</p>
-              <p className="text-xl font-semibold">{totalWithCredited}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-500 mb-1">CGPA</p>
-              <p className="text-3xl font-bold text-dlsu-green">{cgpa}</p>
-            </div>
+            {[
+              { label: 'Active Terms', value: totalTerms, large: false },
+              { label: 'Academic Units', value: totalUnits, large: false },
+              { label: 'Total Units', value: totalWithCredited, large: false },
+              { label: 'CGPA', value: cgpa, large: true },
+            ].map(({ label, value, large }) => (
+              <div key={label} className="text-center">
+                <p className="stat-label mb-1">{label}</p>
+                <p className={large ? 'stat-value text-dlsu-green' : 'font-display font-bold text-xl text-dlsu-slate'}>
+                  {value}
+                </p>
+              </div>
+            ))}
           </div>
-          
-          <div className="pt-4 border-t border-gray-200">
-            {/* Credited Units Input */}
-            <div className="relative group max-w-md">
-              <label htmlFor="creditedUnits" className="block text-xs font-medium text-gray-700 mb-1.5">
+
+          <div className="pt-4 border-t border-gray-100">
+            <div className="max-w-md">
+              <label htmlFor="creditedUnits" className="input-label">
                 Credited Units
-                <span className="ml-1 text-gray-400 cursor-help text-xs">(?)</span>
+                <span className="ml-1 text-gray-400 cursor-help">(?)
+                </span>
               </label>
-              <div className="flex">
+              <div className="flex items-center gap-2">
                 <input
                   type="number"
                   id="creditedUnits"
                   value={creditedUnitsInput}
                   onChange={(e) => handleCreditedUnitsChange(e.target.value)}
-                  className="w-24 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green"
+                  className="input w-24"
                   min="0"
                 />
-                <div className="ml-2 text-xs text-gray-500 flex items-center">
+                <span className="text-xs text-gray-400">
                   Units from previous school/degree (not counted in CGPA)
-                </div>
+                </span>
               </div>
-              
               {saveStatus && (
-                <div className="text-xs text-green-600 mt-1">
-                  {saveStatus}
-                </div>
+                <p className="text-xs text-dlsu-green font-medium mt-1">{saveStatus}</p>
               )}
             </div>
           </div>
@@ -575,75 +574,70 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
       {/* Terms by Year */}
       {Object.entries(termsByYear).map(([year, terms]) => (
         <div key={year} className="space-y-3">
-          <h3 className="text-base font-medium text-gray-700 px-1">{year}</h3>
-          
+          <h3 className="font-display font-semibold text-sm text-dlsu-slate px-1">{year}</h3>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {terms.map(term => (
-              <div 
-                key={term.term} 
-                className={`card h-full ${
-                  term.isActive 
-                    ? 'border-l-4 border-l-dlsu-green shadow-md' 
-                    : 'bg-gray-50 opacity-75'
-                }`}
+              <div
+                key={term.term}
+                className={`card h-full transition-all ${term.isActive
+                  ? 'border-l-[3px] border-l-dlsu-green'
+                  : 'opacity-60'
+                  }`}
               >
-                <div className={`card-header flex justify-between items-center py-2.5 px-4 ${
-                  term.isActive ? 'bg-green-50' : 'bg-gray-100'
-                }`}>
-                  <div className="flex items-center">
-                    <h4 className="font-medium text-sm">Term {term.term}</h4>
+                <div className={`flex justify-between items-center py-2.5 px-4 border-b ${term.isActive ? 'border-gray-100 bg-emerald-50/40' : 'border-gray-100 bg-gray-50'
+                  }`}>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-display font-semibold text-sm text-dlsu-slate">Term {term.term}</h4>
                     {!term.isActive && (
-                      <span className="ml-2 px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">
-                        Inactive
-                      </span>
+                      <span className="badge bg-gray-100 text-gray-500">Inactive</span>
                     )}
                   </div>
-                  <button 
+                  <button
                     onClick={() => onEditTerm(term.term)}
-                    className="p-1.5 text-gray-500 hover:text-dlsu-green rounded-full hover:bg-gray-100"
+                    className="btn-icon p-1.5 text-gray-400 hover:text-dlsu-green hover:bg-gray-100 rounded-md transition-colors"
                     title="Edit Term"
                   >
                     <Edit size={14} />
                   </button>
                 </div>
-                
+
                 <div className="p-4 flex flex-col h-full">
                   <div className="mb-3 text-center">
-                    <div className={`text-2xl font-bold ${term.isActive ? 'text-dlsu-green' : 'text-gray-500'}`}>
+                    <div className={`font-display font-bold text-2xl ${term.isActive ? 'text-dlsu-green' : 'text-gray-400'}`}>
                       {term.gpa}
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Total Units: {term.totalUnits}
-                      {term.totalNASUnits > 0 && ` (${term.totalNASUnits} NAS)`}
+                    <div className="text-xs text-gray-400">
+                      {term.totalUnits} units{term.totalNASUnits > 0 && ` (${term.totalNASUnits} NAS)`}
                     </div>
                   </div>
-                  
-                  <div className="overflow-hidden flex-grow">
+
+                  <div className="overflow-hidden flex-grow rounded-lg border border-gray-100">
                     <table className="min-w-full">
-                      <thead className="bg-gray-50 text-xs">
+                      <thead className="bg-gray-50/80">
                         <tr>
-                          <th className="px-2 py-1.5 text-left text-gray-500">Code</th>
-                          <th className="px-2 py-1.5 text-center text-gray-500 w-12">Units</th>
-                          <th className="px-2 py-1.5 text-center text-gray-500 w-12">Grade</th>
+                          <th className="px-2 py-1.5 text-left text-[0.65rem] font-medium text-gray-400 uppercase tracking-wider">Code</th>
+                          <th className="px-2 py-1.5 text-center text-[0.65rem] font-medium text-gray-400 uppercase tracking-wider w-12">Units</th>
+                          <th className="px-2 py-1.5 text-center text-[0.65rem] font-medium text-gray-400 uppercase tracking-wider w-12">Grade</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100 text-xs">
+                      <tbody className="divide-y divide-gray-50 text-xs">
                         {term.courses.length === 0 ? (
                           <tr>
-                            <td colSpan={3} className="px-2 py-4 text-center text-gray-400 italic text-xs">
+                            <td colSpan={3} className="px-2 py-4 text-center text-gray-300 italic text-xs">
                               No courses yet
                             </td>
                           </tr>
                         ) : (
-                          term.courses.map((course, index) => (
-                            <tr key={course.id} className={`hover:bg-gray-50 ${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                              <td className="px-2 py-1.5 font-medium truncate max-w-[100px]" title={course.code}>
-                                {course.code || '-'}
+                          term.courses.map((course) => (
+                            <tr key={course.id} className="hover:bg-gray-50/50">
+                              <td className="px-2 py-1.5 font-medium text-gray-600 truncate max-w-[100px]" title={course.code}>
+                                {course.code || '–'}
                               </td>
-                              <td className="px-2 py-1.5 text-center">
+                              <td className="px-2 py-1.5 text-center text-gray-500">
                                 {course.nas ? `(${course.units})` : course.units}
                               </td>
-                              <td className="px-2 py-1.5 text-center">
+                              <td className="px-2 py-1.5 text-center text-gray-500">
                                 {course.nas && course.units === 0
                                   ? (course.grade === 1 ? 'P' : 'F')
                                   : course.grade.toFixed(1)}

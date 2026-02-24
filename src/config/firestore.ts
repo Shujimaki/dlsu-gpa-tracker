@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { 
+import {
   doc,
   setDoc,
   getDoc,
@@ -30,12 +30,12 @@ export const saveUserData = async (userId: string, term: number, courses: Course
       console.warn('Cannot save to Firestore: userId is empty or undefined');
       return false; // Return false to indicate failure
     }
-    
+
     if (!Array.isArray(courses)) {
       console.warn('Cannot save to Firestore: courses is not an array');
       return false;
     }
-    
+
     // Validate each course to ensure no undefined values
     const validCourses = courses.map(course => ({
       id: course.id || crypto.randomUUID(),
@@ -45,9 +45,9 @@ export const saveUserData = async (userId: string, term: number, courses: Course
       grade: typeof course.grade === 'number' ? course.grade : 0,
       nas: typeof course.nas === 'boolean' ? course.nas : false
     }));
-    
+
     console.log('Saving to Firestore:', { userId, term, courses: validCourses, isFlowchartExempt });
-    
+
     const userRef = doc(db, 'users', userId);
     const termRef = doc(userRef, 'terms', term.toString());
     await setDoc(termRef, { courses: validCourses, isFlowchartExempt }, { merge: true });
@@ -65,11 +65,11 @@ export const loadUserData = async (userId: string, term: number): Promise<TermDa
       console.warn('Cannot load from Firestore: userId is empty or undefined');
       return null;
     }
-    
+
     const userRef = doc(db, 'users', userId);
     const termRef = doc(userRef, 'terms', term.toString());
     const termDoc = await getDoc(termRef);
-    
+
     if (termDoc.exists()) {
       const data = termDoc.data();
       console.log('Data loaded from Firestore:', data);
@@ -91,23 +91,23 @@ export const getUserTerms = async (userId: string): Promise<number[]> => {
       console.warn('Cannot get terms from Firestore: userId is empty or undefined');
       return [];
     }
-    
+
     const userRef = doc(db, 'users', userId);
     const termsCollectionRef = collection(userRef, 'terms');
     const termsSnapshot = await getDocs(termsCollectionRef);
-    
+
     if (termsSnapshot.empty) {
       console.log('No terms found in Firestore for user:', userId);
       return [];
     }
-    
+
     // Extract term numbers from document IDs
     const termNumbers = termsSnapshot.docs.map(doc => {
       const termId = doc.id;
       const termNumber = parseInt(termId);
       return isNaN(termNumber) ? null : termNumber;
     }).filter((term): term is number => term !== null);
-    
+
     console.log('Terms loaded from Firestore:', termNumbers);
     return termNumbers;
   } catch (error) {
@@ -122,10 +122,10 @@ export const deleteUserTerm = async (userId: string, term: number): Promise<bool
       console.warn('Cannot delete term from Firestore: userId is empty or undefined');
       return false;
     }
-    
+
     const userRef = doc(db, 'users', userId);
     const termRef = doc(userRef, 'terms', term.toString());
-    
+
     await deleteDoc(termRef);
     console.log(`Term ${term} deleted from Firestore for user ${userId}`);
     return true;
@@ -142,9 +142,9 @@ export const saveUserProjectionSettings = async (userId: string, settings: Proje
       console.warn('Cannot save projection settings: userId is empty or undefined');
       return false;
     }
-    
+
     console.log('Saving projection settings to Firestore:', { userId, settings });
-    
+
     const userRef = doc(db, 'users', userId);
     await setDoc(doc(userRef, 'settings', 'projections'), settings, { merge: true });
     console.log('Projection settings saved to Firestore successfully');
@@ -161,11 +161,11 @@ export const loadUserProjectionSettings = async (userId: string): Promise<Projec
       console.warn('Cannot load projection settings: userId is empty or undefined');
       return null;
     }
-    
+
     const userRef = doc(db, 'users', userId);
     const settingsRef = doc(userRef, 'settings', 'projections');
     const settingsDoc = await getDoc(settingsRef);
-    
+
     if (settingsDoc.exists()) {
       const data = settingsDoc.data() as ProjectionSettings;
       console.log('Projection settings loaded from Firestore:', data);
@@ -185,9 +185,9 @@ export const saveUserCGPASettings = async (userId: string, settings: CGPASetting
       console.warn('Cannot save CGPA settings: userId is empty or undefined');
       return false;
     }
-    
+
     console.log('Saving CGPA settings to Firestore:', { userId, settings });
-    
+
     const userRef = doc(db, 'users', userId);
     await setDoc(doc(userRef, 'settings', 'cgpa'), settings, { merge: true });
     console.log('CGPA settings saved to Firestore successfully');
@@ -204,11 +204,11 @@ export const loadUserCGPASettings = async (userId: string): Promise<CGPASettings
       console.warn('Cannot load CGPA settings: userId is empty or undefined');
       return null;
     }
-    
+
     const userRef = doc(db, 'users', userId);
     const settingsRef = doc(userRef, 'settings', 'cgpa');
     const settingsDoc = await getDoc(settingsRef);
-    
+
     if (settingsDoc.exists()) {
       const data = settingsDoc.data() as CGPASettings;
       console.log('CGPA settings loaded from Firestore:', data);

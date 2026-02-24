@@ -123,7 +123,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
           // console.log("GradeCalc: New login detected. Clearing newLogin flag. Migration will be attempted.");
           sessionStorage.removeItem('newLogin'); // Clear the flag, but still proceed to check for migration
         }
-        
+
         let firestoreSubjects: Subject[] = [];
         let firestoreActiveSubjectId: string | null = null;
         let firestoreDocExists = false;
@@ -144,7 +144,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
               const subjectExists = firestoreSubjects.some((s: Subject) => s.id === data.activeSubjectId);
               firestoreActiveSubjectId = subjectExists ? data.activeSubjectId : (firestoreSubjects.length > 0 ? firestoreSubjects[0].id : null);
             } else if (firestoreSubjects.length > 0) {
-               firestoreActiveSubjectId = firestoreSubjects[0].id;
+              firestoreActiveSubjectId = firestoreSubjects[0].id;
             }
           } else {
             // console.log("GradeCalc: No Firestore data document exists for gradeCalculator settings.");
@@ -152,7 +152,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
         } catch (error) {
           console.error("GradeCalc: Error loading Firestore data:", error);
         }
-        
+
         // Migration Condition - now happens even if newLoginSession was true, after flag is cleared.
         const firestoreIsEmptyOrTrulyDefault = firestoreSubjects.length === 0;
         const anonymousHasDataToMigrate = anonymousData && anonymousData.subjects && anonymousData.subjects.length > 0;
@@ -169,7 +169,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
 
           try {
             const userRef = doc(db, 'users', user.uid); // Re-declare for safety within this scope
-            await setDoc(doc(userRef, 'settings', 'gradeCalculator'), { 
+            await setDoc(doc(userRef, 'settings', 'gradeCalculator'), {
               subjects: subjectsToMigrate,
               activeSubjectId: newActiveSubjectId
             }, { merge: true });
@@ -197,15 +197,15 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
           setSubjects([defaultInitialSubject]);
           setActiveSubjectId(defaultInitialSubject.id);
           // If it was a new login session AND Firestore doc didn't exist AND no migration happened, save default state.
-          if (newLoginSession && !firestoreDocExists && !(firestoreIsEmptyOrTrulyDefault && anonymousHasDataToMigrate) && user) { 
+          if (newLoginSession && !firestoreDocExists && !(firestoreIsEmptyOrTrulyDefault && anonymousHasDataToMigrate) && user) {
             // console.log("GradeCalc: New login, Firestore doc didn't exist, and no migration occurred. Saving default state to Firestore.");
             try {
-                const userRef = doc(db, 'users', user.uid);
-                await setDoc(doc(userRef, 'settings', 'gradeCalculator'), { 
-                    subjects: [defaultInitialSubject],
-                    activeSubjectId: defaultInitialSubject.id
-                }, { merge: true });
-            } catch (e) { console.error("GradeCalc: Failed to save default state for new user", e);}
+              const userRef = doc(db, 'users', user.uid);
+              await setDoc(doc(userRef, 'settings', 'gradeCalculator'), {
+                subjects: [defaultInitialSubject],
+                activeSubjectId: defaultInitialSubject.id
+              }, { merge: true });
+            } catch (e) { console.error("GradeCalc: Failed to save default state for new user", e); }
           }
         }
       } else if (!user && authInitialized) { // Anonymous user
@@ -224,10 +224,10 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
             setActiveSubjectId(anonymousData.subjects[0].id);
           }
         } else {
-           // No anonymous data, or it's invalid, so set to default initial state
-           const defaultInitialSubject = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
-           setSubjects([defaultInitialSubject]);
-           setActiveSubjectId(defaultInitialSubject.id);
+          // No anonymous data, or it's invalid, so set to default initial state
+          const defaultInitialSubject = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
+          setSubjects([defaultInitialSubject]);
+          setActiveSubjectId(defaultInitialSubject.id);
         }
       } else {
         // Auth not initialized yet, or some other state. Usually means isLoading should remain true.
@@ -237,8 +237,8 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
       }
       setIsLoading(false);
     };
-    
-    if(authInitialized) { // Only run if auth has initialized
+
+    if (authInitialized) { // Only run if auth has initialized
       loadAndMigrateData();
     }
   }, [user, authInitialized]); // Trigger on user or auth state change
@@ -247,15 +247,15 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   useEffect(() => {
     const saveData = async () => {
       if (isLoading) return; // Don't save during initial load
-      
+
       setSaveStatus('Saving...');
-      
+
       if (user && authInitialized) {
         try {
           const userRef = doc(db, 'users', user.uid);
-          await setDoc(doc(userRef, 'settings', 'gradeCalculator'), { 
+          await setDoc(doc(userRef, 'settings', 'gradeCalculator'), {
             subjects,
-            activeSubjectId 
+            activeSubjectId
           }, { merge: true });
           setSaveStatus('Settings saved');
           setTimeout(() => setSaveStatus(null), 2000);
@@ -266,9 +266,9 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
       } else {
         // For anonymous users, save to session storage
         try {
-          sessionStorage.setItem('grade_calculator_data', JSON.stringify({ 
+          sessionStorage.setItem('grade_calculator_data', JSON.stringify({
             subjects,
-            activeSubjectId 
+            activeSubjectId
           }));
           setSaveStatus('Settings saved');
           setTimeout(() => setSaveStatus(null), 2000);
@@ -278,7 +278,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
         }
       }
     };
-    
+
     // Debounce save to avoid too many requests
     const timeoutId = setTimeout(saveData, 1000);
     return () => clearTimeout(timeoutId);
@@ -297,7 +297,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
     if (authInitialized && !user) {
       // Clear data from session storage
       sessionStorage.removeItem('grade_calculator_data');
-      
+
       // Reset to default state
       setSubjects([{
         id: crypto.randomUUID(),
@@ -305,7 +305,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
         passingGrade: 60,
         categories: []
       }]);
-      
+
       // Reset active subject ID
       setActiveSubjectId(null);
     }
@@ -339,9 +339,9 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
       weightedScore += (category.score / 100) * category.weight;
     });
 
-    return { 
-      totalWeight, 
-      finalGrade: totalWeight > 0 ? weightedScore : 0 
+    return {
+      totalWeight,
+      finalGrade: totalWeight > 0 ? weightedScore : 0
     };
   }, [activeSubject]);
 
@@ -351,10 +351,10 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
 
     // Find the closest preset passing grade
     const passingGrade = activeSubject.passingGrade;
-    const closestPreset = PASSING_GRADE_PRESETS.reduce((prev, curr) => 
+    const closestPreset = PASSING_GRADE_PRESETS.reduce((prev, curr) =>
       Math.abs(curr - passingGrade) < Math.abs(prev - passingGrade) ? curr : prev
     );
-    
+
     // Return the corresponding transmutation table
     return TRANSMUTATION_TABLES[closestPreset as keyof typeof TRANSMUTATION_TABLES];
   }, [activeSubject]);
@@ -377,14 +377,14 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
       alert("Maximum of 8 subjects allowed");
       return;
     }
-    
+
     const newSubject: Subject = {
       id: crypto.randomUUID(),
       name: `New Subject`,
       passingGrade: 60,
       categories: []
     };
-    
+
     setSubjects([...subjects, newSubject]);
     setActiveSubjectId(newSubject.id);
   };
@@ -393,7 +393,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   const removeSubject = (id: string) => {
     const updatedSubjects = subjects.filter(subject => subject.id !== id);
     setSubjects(updatedSubjects);
-    
+
     // If the active subject was removed, set a new active subject
     if (activeSubjectId === id && updatedSubjects.length > 0) {
       setActiveSubjectId(updatedSubjects[0].id);
@@ -406,9 +406,9 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   const updateSubjectName = (id: string, name: string) => {
     // Limit to 30 characters
     const limitedName = name.slice(0, 30);
-    
+
     setSubjects(
-      subjects.map(subject => 
+      subjects.map(subject =>
         subject.id === id ? { ...subject, name: limitedName } : subject
       )
     );
@@ -417,12 +417,12 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   // Update passing grade
   const updatePassingGrade = (id: string, passingGrade: number) => {
     // Find the closest preset
-    const closestPreset = PASSING_GRADE_PRESETS.reduce((prev, curr) => 
+    const closestPreset = PASSING_GRADE_PRESETS.reduce((prev, curr) =>
       Math.abs(curr - passingGrade) < Math.abs(prev - passingGrade) ? curr : prev
     );
-    
+
     setSubjects(
-      subjects.map(subject => 
+      subjects.map(subject =>
         subject.id === id ? { ...subject, passingGrade: closestPreset } : subject
       )
     );
@@ -446,9 +446,9 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
     };
 
     setSubjects(
-      subjects.map(subject => 
-        subject.id === activeSubject.id 
-          ? { ...subject, categories: [...subject.categories, newCategory] } 
+      subjects.map(subject =>
+        subject.id === activeSubject.id
+          ? { ...subject, categories: [...subject.categories, newCategory] }
           : subject
       )
     );
@@ -459,12 +459,12 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
     if (!activeSubject) return;
 
     setSubjects(
-      subjects.map(subject => 
-        subject.id === activeSubject.id 
-          ? { 
-              ...subject, 
-              categories: subject.categories.filter(c => c.id !== categoryId) 
-            } 
+      subjects.map(subject =>
+        subject.id === activeSubject.id
+          ? {
+            ...subject,
+            categories: subject.categories.filter(c => c.id !== categoryId)
+          }
           : subject
       )
     );
@@ -493,7 +493,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
         alert("Score must be between 0 and 100%.");
         // Optionally, clamp the value or revert to previous instead of just returning
         // For now, we prevent the update if out of bounds.
-        return; 
+        return;
       }
       // Round to exactly 2 decimal places to prevent precision issues
       processedValue = Math.round((numValue + Number.EPSILON) * 100) / 100;
@@ -518,21 +518,19 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-dlsu-green"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-dlsu-green/20 border-t-dlsu-green"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with save status */}
+    <div className="space-y-5 animate-mount">
+      {/* Header */}
       <div className="card">
-        <div className="card-header flex flex-col sm:flex-row justify-between items-start sm:items-center">
-          <h2 className="text-lg font-medium text-gray-900">Grade Calculator</h2>
+        <div className="card-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <h2 className="font-display font-semibold text-base text-dlsu-slate">Grade Calculator</h2>
           {saveStatus && (
-            <div className="text-sm text-green-600">
-              {saveStatus}
-            </div>
+            <span className="text-xs text-dlsu-green font-medium">{saveStatus}</span>
           )}
         </div>
         <div className="card-body">
@@ -544,18 +542,17 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
 
       {/* Subject Tabs */}
       <div className="card">
-        <div className="overflow-x-auto border-b border-gray-200 p-3 bg-gray-50 flex flex-row items-center gap-2 grade-calc-subject-tabs-container">
+        <div className="overflow-x-auto border-b border-gray-100 p-3 bg-gray-50/70 flex flex-row items-center gap-2 grade-calc-subject-tabs-container">
           {subjects.map(subject => {
             const isActive = activeSubjectId === subject.id;
             return (
               <button
                 key={subject.id}
                 onClick={() => setActiveSubjectId(subject.id)}
-                className={`px-3 py-1.5 rounded-md whitespace-nowrap flex items-center justify-between min-w-[150px] max-w-[170px] h-9 flex-shrink-0 text-sm grade-calc-subject-button ${
-                  isActive
-                    ? 'bg-dlsu-green text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-3 py-1.5 rounded-lg whitespace-nowrap flex items-center justify-between min-w-[150px] max-w-[170px] h-9 flex-shrink-0 text-sm transition-colors grade-calc-subject-button ${isActive
+                  ? 'bg-dlsu-green text-white shadow-sm'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  }`}
               >
                 <span className="flex-grow truncate mr-1" title={subject.name}>
                   {subject.name}
@@ -566,11 +563,10 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                       e.stopPropagation();
                       removeSubject(subject.id);
                     }}
-                    className={`p-0.5 rounded-full flex items-center justify-center transition-colors ${
-                      isActive
-                        ? 'text-white hover:text-white bg-dlsu-dark-green/30 hover:bg-dlsu-dark-green/60'
-                        : 'text-gray-400 hover:bg-gray-300 hover:text-gray-700'
-                    }`}
+                    className={`p-0.5 rounded-full flex items-center justify-center transition-colors ${isActive
+                      ? 'text-white/70 hover:text-white hover:bg-white/20'
+                      : 'text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+                      }`}
                     aria-label="Remove subject"
                   >
                     <X size={14} />
@@ -579,100 +575,95 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
               </button>
             );
           })}
-          {/* Conditional rendering for Add Subject button or Max Subject indicator */}
           {subjects.length < 8 ? (
             <button
               onClick={addSubject}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center h-9 flex-shrink-0"
+              className="btn btn-sm text-gray-500 hover:text-dlsu-green border border-dashed border-gray-300 hover:border-dlsu-green/40 gap-1 flex-shrink-0 transition-colors"
             >
-              <PlusCircle size={14} className="mr-1" />
-              <span>Add Subject</span>
+              <PlusCircle size={14} />
+              Add Subject
             </button>
           ) : (
-            <div className="px-3 py-1.5 text-xs text-gray-500 italic flex items-center h-9 flex-shrink-0">
-              Max 8 subjects reached
-            </div>
+            <span className="px-3 py-1.5 text-xs text-gray-400 italic h-9 flex items-center flex-shrink-0">
+              Max 8 subjects
+            </span>
           )}
         </div>
 
         {activeSubject && (
-          <div className="p-4">
+          <div className="p-4 sm:p-5">
             <div className="flex flex-col md:flex-row gap-4 mb-5">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Subject Name
-                </label>
+                <label className="input-label">Subject Name</label>
                 <input
                   type="text"
                   value={activeSubject.name}
                   onChange={(e) => updateSubjectName(activeSubject.id, e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-sm"
+                  className="input"
                   maxLength={30}
                 />
               </div>
               <div className="w-full md:w-40">
-                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                  Passing Grade (%)
-                </label>
+                <label className="input-label">Passing Grade (%)</label>
                 <select
                   value={activeSubject.passingGrade}
                   onChange={(e) => updatePassingGrade(activeSubject.id, Number(e.target.value))}
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-sm"
+                  className="input"
                 >
                   {PASSING_GRADE_PRESETS.map(preset => (
                     <option key={preset} value={preset}>{preset}%</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Minimum score to pass (1.0)</p>
+                <p className="text-xs text-gray-400 mt-1">Minimum score to pass (1.0)</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Grade Computations Table */}
               <div className="lg:col-span-2">
-                <h3 className="text-base font-medium text-gray-700 mb-3">Grade Computations</h3>
-                
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border border-gray-200 mb-4">
+                <h3 className="font-display font-semibold text-sm text-dlsu-slate mb-3">Grade Computations</h3>
+
+                <div className="overflow-x-auto rounded-lg border border-gray-100">
+                  <table className="data-table">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-700 border-b border-gray-200">
-                        <th className="px-3 py-2 text-left text-xs font-medium">Category</th>
-                        <th className="px-3 py-2 text-center text-xs font-medium w-24">Weight (%)</th>
-                        <th className="px-3 py-2 text-center text-xs font-medium w-24">Score (%)</th>
-                        <th className="px-3 py-2 text-center text-xs font-medium w-24">Weighted</th>
-                        <th className="px-3 py-2 w-10"></th>
+                      <tr>
+                        <th>Category</th>
+                        <th className="text-center w-24">Weight (%)</th>
+                        <th className="text-center w-24">Score (%)</th>
+                        <th className="text-center w-24">Weighted</th>
+                        <th className="w-10"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {activeSubject.categories.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-4 px-4 text-center text-sm text-gray-500 italic">
+                          <td colSpan={5} className="py-6 text-center text-sm text-gray-400 italic">
                             No categories added yet
                           </td>
                         </tr>
                       ) : (
                         activeSubject.categories.map(category => (
-                          <tr key={category.id} className={`border-b hover:bg-gray-50 ${activeSubject.categories.indexOf(category) % 2 === 0 ? '!bg-white' : '!bg-slate-50'}`}>
-                            <td className="px-3 py-2">
+                          <tr key={category.id}>
+                            <td>
                               <input
                                 type="text"
                                 value={category.name}
                                 onChange={(e) => updateCategory(category.id, 'name', e.target.value)}
                                 placeholder="Category name"
-                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green"
+                                className="input py-1.5"
                               />
                             </td>
-                            <td className="px-3 py-2">
+                            <td>
                               <input
                                 type="number"
                                 value={category.weight}
                                 onChange={(e) => updateCategory(category.id, 'weight', Number(e.target.value))}
                                 min="0"
                                 max="100"
-                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-center min-w-[90px]"
+                                className="input py-1.5 text-center min-w-[80px]"
                               />
                             </td>
-                            <td className="px-3 py-2">
+                            <td>
                               <input
                                 type="number"
                                 value={category.score}
@@ -680,81 +671,82 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                                 min="0"
                                 max="100"
                                 step="0.01"
-                                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-dlsu-green focus:border-dlsu-green text-center min-w-[90px]"
+                                className="input py-1.5 text-center min-w-[80px]"
                               />
                             </td>
-                            <td className="px-3 py-2 text-center text-sm">
+                            <td className="text-center text-sm font-medium text-gray-600">
                               {((category.score / 100) * category.weight).toFixed(2)}
                             </td>
-                            <td className="px-3 py-2 text-center">
+                            <td className="text-center">
                               <button
                                 onClick={() => removeCategory(category.id)}
-                                className="p-1 hover:bg-red-50 rounded-full"
+                                className="btn-icon p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                                 aria-label="Remove category"
                               >
-                                <TrashIcon size={14} className="text-gray-400 hover:text-red-500" />
+                                <TrashIcon size={14} />
                               </button>
                             </td>
                           </tr>
                         ))
                       )}
-                      <tr className="bg-gray-50 font-medium text-sm">
-                        <td className="py-2 px-3 text-right">Total</td>
-                        <td className="py-2 px-3 text-center">{totalWeight.toFixed(2)}%</td>
-                        <td className="py-2 px-3"></td>
-                        <td className="py-2 px-3 text-center">{finalGrade.toFixed(2)}%</td>
-                        <td className="py-2 px-3"></td>
+                      <tr className="!bg-gray-50 font-medium text-sm">
+                        <td className="text-right text-gray-500">Total</td>
+                        <td className="text-center">{totalWeight.toFixed(2)}%</td>
+                        <td></td>
+                        <td className="text-center text-dlsu-slate">{finalGrade.toFixed(2)}%</td>
+                        <td></td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                
+
                 <button
                   onClick={addCategory}
-                  className="px-3 py-1.5 text-sm bg-dlsu-green text-white rounded hover:bg-dlsu-dark-green transition-colors flex items-center grade-calc-button"
+                  className="btn btn-primary btn-sm gap-1 mt-3 grade-calc-button"
                 >
-                  <PlusCircle size={14} className="mr-1" />
-                  <span>Add Category</span>
+                  <PlusCircle size={14} />
+                  Add Category
                 </button>
               </div>
 
               {/* Grade Transmutation Table */}
               <div className="lg:col-span-1">
-                <h3 className="text-base font-medium text-gray-700 mb-3">Grade Transmutation</h3>
-                
-                <div className="overflow-x-auto">
-                  <table className="min-w-full border border-gray-200 mb-4">
+                <h3 className="font-display font-semibold text-sm text-dlsu-slate mb-3">Grade Transmutation</h3>
+
+                <div className="overflow-x-auto rounded-lg border border-gray-100">
+                  <table className="data-table">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-700 border-b border-gray-200">
-                        <th className="px-3 py-2 text-left text-xs font-medium">Percentage Range</th>
-                        <th className="px-3 py-2 text-center text-xs font-medium">Grade</th>
+                      <tr>
+                        <th>Percentage Range</th>
+                        <th className="text-center">Grade</th>
                       </tr>
                     </thead>
                     <tbody>
                       {transmutationTable.map((row, index) => (
-                        <tr key={index} className={`border-b text-sm ${
-                          finalGrade >= row.range[0] && finalGrade <= row.range[1] ? 'bg-green-50 font-medium' : 
-                          index % 2 === 0 ? '!bg-white' : '!bg-slate-50'
-                        }`}>
-                          <td className="px-3 py-1.5">
-                            {row.range[0].toFixed(2)}% - {row.range[1].toFixed(2)}%
+                        <tr key={index} className={
+                          finalGrade >= row.range[0] && finalGrade <= row.range[1]
+                            ? '!bg-emerald-50 font-medium'
+                            : ''
+                        }>
+                          <td className="text-xs">
+                            {row.range[0].toFixed(2)}% – {row.range[1].toFixed(2)}%
                           </td>
-                          <td className="px-3 py-1.5 text-center">{row.grade.toFixed(1)}</td>
+                          <td className="text-center text-xs">{row.grade.toFixed(1)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg text-center mt-4">
-                  <p className="text-xs text-gray-600 mb-1">Final Grade</p>
-                  <p className="text-3xl font-bold text-dlsu-green">{transmutedGrade.toFixed(1)}</p>
+                <div className="bg-gradient-to-br from-gray-50 to-emerald-50/30 p-4 rounded-xl text-center mt-4 border border-gray-100">
+                  <p className="stat-label mb-1">Final Grade</p>
+                  <p className="stat-value text-dlsu-green">{transmutedGrade.toFixed(1)}</p>
                   <p className="text-sm text-gray-500 mt-1">Raw score: {finalGrade.toFixed(2)}%</p>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-gray-400 mt-2">
                     {activeSubject.passingGrade}% is the minimum to pass (1.0)
                   </p>
                   <p className="text-xs text-gray-400 mt-1 italic">
-                    Note: These grades are not final. Please refer to the official grades posted on MLS.
+                    Note: These grades are not final. Please refer to MLS.
                   </p>
                 </div>
               </div>

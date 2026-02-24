@@ -1,48 +1,42 @@
+import { Calculator, Award, TrendingUp, Target } from 'lucide-react';
+
 interface TabNavigationProps {
   activeTab: string;
-  setActiveTab: (tab: string) => void;
 }
 
-const TabNavigation = ({ activeTab, setActiveTab }: TabNavigationProps) => {
-  const tabs = [
-    {
-      id: 'gpa',
-      label: 'GPA Calculator'
-    },
-    {
-      id: 'grade',
-      label: 'Grade Calculator'
-    },
-    {
-      id: 'cgpa',
-      label: 'CGPA Calculator'
-    },
-    {
-      id: 'projections',
-      label: 'CGPA Projections'
-    }
-  ];
+const tabs = [
+  { id: 'gpa', label: 'GPA', fullLabel: 'GPA Calculator', icon: Calculator },
+  { id: 'grade', label: 'Grade', fullLabel: 'Grade Calculator', icon: Award },
+  { id: 'cgpa', label: 'CGPA', fullLabel: 'CGPA Calculator', icon: TrendingUp },
+  { id: 'projections', label: 'Projections', fullLabel: 'CGPA Projections', icon: Target },
+];
+
+const TabNavigation = ({ activeTab }: TabNavigationProps) => {
+  const switchTab = (tabId: string) => {
+    window.dispatchEvent(new CustomEvent('switchTab', { detail: tabId }));
+  };
 
   return (
-    <div className="bg-white border-b border-gray-200 overflow-x-auto scrollbar-hide">
-      <div className="container mx-auto flex px-4">
-        {tabs.map((tab) => (
+    <nav className="tab-pills" role="tablist">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id;
+        return (
           <button
             key={tab.id}
-            className={`px-4 py-3 text-sm font-medium transition-all duration-200 focus:outline-none relative
-              ${activeTab === tab.id 
-                ? 'text-dlsu-green border-b-2 border-dlsu-green' 
-                : 'text-gray-500 hover:text-gray-700 hover:border-b-2 hover:border-gray-300'
-              }
-            `}
-            onClick={() => setActiveTab(tab.id)}
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => switchTab(tab.id)}
+            className={`tab-pill ${isActive ? 'active' : ''}`}
           >
-            {tab.label}
+            <Icon size={15} strokeWidth={isActive ? 2.2 : 1.8} />
+            <span className="hidden sm:inline">{tab.fullLabel}</span>
+            <span className="sm:hidden">{tab.label}</span>
           </button>
-        ))}
-      </div>
-    </div>
+        );
+      })}
+    </nav>
   );
 };
 
-export default TabNavigation; 
+export default TabNavigation;
