@@ -711,8 +711,8 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 <button
                   onClick={() => handleDeleteClick(selectedTerm)}
                   className={`btn btn-sm ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12
-                      ? 'text-red-500 hover:bg-red-50'
-                      : 'text-amber-500 hover:bg-amber-50'
+                    ? 'text-red-500 hover:bg-red-50'
+                    : 'text-amber-500 hover:bg-amber-50'
                     } border border-gray-200`}
                   title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
                 >
@@ -899,7 +899,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               {(isDeansLister || isFirstHonors) && (
                 <div className="mt-1.5">
                   <span className={`badge ${isFirstHonors ? 'badge-gold' : 'badge-green'}`}>
-                    {isFirstHonors ? '🏆 First Honors' : '⭐ Second Honors'}
+                    {isFirstHonors ? 'First Honors Dean\'s Lister' : 'Second Honors Dean\'s Lister'}
                   </span>
                 </div>
               )}
