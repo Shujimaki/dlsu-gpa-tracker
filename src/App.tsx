@@ -8,6 +8,7 @@ import LoginModal from './components/LoginModal'
 import TabNavigation from './components/TabNavigation'
 import UpdateModal from './components/UpdateModal'
 import TutorialModal from './components/TutorialModal'
+import { DeansListModal, GPACalculationModal } from './components/InstructionModals'
 import type { User as FirebaseUser } from 'firebase/auth'
 import { auth } from './config/firebase';
 import { onAuthStateChanged, signOut, setPersistence, browserSessionPersistence, browserLocalPersistence } from 'firebase/auth';
@@ -18,6 +19,8 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(true) // Always start with true
   const [showTutorialModal, setShowTutorialModal] = useState(false);
+  const [showDeansListModal, setShowDeansListModal] = useState(false);
+  const [showGPACalcModal, setShowGPACalcModal] = useState(false);
   const [activeTab, setActiveTab] = useState('gpa')
   const [authInitialized, setAuthInitialized] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState(() => {
@@ -210,6 +213,8 @@ function App() {
         onShowUpdates={() => setShowUpdateModal(true)}
         onShowTutorial={() => setShowTutorialModal(true)}
         onShowWarnings={() => setWarningDismissed(false)}
+        onShowDeansList={() => setShowDeansListModal(true)}
+        onShowGPACalculation={() => setShowGPACalcModal(true)}
         hasWarnings={showAnonymousWarning && warningDismissed && !user}
       />
 
@@ -332,6 +337,16 @@ function App() {
       {/* Tutorial Modal */}
       {showTutorialModal && (
         <TutorialModal isOpen={showTutorialModal} onClose={() => setShowTutorialModal(false)} />
+      )}
+
+      {/* Dean's List Modal */}
+      {showDeansListModal && (
+        <DeansListModal isOpen={showDeansListModal} onClose={() => setShowDeansListModal(false)} />
+      )}
+
+      {/* GPA Calculation Modal */}
+      {showGPACalcModal && (
+        <GPACalculationModal isOpen={showGPACalcModal} onClose={() => setShowGPACalcModal(false)} />
       )}
     </div>
   );

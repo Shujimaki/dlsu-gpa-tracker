@@ -28,3 +28,7 @@ references/
 *.env
 *.pdf
 *.docx
+
+.agents
+.claude
+.gsd

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PlusIcon, TrashIcon, InfoIcon, Loader2, Printer, AlertTriangle } from 'lucide-react';
+import { PlusIcon, TrashIcon, Loader2, Printer, AlertTriangle } from 'lucide-react';
 import type { Course } from '../types';
 import { logGpaCalculation, logDeansListEligibility, logUserAction } from '../config/analytics';
 import { saveUserData, loadUserData, getUserTerms, deleteUserTerm } from '../config/firestore';
@@ -42,8 +42,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedTerm, setSelectedTerm] = useState(initialTerm);
   const [availableTerms, setAvailableTerms] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-  const [showDeansListModal, setShowDeansListModal] = useState(false);
-  const [showGPAModal, setShowGPAModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [isFlowchartExempt, setIsFlowchartExempt] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -666,27 +664,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
             )}
           </div>
         </div>
-        <div className="card-body">
-          <p className="text-sm text-gray-500 mb-3">
-            Enter your courses, units, and grades to calculate your GPA.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setShowDeansListModal(true)}
-              className="text-xs text-dlsu-green hover:text-dlsu-dark-green flex items-center gap-1 transition-colors"
-            >
-              <InfoIcon size={13} />
-              Dean's List Rules
-            </button>
-            <button
-              onClick={() => setShowGPAModal(true)}
-              className="text-xs text-dlsu-green hover:text-dlsu-dark-green flex items-center gap-1 transition-colors"
-            >
-              <InfoIcon size={13} />
-              How GPA is Calculated
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Term Selection */}
@@ -907,74 +884,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
           </div>
         </div>
       </div>
-
-      {/* Dean's List Modal */}
-      {showDeansListModal && (
-        <div className="modal-overlay" onClick={() => setShowDeansListModal(false)}>
-          <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-gray-100">
-              <h3 className="font-display font-semibold text-base text-dlsu-slate">Dean's List Requirements</h3>
-            </div>
-            <div className="p-5 space-y-2.5">
-              {[
-                'Must be enrolled in at least 12 academic units',
-                'No grade below 2.0 in any academic subject',
-                'No failing grade (0.0 or F) in any subject, including non-academic subjects',
-                'First Honors: GPA of 3.4 or higher',
-                'Second Honors: GPA of 3.0 to 3.39',
-                'Must not have been found guilty of academic dishonesty',
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-dlsu-green mt-1.5 flex-shrink-0"></div>
-                  <span>{item}</span>
-                </div>
-              ))}
-              <div className="alert alert-warning mt-4">
-                <span><strong>Note:</strong> Academic dishonesty includes cheating, plagiarism, and other forms of academic misconduct as defined in the DLSU Student Handbook.</span>
-              </div>
-            </div>
-            <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
-              <button onClick={() => setShowDeansListModal(false)} className="btn btn-primary btn-sm">Close</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* GPA Calculation Modal */}
-      {showGPAModal && (
-        <div className="modal-overlay" onClick={() => setShowGPAModal(false)}>
-          <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-gray-100">
-              <h3 className="font-display font-semibold text-base text-dlsu-slate">How GPA is Calculated</h3>
-            </div>
-            <div className="p-5 space-y-4">
-              <p className="text-sm text-gray-600">GPA is calculated using the following formula:</p>
-              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 font-mono text-sm text-gray-600">
-                GPA = Σ(Grade × Units) ÷ Total Units
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-sm font-medium text-gray-700">Where:</p>
-                {[
-                  ['Grade', 'Numerical grade (4.0, 3.5, 3.0, etc.)'],
-                  ['Units', 'Number of units for each course'],
-                  ['Total Units', 'Sum of all course units'],
-                ].map(([label, desc], i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                    <div className="w-1.5 h-1.5 rounded-full bg-dlsu-green mt-1.5 flex-shrink-0"></div>
-                    <span><strong>{label}:</strong> {desc}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="alert alert-warning">
-                <span><strong>Note:</strong> Non-Academic Subjects (NAS) are <u>not</u> included in GPA calculations, but are considered for Dean's List eligibility.</span>
-              </div>
-            </div>
-            <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
-              <button onClick={() => setShowGPAModal(false)} className="btn btn-primary btn-sm">Close</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Print Grades Modal */}
       <PrintGradesModal

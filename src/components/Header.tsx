@@ -1,4 +1,5 @@
-import { Bell, BookOpen, Info, LogIn, LogOut, User } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Bell, BookOpen, HelpCircle, Info, LogIn, LogOut, User } from 'lucide-react';
 
 interface HeaderProps {
   user: { email?: string | null; displayName?: string | null; uid?: string } | null;
@@ -6,11 +7,33 @@ interface HeaderProps {
   onLogout: () => void;
   onShowUpdates: () => void;
   onShowTutorial: () => void;
+  onShowDeansList: () => void;
+  onShowGPACalculation: () => void;
   onShowWarnings: () => void;
   hasWarnings: boolean;
 }
 
-const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShowWarnings, hasWarnings }: HeaderProps) => {
+const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShowDeansList, onShowGPACalculation, onShowWarnings, hasWarnings }: HeaderProps) => {
+  const [helpOpen, setHelpOpen] = useState(false);
+  const helpRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!helpOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (helpRef.current && !helpRef.current.contains(e.target as Node)) {
+        setHelpOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setHelpOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [helpOpen]);
   const formatUserIdentifier = (user: { email?: string | null; displayName?: string | null; uid?: string }): string => {
     if (user.displayName) return user.displayName;
     if (user.email) return user.email;
@@ -49,14 +72,51 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
               <Bell size={17} />
             </button>
 
-            <button
-              onClick={onShowTutorial}
-              className="btn-icon btn-ghost rounded-lg p-2 text-gray-500 hover:text-dlsu-green hover:bg-dlsu-green/5 transition-all"
-              aria-label="How to use"
-              title="How to use"
-            >
-              <BookOpen size={17} />
-            </button>
+            {/* Help section - grouped "?" button with dropdown */}
+            <div className="relative" ref={helpRef}>
+              <button
+                onClick={() => setHelpOpen((open) => !open)}
+                className="btn-icon btn-ghost rounded-lg p-2 text-gray-500 hover:text-dlsu-green hover:bg-dlsu-green/5 transition-all"
+                aria-label="Help"
+                aria-haspopup="menu"
+                aria-expanded={helpOpen}
+                title="Help"
+              >
+                <HelpCircle size={17} />
+              </button>
+              {helpOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-48"
+                  role="menu"
+                  aria-label="Help menu"
+                >
+                  <button
+                    role="menuitem"
+                    onClick={() => { onShowTutorial(); setHelpOpen(false); }}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <BookOpen size={14} />
+                    <span>How to use</span>
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => { onShowDeansList(); setHelpOpen(false); }}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Info size={14} />
+                    <span>Dean's List rules</span>
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => { onShowGPACalculation(); setHelpOpen(false); }}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Info size={14} />
+                    <span>How GPA is calculated</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {hasWarnings && (
               <button
