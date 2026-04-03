@@ -20,7 +20,7 @@ const ModalShell = ({ isOpen, onClose, title, icon, children }: ModalShellProps)
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[#1E2B24] flex items-center justify-between">
           <div className="flex items-center gap-2">
             {icon}
             <h3 className="font-display font-semibold text-base text-dlsu-slate">
@@ -29,14 +29,14 @@ const ModalShell = ({ isOpen, onClose, title, icon, children }: ModalShellProps)
           </div>
           <button
             onClick={onClose}
-            className="btn-icon btn-ghost rounded-lg p-1.5 text-gray-400 hover:text-gray-600"
+            className="btn-icon btn-ghost rounded-lg p-1.5 text-gray-500 hover:text-gray-300"
             aria-label="Close modal"
           >
             <X size={18} />
           </button>
         </div>
         <div className="p-5">{children}</div>
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
+        <div className="px-5 py-4 border-t border-[#1E2B24] flex justify-end">
           <button onClick={onClose} className="btn btn-primary btn-sm">
             Close
           </button>
@@ -73,22 +73,22 @@ export const DeansListModal = ({ isOpen, onClose }: InstructionModalProps) => {
               key={item}
               className={`flex items-start gap-2.5 text-sm ${
                 isFirstHonors
-                  ? 'text-amber-700 font-medium bg-amber-50 p-2 rounded-lg'
+                  ? 'text-amber-300 font-medium bg-amber-500/10 p-2 rounded-lg'
                   : isSecondHonors
                     ? 'text-dlsu-green font-medium bg-dlsu-green/5 p-2 rounded-lg'
-                    : 'text-gray-600'
+                    : 'text-gray-300'
               }`}
             >
               {isFirstHonors || isSecondHonors ? (
                 <CheckCircle size={15} className="mt-0.5 flex-shrink-0" />
               ) : BULLET_DOT}
               {isFirstHonors && (
-                <span className="inline-block px-1.5 py-0.5 text-[0.65rem] uppercase tracking-wider bg-amber-100 text-amber-700 rounded font-semibold">
+                <span className="inline-block px-1.5 py-0.5 text-[0.65rem] uppercase tracking-wider bg-amber-500/20 text-amber-300 rounded font-semibold">
                   First
                 </span>
               )}
               {isSecondHonors && (
-                <span className="inline-block px-1.5 py-0.5 text-[0.65rem] uppercase tracking-wider bg-green-100 text-green-700 rounded font-semibold">
+                <span className="inline-block px-1.5 py-0.5 text-[0.65rem] uppercase tracking-wider bg-green-500/20 text-green-400 rounded font-semibold">
                   Second
                 </span>
               )}
@@ -117,18 +117,18 @@ export const GPACalculationModal = ({ isOpen, onClose }: InstructionModalProps) 
   return (
     <ModalShell isOpen={isOpen} onClose={onClose} title="How GPA is Calculated" icon={<BookOpen size={18} className="text-dlsu-green" />}>
       <div className="space-y-4">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-300">
           GPA is calculated using the following formula:
         </p>
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <p className="font-mono text-sm text-gray-700 font-medium text-center">
+        <div className="bg-[#162019] p-4 rounded-lg border border-[#1E2B24]">
+          <p className="font-mono text-sm text-gray-200 font-medium text-center">
             GPA = Σ(Grade × Units) ÷ Total Units
           </p>
         </div>
         <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-700">Where:</p>
+          <p className="text-sm font-medium text-gray-200">Where:</p>
           {definitions.map(([label, desc]) => (
-            <div key={label} className="flex items-start gap-2 text-sm text-gray-600">
+            <div key={label} className="flex items-start gap-2 text-sm text-gray-300">
               {BULLET_DOT}
               <span>
                 <strong>{label}:</strong> {desc}

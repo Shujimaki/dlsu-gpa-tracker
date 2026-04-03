@@ -7,17 +7,17 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'display': ['Outfit', 'system-ui', 'sans-serif'],
-        'body': ['DM Sans', 'system-ui', 'sans-serif'],
+        'display': ['Space Grotesk', 'system-ui', 'sans-serif'],
+        'body': ['Archivo', 'system-ui', 'sans-serif'],
       },
       colors: {
-        'dlsu-green': '#006f51',
-        'dlsu-light-green': '#009a73',
-        'dlsu-dark-green': '#005940',
-        'dlsu-emerald': '#10b981',
-        'dlsu-gold': '#d4a843',
+        'dlsu-green': '#00E09A',
+        'dlsu-light-green': '#00C78A',
+        'dlsu-dark-green': '#006f51',
+        'dlsu-emerald': '#34D399',
+        'dlsu-gold': '#E8C55A',
         'dlsu-cream': '#f8f6f0',
-        'dlsu-slate': '#1e293b',
+        'dlsu-slate': '#E8EFEA',
       },
       borderRadius: {
         'sm': '0.375rem',

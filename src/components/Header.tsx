@@ -42,30 +42,36 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
   };
 
   return (
-    <header className="glass sticky top-0 z-40 border-b border-white/30">
+    <header className="glass sticky top-0 z-40">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-dlsu-green flex items-center justify-center shadow-sm">
-              <span className="text-white font-display font-bold text-sm">G</span>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="font-display font-bold text-base sm:text-lg tracking-tight text-dlsu-slate leading-none">
+          <a
+            href="/"
+            className="flex items-center gap-3 flex-shrink-0 min-w-0"
+          >
+            <img
+              src="/greendex-icon.svg"
+              alt="Greendex"
+              className="w-8 h-8 flex-shrink-0"
+              style={{ minWidth: '2rem', minHeight: '2rem' }}
+            />
+            <div className="flex flex-col min-w-0">
+              <h1 className="font-display font-bold text-base sm:text-lg tracking-tight text-dlsu-slate leading-none truncate">
                 Greendex
               </h1>
-              <span className="text-[0.6rem] text-gray-400 font-medium tracking-wider uppercase leading-tight hidden sm:block">
+              <span className="text-[0.6rem] text-gray-500 font-medium tracking-wider uppercase leading-tight hidden sm:block truncate">
                 DLSU GPA Tracker
               </span>
             </div>
-          </div>
+          </a>
 
           {/* Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Utility buttons */}
             <button
               onClick={onShowUpdates}
-              className="btn-icon btn-ghost rounded-lg p-2 text-gray-500 hover:text-dlsu-green hover:bg-dlsu-green/5 transition-all"
+              className="btn-icon btn-ghost rounded-lg p-2 text-gray-400 hover:text-dlsu-green hover:bg-dlsu-green/10 transition-all"
               aria-label="Updates"
               title="Updates"
             >
@@ -76,7 +82,7 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
             <div className="relative" ref={helpRef}>
               <button
                 onClick={() => setHelpOpen((open) => !open)}
-                className="btn-icon btn-ghost rounded-lg p-2 text-gray-500 hover:text-dlsu-green hover:bg-dlsu-green/5 transition-all"
+                className="btn-icon btn-ghost rounded-lg p-2 text-gray-400 hover:text-dlsu-green hover:bg-dlsu-green/10 transition-all"
                 aria-label="Help"
                 aria-haspopup="menu"
                 aria-expanded={helpOpen}
@@ -86,14 +92,14 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
               </button>
               {helpOpen && (
                 <div
-                  className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 w-48"
+                  className="absolute right-0 top-full mt-1 bg-[#111916] rounded-lg shadow-lg border border-[#1E2B24] py-1 w-48"
                   role="menu"
                   aria-label="Help menu"
                 >
                   <button
                     role="menuitem"
                     onClick={() => { onShowTutorial(); setHelpOpen(false); }}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-white/5 flex items-center gap-2"
                   >
                     <BookOpen size={14} />
                     <span>How to use</span>
@@ -101,15 +107,15 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
                   <button
                     role="menuitem"
                     onClick={() => { onShowDeansList(); setHelpOpen(false); }}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-white/5 flex items-center gap-2"
                   >
                     <Info size={14} />
-                    <span>Dean's List rules</span>
+                    <span>Dean&apos;s List rules</span>
                   </button>
                   <button
                     role="menuitem"
                     onClick={() => { onShowGPACalculation(); setHelpOpen(false); }}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-white/5 flex items-center gap-2"
                   >
                     <Info size={14} />
                     <span>How GPA is calculated</span>
@@ -121,7 +127,7 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
             {hasWarnings && (
               <button
                 onClick={onShowWarnings}
-                className="btn-icon rounded-lg p-2 text-amber-600 hover:bg-amber-50 transition-all relative"
+                className="btn-icon rounded-lg p-2 text-amber-400 hover:bg-amber-400/10 transition-all relative"
                 aria-label="Warnings"
                 title="Warnings"
               >
@@ -131,13 +137,13 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
             )}
 
             {/* Divider */}
-            <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block"></div>
+            <div className="w-px h-6 bg-gray-700 mx-1 hidden sm:block"></div>
 
             {/* Auth section */}
             {user ? (
               <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-dlsu-green/5">
-                  <div className="w-6 h-6 rounded-full bg-dlsu-green/10 flex items-center justify-center">
+                <div className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-dlsu-green/10">
+                  <div className="w-6 h-6 rounded-full bg-dlsu-green/20 flex items-center justify-center">
                     <User size={13} className="text-dlsu-green" />
                   </div>
                   <span className="text-xs font-medium text-dlsu-green max-w-[140px] truncate">
@@ -146,7 +152,7 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
                 </div>
                 <button
                   onClick={onLogout}
-                  className="btn btn-ghost btn-sm text-gray-500 hover:text-red-600 hover:bg-red-50 gap-1.5"
+                  className="btn btn-ghost btn-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 gap-1.5"
                   title="Log out"
                 >
                   <LogOut size={15} />
@@ -156,7 +162,8 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
             ) : (
               <button
                 onClick={onLogin}
-                className="btn btn-primary btn-sm gap-1.5 shadow-sm"
+                className="btn btn-primary btn-sm gap-1.5"
+                style={{ boxShadow: '0 0 12px rgba(0,224,154,0.2)' }}
               >
                 <LogIn size={15} />
                 <span className="text-xs">Log in</span>
@@ -167,7 +174,7 @@ const Header = ({ user, onLogin, onLogout, onShowUpdates, onShowTutorial, onShow
       </div>
 
       {/* Gradient bottom border */}
-      <div className="h-px bg-gradient-to-r from-transparent via-dlsu-green/20 to-transparent"></div>
+      <div className="h-px bg-gradient-to-r from-transparent via-dlsu-green/40 to-transparent"></div>
     </header>
   );
 };

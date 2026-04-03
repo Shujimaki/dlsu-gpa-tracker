@@ -321,11 +321,11 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
 
   // Get color class based on projected GPA
   const getGPAColorClass = (gpa: number): string => {
-    if (!isAchievable) return 'text-red-600';
+    if (!isAchievable) return 'text-red-400';
     if (gpa >= 3.5) return 'text-green-600';
     if (gpa >= 3.0) return 'text-blue-600';
     if (gpa >= 2.0) return 'text-yellow-600';
-    return 'text-red-600';
+    return 'text-red-400';
   };
 
   if (isLoading) {
@@ -363,7 +363,7 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
           <h2 className="font-display font-semibold text-base text-dlsu-slate">CGPA Projections</h2>
         </div>
         <div className="card-body">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Calculate the GPA you need in your remaining terms to reach your target CGPA.
           </p>
         </div>
@@ -391,10 +391,10 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
             {/* Progress toward target */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-gray-500">Progress to target</span>
+                <span className="text-xs text-gray-400">Progress to target</span>
                 <span className="text-xs font-medium text-dlsu-green">{progressPercent.toFixed(0)}%</span>
               </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-[#162019] rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
@@ -478,10 +478,10 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
           <h3 className="font-display font-semibold text-sm text-dlsu-slate">How is this calculated?</h3>
         </div>
         <div className="card-body">
-          <p className="text-sm text-gray-500 mb-3">
+          <p className="text-sm text-gray-400 mb-3">
             The required GPA for your remaining units is calculated using:
           </p>
-          <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 font-mono text-xs sm:text-sm text-gray-600 overflow-x-auto">
+          <div className="bg-[#162019] p-3 rounded-lg border border-[#1E2B24] font-mono text-xs sm:text-sm text-gray-300 overflow-x-auto">
             Required GPA = (Target × Total Units − Current × Earned Units) ÷ Remaining Units
           </div>
         </div>

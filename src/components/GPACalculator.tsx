@@ -660,7 +660,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               <span className="text-dlsu-green font-medium">Saved</span>
             )}
             {saveStatus === 'error' && (
-              <span className="text-red-500 font-medium">Error saving</span>
+              <span className="text-red-400 font-medium">Error saving</span>
             )}
           </div>
         </div>
@@ -688,9 +688,9 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 <button
                   onClick={() => handleDeleteClick(selectedTerm)}
                   className={`btn btn-sm ${selectedTerm === Math.max(...availableTerms) && selectedTerm > 12
-                    ? 'text-red-500 hover:bg-red-50'
-                    : 'text-amber-500 hover:bg-amber-50'
-                    } border border-gray-200`}
+                    ? 'text-red-400 hover:bg-red-500/10'
+                    : 'text-amber-400 hover:bg-amber-500/10'
+                    } border border-[#1E2B24]`}
                   title={selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? "Delete this term" : "Clear term data"}
                 >
                   {selectedTerm > 12 && selectedTerm === Math.max(...availableTerms) ? (
@@ -706,16 +706,16 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
               <label className="input-label">Term Options</label>
               <label
                 htmlFor="flowchartExempt"
-                className="flex items-center px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                className="flex items-center px-3 py-2 border border-[#1E2B24] rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
               >
                 <input
                   type="checkbox"
                   id="flowchartExempt"
                   checked={isFlowchartExempt}
                   onChange={(e) => setIsFlowchartExempt(e.target.checked)}
-                  className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-gray-300 rounded mr-2.5"
+                  className="h-4 w-4 text-dlsu-green focus:ring-dlsu-green border-[#2D3B33] rounded mr-2.5"
                 />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-300">
                   Flowchart exempts me from 12-unit requirement
                 </span>
               </label>
@@ -737,9 +737,9 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 <th className="text-center group relative">
                   <div className="flex items-center justify-center gap-0.5">
                     <span>NAS</span>
-                    <span className="w-3.5 h-3.5 inline-flex items-center justify-center text-[0.6rem] rounded-full bg-gray-200 text-gray-500 cursor-help">?</span>
+                    <span className="w-3.5 h-3.5 inline-flex items-center justify-center text-[0.6rem] rounded-full bg-[#1E2B24] text-gray-400 cursor-help">?</span>
                   </div>
-                  <span className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded-lg py-1.5 px-2.5 w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                  <span className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 bg-[#162019] text-white text-xs rounded-lg py-1.5 px-2.5 w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                     Non-Academic Subject<br />(Not counted in GPA)
                   </span>
                 </th>
@@ -818,7 +818,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                             type="checkbox"
                             checked={course.nas}
                             onChange={e => updateCourse(course.id, 'nas', e.target.checked)}
-                            className="h-4 w-4 accent-dlsu-green border-gray-300 rounded"
+                            className="h-4 w-4 accent-dlsu-green border-[#2D3B33] rounded"
                             aria-label="Non-Academic Subject"
                           />
                         </div>
@@ -826,7 +826,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                       <td>
                         <button
                           onClick={() => removeCourse(course.id)}
-                          className="btn-icon p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                          className="btn-icon p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
                         >
                           <TrashIcon size={15} />
                         </button>
@@ -838,8 +838,8 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
             )}
           </table>
           {!isInitialLoad && courses.length > 0 && (
-            <div className="border-t border-gray-100 px-3 py-2.5 flex justify-between items-center bg-gray-50/50">
-              <span className="text-xs font-medium text-gray-500">
+            <div className="border-t border-[#1E2B24] px-3 py-2.5 flex justify-between items-center bg-[#0D1410]">
+              <span className="text-xs font-medium text-gray-400">
                 Total Units: <span className="text-dlsu-slate">{totalUnits}</span>
                 {totalNASUnits > 0 && (
                   <span className="text-gray-400 ml-1">({totalNASUnits} NAS)</span>
@@ -903,18 +903,18 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       {showDeleteConfirm && termToDelete !== null && (
         <div className="modal-overlay" onClick={cancelDelete}>
           <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-              <AlertTriangle className="text-amber-500" size={18} />
+            <div className="px-5 py-4 border-b border-[#1E2B24] flex items-center gap-2">
+              <AlertTriangle className="text-amber-400" size={18} />
               <h3 className="font-display font-semibold text-base text-dlsu-slate">Confirm Action</h3>
             </div>
             <div className="p-5 space-y-3">
               {termToDelete > 12 && termToDelete === Math.max(...availableTerms) ? (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-300">
                   You are about to delete Term {termToDelete}. This will remove the term from the list. Are you sure?
                 </p>
               ) : (
                 <>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-300">
                     You are about to clear all data for Term {termToDelete}.
                   </p>
                   <div className="alert alert-warning">
@@ -929,7 +929,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                 </>
               )}
             </div>
-            <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+            <div className="px-5 py-4 border-t border-[#1E2B24] flex justify-end gap-2">
               <button onClick={cancelDelete} className="btn btn-ghost btn-sm">Cancel</button>
               <button onClick={confirmDelete} className="btn btn-sm bg-red-600 text-white hover:bg-red-700">
                 {termToDelete > 12 && termToDelete === Math.max(...availableTerms) ? 'Delete Term' : 'Clear Term Data'}

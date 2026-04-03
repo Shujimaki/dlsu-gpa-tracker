@@ -651,11 +651,11 @@ const PrintGradesModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 print:hidden">
-      <div className="bg-white rounded-lg p-4 sm:p-6 max-w-5xl w-full mx-2 sm:mx-4 max-h-[90vh] overflow-auto print-modal-content">
+      <div className="bg-[#111916] rounded-lg p-4 sm:p-6 max-w-5xl w-full mx-2 sm:mx-4 max-h-[90vh] overflow-auto print-modal-content">
         {/* ... (Modal JSX as before - no changes needed here) ... */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-dlsu-green">Print Grades</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-200">
             <X size={24} />
           </button>
         </div>
@@ -663,12 +663,12 @@ const PrintGradesModal = ({
         {step === 'info' ? (
           <form onSubmit={handleSubmitInfo} className="space-y-4">
             <div>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-gray-400 mb-4">
                 Add your personal details below. This information will not be saved and will only be used for the printed document.
               </p>
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-200 mb-1">
                     Full Name (Optional)
                   </label>
                   <input
@@ -676,12 +676,12 @@ const PrintGradesModal = ({
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-[#2D3B33] rounded"
                     placeholder="e.g., Juan Dela Cruz"
                   />
                 </div>
                 <div>
-                  <label htmlFor="degree" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="degree" className="block text-sm font-medium text-gray-200 mb-1">
                     Degree Program (Optional)
                   </label>
                   <input
@@ -689,7 +689,7 @@ const PrintGradesModal = ({
                     id="degree"
                     value={degree}
                     onChange={(e) => setDegree(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-[#2D3B33] rounded"
                     placeholder="e.g., BS Computer Science"
                   />
                 </div>
@@ -697,12 +697,12 @@ const PrintGradesModal = ({
             </div>
 
             <div>
-              <h3 className="text-md font-medium text-gray-700 mb-2">Document Options</h3>
+              <h3 className="text-md font-medium text-gray-200 mb-2">Document Options</h3>
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="sm:w-1/2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Size</label>
+                  <label className="block text-sm font-medium text-gray-200 mb-2">Size</label>
                   <div className="space-y-2">
-                    <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
                       <input
                         type="radio"
                         name="size"
@@ -713,10 +713,10 @@ const PrintGradesModal = ({
                       />
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-sm">Standard (Letter/A4)</div>
-                        <div className="text-xs text-gray-500 whitespace-normal">Best for physical printing</div>
+                        <div className="text-xs text-gray-400 whitespace-normal">Best for physical printing</div>
                       </div>
                     </label>
-                    <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
                       <input
                         type="radio"
                         name="size"
@@ -727,15 +727,15 @@ const PrintGradesModal = ({
                       />
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-sm">IG/FB Story</div>
-                        <div className="text-xs text-gray-500 whitespace-normal">Perfect for sharing on social media</div>
+                        <div className="text-xs text-gray-400 whitespace-normal">Perfect for sharing on social media</div>
                       </div>
                     </label>
                   </div>
                 </div>
                 <div className="sm:w-1/2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Orientation</label>
+                  <label className="block text-sm font-medium text-gray-200 mb-2">Orientation</label>
                   <div className="space-y-2">
-                    <label className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${size === 'story' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <label className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-white/5 transition-colors ${size === 'story' ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       <input
                         type="radio"
                         name="orientation"
@@ -747,10 +747,10 @@ const PrintGradesModal = ({
                       />
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-sm">Portrait</div>
-                        <div className="text-xs text-gray-500 whitespace-normal">Vertical (8.5" x 11")</div>
+                        <div className="text-xs text-gray-400 whitespace-normal">Vertical (8.5" x 11")</div>
                       </div>
                     </label>
-                    <label className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${size === 'story' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <label className={`flex items-center p-3 border rounded-lg cursor-pointer hover:bg-white/5 transition-colors ${size === 'story' ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       <input
                         type="radio"
                         name="orientation"
@@ -762,7 +762,7 @@ const PrintGradesModal = ({
                       />
                       <div className="min-w-0 flex-1">
                         <div className="font-medium text-sm">Landscape</div>
-                        <div className="text-xs text-gray-500 whitespace-normal">Horizontal (11" x 8.5")</div>
+                        <div className="text-xs text-gray-400 whitespace-normal">Horizontal (11" x 8.5")</div>
                       </div>
                     </label>
                   </div>
@@ -782,7 +782,7 @@ const PrintGradesModal = ({
         ) : (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-md font-medium text-gray-700">Preview</h3>
+              <h3 className="text-md font-medium text-gray-200">Preview</h3>
               <button
                 onClick={handleBack}
                 className="text-sm text-dlsu-green hover:text-dlsu-light-green flex items-center"
@@ -790,7 +790,7 @@ const PrintGradesModal = ({
                 <span className="mr-1">Edit details</span>
               </button>
             </div>
-            <div className="overflow-auto max-h-[60vh] flex justify-center items-start p-2 sm:p-4 bg-gray-100 rounded print-preview-container" ref={previewContainerRef}>
+            <div className="overflow-auto max-h-[60vh] flex justify-center items-start p-2 sm:p-4 bg-[#162019] rounded print-preview-container" ref={previewContainerRef}>
               <div style={{ transform: size === 'story' ? 'scale(0.3)' : 'scale(0.5)', transformOrigin: 'top center' }}>
                 <PrintPreview
                   courses={courses}
@@ -811,7 +811,7 @@ const PrintGradesModal = ({
             <div className="pt-4 flex flex-col sm:flex-row justify-between gap-3">
               <button
                 onClick={handleBack}
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-[#2D3B33] rounded hover:bg-white/5 transition-colors"
               >
                 Back
               </button>

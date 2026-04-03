@@ -503,11 +503,11 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     return (
       <div className="card animate-mount">
         <div className="card-body flex flex-col items-center justify-center py-12">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <div className="w-12 h-12 rounded-full bg-[#162019] flex items-center justify-center mb-4">
             <span className="text-xl">📊</span>
           </div>
           <h3 className="font-display font-semibold text-lg text-dlsu-slate mb-2">No Term Data Available</h3>
-          <p className="text-sm text-gray-500 mb-5">Add courses in the GPA Calculator tab to get started.</p>
+          <p className="text-sm text-gray-400 mb-5">Add courses in the GPA Calculator tab to get started.</p>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('switchTab', { detail: 'gpa' }))}
             className="btn btn-primary btn-sm"
@@ -543,11 +543,11 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
             ))}
           </div>
 
-          <div className="pt-4 border-t border-gray-100">
+          <div className="pt-4 border-t border-[#1E2B24]">
             <div className="max-w-md">
               <label htmlFor="creditedUnits" className="input-label">
                 Credited Units
-                <span className="ml-1 text-gray-400 cursor-help">(?)
+                <span className="ml-1 text-gray-500 cursor-help">(?)
                 </span>
               </label>
               <div className="flex items-center gap-2">
@@ -559,7 +559,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
                   className="input w-24"
                   min="0"
                 />
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-500">
                   Units from previous school/degree (not counted in CGPA)
                 </span>
               </div>
@@ -585,17 +585,17 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
                   : 'opacity-60'
                   }`}
               >
-                <div className={`flex justify-between items-center py-2.5 px-4 border-b ${term.isActive ? 'border-gray-100 bg-emerald-50/40' : 'border-gray-100 bg-gray-50'
+                <div className={`flex justify-between items-center py-2.5 px-4 border-b ${term.isActive ? 'border-[#1E2B24] bg-emerald-500/10' : 'border-[#1E2B24] bg-[#162019]'
                   }`}>
                   <div className="flex items-center gap-2">
                     <h4 className="font-display font-semibold text-sm text-dlsu-slate">Term {term.term}</h4>
                     {!term.isActive && (
-                      <span className="badge bg-gray-100 text-gray-500">Inactive</span>
+                      <span className="badge bg-[#162019] text-gray-500">Inactive</span>
                     )}
                   </div>
                   <button
                     onClick={() => onEditTerm(term.term)}
-                    className="btn-icon p-1.5 text-gray-400 hover:text-dlsu-green hover:bg-gray-100 rounded-md transition-colors"
+                    className="btn-icon p-1.5 text-gray-400 hover:text-dlsu-green hover:bg-[#162019] rounded-md transition-colors"
                     title="Edit Term"
                   >
                     <Edit size={14} />
@@ -604,34 +604,34 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
 
                 <div className="p-4 flex flex-col h-full">
                   <div className="mb-3 text-center">
-                    <div className={`font-display font-bold text-2xl ${term.isActive ? 'text-dlsu-green' : 'text-gray-400'}`}>
+                    <div className={`font-display font-bold text-2xl ${term.isActive ? 'text-dlsu-green' : 'text-gray-500'}`}>
                       {term.gpa}
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-500">
                       {term.totalUnits} units{term.totalNASUnits > 0 && ` (${term.totalNASUnits} NAS)`}
                     </div>
                   </div>
 
-                  <div className="overflow-hidden flex-grow rounded-lg border border-gray-100">
+                  <div className="overflow-hidden flex-grow rounded-lg border border-[#1E2B24]">
                     <table className="min-w-full">
-                      <thead className="bg-gray-50/80">
+                      <thead className="bg-[#0D1410]">
                         <tr>
-                          <th className="px-2 py-1.5 text-left text-[0.65rem] font-medium text-gray-400 uppercase tracking-wider">Code</th>
-                          <th className="px-2 py-1.5 text-center text-[0.65rem] font-medium text-gray-400 uppercase tracking-wider w-12">Units</th>
-                          <th className="px-2 py-1.5 text-center text-[0.65rem] font-medium text-gray-400 uppercase tracking-wider w-12">Grade</th>
+                          <th className="px-2 py-1.5 text-left text-[0.65rem] font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                          <th className="px-2 py-1.5 text-center text-[0.65rem] font-medium text-gray-500 uppercase tracking-wider w-12">Units</th>
+                          <th className="px-2 py-1.5 text-center text-[0.65rem] font-medium text-gray-500 uppercase tracking-wider w-12">Grade</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-50 text-xs">
+                      <tbody className="divide-y divide-[#1E2B24] text-xs">
                         {term.courses.length === 0 ? (
                           <tr>
-                            <td colSpan={3} className="px-2 py-4 text-center text-gray-300 italic text-xs">
+                            <td colSpan={3} className="px-2 py-4 text-center text-gray-400 italic text-xs">
                               No courses yet
                             </td>
                           </tr>
                         ) : (
                           term.courses.map((course) => (
-                            <tr key={course.id} className="hover:bg-gray-50/50">
-                              <td className="px-2 py-1.5 font-medium text-gray-600 truncate max-w-[100px]" title={course.code}>
+                            <tr key={course.id} className="hover:bg-[#162019]/50">
+                              <td className="px-2 py-1.5 font-medium text-gray-300 truncate max-w-[100px]" title={course.code}>
                                 {course.code || '–'}
                               </td>
                               <td className="px-2 py-1.5 text-center text-gray-500">

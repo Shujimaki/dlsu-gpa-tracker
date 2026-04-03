@@ -16,11 +16,11 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   return (
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-panel max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+        <div className="px-5 py-4 border-b border-[#1E2B24] flex justify-between items-center">
           <h2 className="font-display font-semibold text-base text-dlsu-slate">App Updates</h2>
           <button
             onClick={handleClose}
-            className="btn-icon btn-ghost rounded-lg p-1.5 text-gray-400 hover:text-gray-600"
+            className="btn-icon btn-ghost rounded-lg p-1.5 text-gray-500 hover:text-gray-300"
             aria-label="Close"
           >
             <X size={18} />
@@ -42,7 +42,7 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
               'Anonymous (not-logged-in) data is cleared when you are not signed in so the app shows default values.',
               'Logging out still clears your data and keeps you signed out on refresh.',
             ].map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+              <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                 <div className="w-1.5 h-1.5 rounded-full bg-dlsu-emerald mt-1.5 flex-shrink-0"></div>
                 <span>{item}</span>
               </li>
@@ -50,7 +50,7 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
           </ul>
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
+        <div className="px-5 py-4 border-t border-[#1E2B24] flex justify-end">
           <button onClick={handleClose} className="btn btn-primary btn-sm">
             Got it
           </button>

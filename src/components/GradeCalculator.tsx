@@ -534,7 +534,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
           )}
         </div>
         <div className="card-body">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Calculate your subject grades based on weighted components.
           </p>
         </div>
@@ -542,7 +542,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
 
       {/* Subject Tabs */}
       <div className="card">
-        <div className="overflow-x-auto border-b border-gray-100 p-3 bg-gray-50/70 flex flex-row items-center gap-2 grade-calc-subject-tabs-container">
+        <div className="overflow-x-auto border-b border-[#1E2B24] p-3 bg-[#0D1410] flex flex-row items-center gap-2 grade-calc-subject-tabs-container">
           {subjects.map(subject => {
             const isActive = activeSubjectId === subject.id;
             return (
@@ -551,10 +551,10 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                 onClick={() => setActiveSubjectId(subject.id)}
                 className={`px-3 py-1.5 rounded-lg whitespace-nowrap flex items-center justify-between min-w-[150px] max-w-[170px] h-9 flex-shrink-0 text-sm transition-colors grade-calc-subject-button ${isActive
                   ? 'bg-dlsu-green text-white shadow-sm'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+                  : 'bg-[#111916] text-gray-300 hover:bg-white/5 border border-[#1E2B24]'
                   }`}
               >
-                <span className="flex-grow truncate mr-1" title={subject.name}>
+                <span className={`flex-grow truncate mr-1 ${isActive ? 'text-[#0A0F0D]' : ''}`} title={subject.name}>
                   {subject.name}
                 </span>
                 {subjects.length > 1 && (
@@ -565,7 +565,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                     }}
                     className={`p-0.5 rounded-full flex items-center justify-center transition-colors ${isActive
                       ? 'text-white/70 hover:text-white hover:bg-white/20'
-                      : 'text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+                      : 'text-gray-500 hover:bg-white/10 hover:text-gray-300'
                       }`}
                     aria-label="Remove subject"
                   >
@@ -578,13 +578,13 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
           {subjects.length < 8 ? (
             <button
               onClick={addSubject}
-              className="btn btn-sm text-gray-500 hover:text-dlsu-green border border-dashed border-gray-300 hover:border-dlsu-green/40 gap-1 flex-shrink-0 transition-colors"
+              className="btn btn-sm text-gray-400 hover:text-dlsu-green border border-dashed border-[#2D3B33] hover:border-dlsu-green/40 gap-1 flex-shrink-0 transition-colors"
             >
               <PlusCircle size={14} />
               Add Subject
             </button>
           ) : (
-            <span className="px-3 py-1.5 text-xs text-gray-400 italic h-9 flex items-center flex-shrink-0">
+            <span className="px-3 py-1.5 text-xs text-gray-500 italic h-9 flex items-center flex-shrink-0">
               Max 8 subjects
             </span>
           )}
@@ -614,7 +614,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                     <option key={preset} value={preset}>{preset}%</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-400 mt-1">Minimum score to pass (1.0)</p>
+                <p className="text-xs text-gray-500 mt-1">Minimum score to pass (1.0)</p>
               </div>
             </div>
 
@@ -623,7 +623,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
               <div className="lg:col-span-2">
                 <h3 className="font-display font-semibold text-sm text-dlsu-slate mb-3">Grade Computations</h3>
 
-                <div className="overflow-x-auto rounded-lg border border-gray-100">
+                <div className="overflow-x-auto rounded-lg border border-[#1E2B24]">
                   <table className="data-table">
                     <thead>
                       <tr>
@@ -637,7 +637,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                     <tbody>
                       {activeSubject.categories.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-6 text-center text-sm text-gray-400 italic">
+                          <td colSpan={5} className="py-6 text-center text-sm text-gray-500 italic">
                             No categories added yet
                           </td>
                         </tr>
@@ -674,13 +674,13 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                                 className="input py-1.5 text-center min-w-[80px]"
                               />
                             </td>
-                            <td className="text-center text-sm font-medium text-gray-600">
+                            <td className="text-center text-sm font-medium text-gray-300">
                               {((category.score / 100) * category.weight).toFixed(2)}
                             </td>
                             <td className="text-center">
                               <button
                                 onClick={() => removeCategory(category.id)}
-                                className="btn-icon p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                className="btn-icon p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
                                 aria-label="Remove category"
                               >
                                 <TrashIcon size={14} />
@@ -689,8 +689,8 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                           </tr>
                         ))
                       )}
-                      <tr className="!bg-gray-50 font-medium text-sm">
-                        <td className="text-right text-gray-500">Total</td>
+                      <tr className="!bg-[#0D1410] font-medium text-sm">
+                        <td className="text-right text-gray-400">Total</td>
                         <td className="text-center">{totalWeight.toFixed(2)}%</td>
                         <td></td>
                         <td className="text-center text-dlsu-slate">{finalGrade.toFixed(2)}%</td>
@@ -713,7 +713,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
               <div className="lg:col-span-1">
                 <h3 className="font-display font-semibold text-sm text-dlsu-slate mb-3">Grade Transmutation</h3>
 
-                <div className="overflow-x-auto rounded-lg border border-gray-100">
+                <div className="overflow-x-auto rounded-lg border border-[#1E2B24]">
                   <table className="data-table">
                     <thead>
                       <tr>
@@ -725,7 +725,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                       {transmutationTable.map((row, index) => (
                         <tr key={index} className={
                           finalGrade >= row.range[0] && finalGrade <= row.range[1]
-                            ? '!bg-emerald-50 font-medium'
+                            ? '!bg-emerald-500/10 font-medium'
                             : ''
                         }>
                           <td className="text-xs">
@@ -738,14 +738,14 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                   </table>
                 </div>
 
-                <div className="bg-gradient-to-br from-gray-50 to-emerald-50/30 p-4 rounded-xl text-center mt-4 border border-gray-100">
+                <div className="bg-gradient-to-br from-[#0D1410] to-emerald-500/10 p-4 rounded-xl text-center mt-4 border border-[#1E2B24]">
                   <p className="stat-label mb-1">Final Grade</p>
                   <p className="stat-value text-dlsu-green">{transmutedGrade.toFixed(1)}</p>
-                  <p className="text-sm text-gray-500 mt-1">Raw score: {finalGrade.toFixed(2)}%</p>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="text-sm text-gray-400 mt-1">Raw score: {finalGrade.toFixed(2)}%</p>
+                  <p className="text-xs text-gray-500 mt-2">
                     {activeSubject.passingGrade}% is the minimum to pass (1.0)
                   </p>
-                  <p className="text-xs text-gray-400 mt-1 italic">
+                  <p className="text-xs text-gray-500 mt-1 italic">
                     Note: These grades are not final. Please refer to MLS.
                   </p>
                 </div>

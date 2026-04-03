@@ -13,7 +13,7 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
       id: 'gpa-calculator',
       title: 'GPA Calculator',
       icon: Calculator,
-      color: 'bg-emerald-50 text-emerald-600',
+      color: 'bg-emerald-500/10 text-emerald-600',
       content: [
         'Enter your courses, units, and grades to calculate your term GPA.',
         'Use the NAS (Non-Academic Subject) checkbox for subjects that don\'t count toward your GPA.',
@@ -24,7 +24,7 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
       id: 'grade-calculator',
       title: 'Grade Calculator',
       icon: Award,
-      color: 'bg-amber-50 text-amber-600',
+      color: 'bg-amber-500/10 text-amber-400',
       content: [
         'Calculate your final grade based on assessment components.',
         'Choose from preset passing grades (50% to 70%).',
@@ -35,7 +35,7 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
       id: 'cgpa-calculator',
       title: 'CGPA Calculator',
       icon: TrendingUp,
-      color: 'bg-blue-50 text-blue-600',
+      color: 'bg-blue-500/10 text-blue-400',
       content: [
         'View all your terms at once to see your cumulative GPA.',
         'Click the edit button to modify any term.',
@@ -46,7 +46,7 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
       id: 'cgpa-projections',
       title: 'CGPA Projections',
       icon: Target,
-      color: 'bg-purple-50 text-purple-600',
+      color: 'bg-purple-500/10 text-purple-400',
       content: [
         'Simulate future terms to see how they affect your CGPA.',
         'Helpful for planning what grades you need to reach your target CGPA.',
@@ -56,7 +56,7 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
       id: 'saving-data',
       title: 'Saving Your Data',
       icon: Save,
-      color: 'bg-slate-50 text-slate-600',
+      color: 'bg-slate-500/10 text-slate-400',
       content: [
         'Create an account to save your data across devices.',
         'Without logging in, your data is only saved in this browser session.',
@@ -71,11 +71,11 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
         className="modal-panel max-w-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+        <div className="px-5 py-4 border-b border-[#1E2B24] flex justify-between items-center">
           <h2 className="font-display font-semibold text-base text-dlsu-slate">How to Use Greendex</h2>
           <button
             onClick={onClose}
-            className="btn-icon btn-ghost rounded-lg p-1.5 text-gray-400 hover:text-gray-600"
+            className="btn-icon btn-ghost rounded-lg p-1.5 text-gray-500 hover:text-gray-300"
             aria-label="Close tutorial"
           >
             <X size={18} />
@@ -98,8 +98,8 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
                   </div>
                   <ul className="space-y-1.5 ml-[2.375rem]">
                     {section.content.map((point, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm text-gray-500">
-                        <div className="w-1 h-1 rounded-full bg-gray-300 mt-2 flex-shrink-0"></div>
+                      <li key={index} className="flex items-start gap-2 text-sm text-gray-400">
+                        <div className="w-1 h-1 rounded-full bg-gray-400 mt-2 flex-shrink-0"></div>
                         <span>{point}</span>
                       </li>
                     ))}
@@ -110,7 +110,7 @@ const TutorialModal = ({ isOpen, onClose }: TutorialModalProps) => {
           </div>
         </div>
 
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
+        <div className="px-5 py-4 border-t border-[#1E2B24] flex justify-end">
           <button onClick={onClose} className="btn btn-primary btn-sm">
             Got it
           </button>

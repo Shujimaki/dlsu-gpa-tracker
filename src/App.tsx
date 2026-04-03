@@ -205,7 +205,7 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50/50">
+    <div className="flex flex-col min-h-screen bg-[#0A0F0D]">
       <Header
         user={user}
         onLogin={() => setShowLoginModal(true)}
@@ -220,19 +220,19 @@ function App() {
 
       {/* Anonymous user warning banner */}
       {showAnonymousWarning && !warningDismissed && (
-        <div className="border-b border-amber-100 bg-amber-50/80">
+        <div className="border-b border-amber-500/20 bg-amber-500/5">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-2.5">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
-                <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                <p className="text-amber-700 text-sm truncate">
+                <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                <p className="text-amber-300 text-sm truncate">
                   Your data is only saved temporarily.<span className="hidden sm:inline"> Data will be lost if you close this page.</span>
                 </p>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 <button
                   onClick={() => setWarningDismissed(true)}
-                  className="btn btn-ghost btn-sm text-xs text-gray-500"
+                  className="btn btn-ghost btn-sm text-xs text-gray-400"
                 >
                   Hide
                 </button>
@@ -293,12 +293,12 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white py-6">
+      <footer className="border-t border-[#1E2B24] bg-[#111916] py-6">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-center sm:text-left">
               <p className="font-display font-semibold text-sm text-dlsu-slate">© {new Date().getFullYear()} Greendex</p>
-              <p className="mt-1 text-gray-400 text-xs">
+              <p className="mt-1 text-gray-500 text-xs">
                 Based on the original{' '}
                 <a href="https://www.anotsopopularkid.com/2012/12/dlsu-gpa-and-grade-calculator.html" target="_blank" rel="noopener noreferrer" className="text-dlsu-green hover:underline">
                   DLSU GPA & Grade Calculator
@@ -307,7 +307,7 @@ function App() {
             </div>
             <a
               href="mailto:contactgreendex@gmail.com"
-              className="text-gray-400 hover:text-dlsu-green transition-colors flex items-center gap-1.5 text-xs"
+              className="text-gray-500 hover:text-dlsu-green transition-colors flex items-center gap-1.5 text-xs"
             >
               <Mail size={14} />
               <span>contactgreendex@gmail.com</span>

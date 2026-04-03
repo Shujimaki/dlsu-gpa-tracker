@@ -519,9 +519,9 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
       <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto rounded-lg bg-white shadow-md w-full max-w-sm">
-          <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-            <Dialog.Title className="text-base font-medium text-gray-900">
+        <Dialog.Panel className="mx-auto rounded-lg bg-[#111916] shadow-md w-full max-w-sm">
+          <div className="px-4 py-3 border-b border-[#1E2B24] flex justify-between items-center">
+            <Dialog.Title className="text-base font-medium text-gray-200">
               {verificationSent ? 'Email Verification Required' :
                 showForgotPassword ? 'Reset Password' :
                   showEmailForm ? (isSignUp ? 'Create Account' : 'Log In') :
@@ -530,7 +530,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
             {!verificationSent && (
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                className="text-gray-500 hover:text-gray-400 focus:outline-none"
                 aria-label="Close"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -543,7 +543,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
           <div className="p-4">
             {verificationSent ? (
               <div className="space-y-4">
-                <div className="p-3 bg-blue-50 border-l-4 border-blue-500 text-blue-700 text-sm rounded">
+                <div className="p-3 bg-blue-500/10 border-l-4 border-blue-500 text-blue-400 text-sm rounded">
                   <h4 className="font-medium mb-1">Email Verification Required</h4>
                   <p className="mb-2">We've sent a verification link to <strong>{email}</strong>.</p>
                   <p className="mb-2">Please check your inbox (and spam folder) and click the verification link before logging in.</p>
@@ -558,13 +558,13 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                 </div>
 
                 {error && (
-                  <div className="p-2 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs">
+                  <div className="p-2 bg-red-500/10 border-l-4 border-red-500 text-red-300 text-xs">
                     {error}
                   </div>
                 )}
 
                 {successMessage && (
-                  <div className="p-2 bg-green-50 border-l-4 border-green-500 text-green-700 text-xs">
+                  <div className="p-2 bg-green-500/10 border-l-4 border-green-500 text-green-400 text-xs">
                     {successMessage}
                   </div>
                 )}
@@ -611,7 +611,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                   <button
                     type="button"
                     onClick={handleCancelVerification}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                    className="w-full px-3 py-2 text-sm border border-[#2D3B33] text-gray-200 rounded hover:bg-white/5 transition-colors"
                     disabled={isLoading}
                   >
                     {isSignUp ? 'Cancel Account Creation' : 'Cancel & Return to Login'}
@@ -623,12 +623,12 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-full bg-white text-gray-700 py-2 px-3 rounded border border-gray-300 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                  className="w-full bg-[#111916] text-gray-200 py-2 px-3 rounded border border-[#2D3B33] hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-sm"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -643,15 +643,15 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                 </button>
 
                 {error && (
-                  <div className="p-2 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs">
+                  <div className="p-2 bg-red-500/10 border-l-4 border-red-500 text-red-300 text-xs">
                     {error}
                   </div>
                 )}
 
                 <div className="relative flex items-center">
-                  <div className="flex-grow border-t border-gray-200"></div>
-                  <span className="flex-shrink mx-3 text-gray-500 text-xs">or</span>
-                  <div className="flex-grow border-t border-gray-200"></div>
+                  <div className="flex-grow border-t border-[#1E2B24]"></div>
+                  <span className="flex-shrink mx-3 text-gray-400 text-xs">or</span>
+                  <div className="flex-grow border-t border-[#1E2B24]"></div>
                 </div>
 
                 <button
@@ -669,7 +669,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
             ) : showForgotPassword ? (
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-xs font-medium text-gray-200 mb-1">
                     Email
                   </label>
                   <input
@@ -678,19 +678,19 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                    className="w-full px-3 py-2 text-sm border border-[#2D3B33] rounded"
                     disabled={isLoading}
                   />
                 </div>
 
                 {error && (
-                  <div className="p-2 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs">
+                  <div className="p-2 bg-red-500/10 border-l-4 border-red-500 text-red-300 text-xs">
                     {error}
                   </div>
                 )}
 
                 {successMessage && (
-                  <div className="p-2 bg-green-50 border-l-4 border-green-500 text-green-700 text-xs">
+                  <div className="p-2 bg-green-500/10 border-l-4 border-green-500 text-green-400 text-xs">
                     {successMessage}
                   </div>
                 )}
@@ -703,7 +703,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                       setError(null);
                       setSuccessMessage(null);
                     }}
-                    className="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                    className="px-3 py-1.5 text-sm border border-[#2D3B33] text-gray-200 rounded hover:bg-white/5 transition-colors"
                     disabled={isLoading}
                   >
                     Back
@@ -730,7 +730,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
             ) : (
               <form onSubmit={handleEmailLogin} className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-xs font-medium text-gray-200 mb-1">
                     Email
                   </label>
                   <input
@@ -739,13 +739,13 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                    className="w-full px-3 py-2 text-sm border border-[#2D3B33] rounded"
                     disabled={isLoading}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
+                  <label htmlFor="password" className="block text-xs font-medium text-gray-200 mb-1">
                     Password
                   </label>
                   <input
@@ -754,7 +754,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                    className="w-full px-3 py-2 text-sm border border-[#2D3B33] rounded"
                     disabled={isLoading}
                     minLength={6}
                   />
@@ -762,7 +762,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
 
                 {isSignUp && (
                   <div>
-                    <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-700 mb-1">
+                    <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-200 mb-1">
                       Confirm Password
                     </label>
                     <input
@@ -771,7 +771,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                      className="w-full px-3 py-2 text-sm border border-[#2D3B33] rounded"
                       disabled={isLoading}
                       minLength={6}
                     />
@@ -779,13 +779,13 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                 )}
 
                 {error && (
-                  <div className="p-2 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs">
+                  <div className="p-2 bg-red-500/10 border-l-4 border-red-500 text-red-300 text-xs">
                     {error}
                   </div>
                 )}
 
                 {successMessage && (
-                  <div className="p-2 bg-green-50 border-l-4 border-green-500 text-green-700 text-xs">
+                  <div className="p-2 bg-green-500/10 border-l-4 border-green-500 text-green-400 text-xs">
                     {successMessage}
                   </div>
                 )}
@@ -794,7 +794,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }: LoginModalProps) => {
                   <button
                     type="button"
                     onClick={() => setShowEmailForm(false)}
-                    className="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                    className="px-3 py-1.5 text-sm border border-[#2D3B33] text-gray-200 rounded hover:bg-white/5 transition-colors"
                     disabled={isLoading}
                   >
                     Back
