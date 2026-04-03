@@ -1,196 +1,23 @@
-/* Print styles for the Greendex Grade Report */
+/* Font import for the Academic Monograph design */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500&display=swap');
 
-/* Story size (Instagram/Facebook) */
-.print-story {
-  width: 1080px !important;
-  height: 1920px !important;
-  margin: 0 auto;
-  box-sizing: border-box;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-  max-height: 1920px;
-  overflow: hidden;
-}
+/* ── Modal container ── */
+.print-modal-content { scrollbar-width: thin; }
+.print-preview-container { overflow-y: auto; }
 
-/* Macbook-specific fixes for text wrapping in the header */
-.print-story .bg-dlsu-green h2,
-.print-story .bg-dlsu-green p {
-  word-break: break-word !important;
-  overflow-wrap: break-word !important;
-  white-space: normal !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
-  -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-/* Standard size */
-.print-standard-portrait {
-  width: 8.5in !important;
-  height: 11in !important;
-  margin: 0 auto;
-  box-sizing: border-box;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-}
-
-.print-standard-landscape {
-  width: 11in !important;
-  height: 8.5in !important;
-  margin: 0 auto;
-  box-sizing: border-box;
-  background-color: white;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Ensure the footer stays at the bottom and spans full width */
-.print-story .bg-gray-100,
-.print-standard-portrait .bg-gray-100,
-.print-standard-landscape .bg-gray-100 {
-  margin-top: auto;
-  width: 100% !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  position: relative !important;
-}
-
-/* Dean's Lister badge styling - ensure vertical centering */
-/* Make selectors more specific to only target print preview elements */
-#print-preview .bg-dlsu-green.text-white:not(:first-child) {
-  margin: 0 auto;
-  text-align: center;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: center !important;
-  min-height: 80px;
-}
-
-.print-story #print-preview .bg-dlsu-green.text-white:not(:first-child) {
-  min-height: 120px;
-}
-
-#print-preview .bg-dlsu-green.text-white h3 {
-  text-align: center;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0;
-}
-
-/* Ensure header spans full width */
-.bg-dlsu-green {
-  width: 100% !important;
-}
-
-/* Ensure content area spans full width */
-.print-story > div:nth-child(2),
-.print-standard-portrait > div:nth-child(2),
-.print-standard-landscape > div:nth-child(2) {
-  width: 100% !important;
-}
-
-/* Table styling for story format */
-.print-story table {
-  border-spacing: 0;
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.print-story table th,
-.print-story table td {
-  padding: 0.75rem 1rem;
-}
-
-/* Mobile styles */
-@media (max-width: 640px) {
-  .print-preview-container {
-    padding: 0.5rem !important;
-  }
-  
-  .print-modal-content {
-    padding: 1rem !important;
-    margin: 0.5rem !important;
-  }
-}
-
-/* Print media query */
+/* ── Print media query (single authoritative) ── */
 @media print {
-  @page {
-    size: auto;
-    margin: 0mm;
-  }
-  
-  body * {
-    visibility: hidden;
-  }
-  
-  #print-preview, 
-  #print-preview * {
-    visibility: visible;
-  }
-  
+  body *, body { visibility: hidden; background: none !important; }
+  #print-preview, #print-preview * { visibility: visible; }
   #print-preview {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    box-shadow: none !important;
-    page-break-after: always;
+    position: absolute; left: 0; top: 0;
+    margin: 0; padding: 0; box-shadow: none !important;
+    transform: none !important; page-break-after: always;
   }
-  
-  .print-hidden {
-    display: none !important;
-  }
-  
-  /* Force background colors and images to print */
-  * {
+  [style], [style*="background"] {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
+  .print-hidden, .fixed, .modal-overlay { display: none !important; }
 }
-
-/* DLSU colors */
-:root {
-  --dlsu-green: #006f51;
-  --dlsu-light-green: #00a651;
-} 
-
-/* 
-  Specific override for GradeCalculator subject buttons to ensure horizontal layout 
-  and correct height when active, counteracting the general rule above.
-*/
-.grade-calc-subject-tabs-container .grade-calc-subject-button.bg-dlsu-green.text-white {
-  display: flex !important; /* Tailwind's 'flex' */
-  flex-direction: row !important; /* Tailwind's 'flex-row' */
-  justify-content: space-between !important; /* Tailwind's 'justify-between' */
-  align-items: center !important; /* Tailwind's 'items-center' */
-  min-height: 2.5rem !important; /* Corresponds to h-10 (40px / 16px base = 2.5rem) */
-  height: 2.5rem !important; /* Corresponds to h-10 */
-  padding-top: 0 !important; /* Corresponds to py-0 */
-  padding-bottom: 0 !important; /* Corresponds to py-0 */
-  text-align: left !important; /* Ensure text alignment is as expected for flex items */
-  margin: 0 !important; /* Reset any margin that might be set by the conflicting rule */
-}
-
-/* Ensure that even the first child, if it matches, gets these specific styles */
-.grade-calc-subject-tabs-container .grade-calc-subject-button.bg-dlsu-green.text-white:first-child {
-  display: flex !important;
-  flex-direction: row !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  min-height: 2.5rem !important;
-  height: 2.5rem !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  text-align: left !important;
-  margin: 0 !important;
-} 

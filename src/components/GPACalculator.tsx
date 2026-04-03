@@ -896,7 +896,6 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
         totalNASUnits={totalNASUnits}
         isDeansLister={isDeansLister}
         isFirstHonors={isFirstHonors}
-        isFlowchartExempt={isFlowchartExempt}
       />
 
       {/* Delete Confirmation Modal */}

@@ -493,28 +493,4 @@ h1, h2, h3, h4, h5, h6 {
   animation: slideUp 0.4s ease-out;
 }
 
-/* ========================================
-   PRINT STYLES
-   ======================================== */
-
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  #print-preview,
-  #print-preview * {
-    visibility: visible;
-  }
-
-  #print-preview {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-
-  @page {
-    margin: 0;
-  }
-}
+/* Print styles live in src/print.css + PrintStyles.css */
