@@ -83,7 +83,7 @@ function buildPageHTML(p: PrintData, layout: 'story' | 'portrait' | 'landscape')
 
 function buildStory(
   p: PrintData, escName: string, escDegree: string, escTerm: string, gpaVal: string,
-  deansShort: string, tableRows: string
+  _deansShort: string, tableRows: string
 ): string {
   const nameBlock = p.name
     ? `<div style="font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;color:#fff;line-height:1.1;word-wrap:break-word;overflow-wrap:break-word;">${escName}</div>`

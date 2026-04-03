@@ -170,7 +170,7 @@ function App() {
   // Check if update modal should be hidden based on sessionStorage
   useEffect(() => {
     const lastUpdateSeen = sessionStorage.getItem('lastUpdateSeen');
-    if (lastUpdateSeen === '2025-05-24') {
+    if (lastUpdateSeen === '2026-04-04') {
       setShowUpdateModal(false);
     } else {
       console.log("Update modal should be shown");
@@ -305,13 +305,24 @@ function App() {
                 </a>
               </p>
             </div>
-            <a
-              href="mailto:contactgreendex@gmail.com"
-              className="text-gray-500 hover:text-dlsu-green transition-colors flex items-center gap-1.5 text-xs"
-            >
-              <Mail size={14} />
-              <span>contactgreendex@gmail.com</span>
-            </a>
+            <div className="flex flex-col items-center sm:items-end gap-1.5">
+              <div className="text-center sm:text-right">
+                <p className="text-xs text-gray-400">Made by Brian</p>
+                <a
+                  href="mailto:brian_metrillo@dlsu.edu.ph"
+                  className="text-gray-500 hover:text-dlsu-green transition-colors text-xs"
+                >
+                  brian_metrillo@dlsu.edu.ph
+                </a>
+              </div>
+              <a
+                href="mailto:contactgreendex@gmail.com"
+                className="text-gray-500 hover:text-dlsu-green transition-colors flex items-center gap-1.5 text-xs"
+              >
+                <Mail size={14} />
+                <span>contactgreendex@gmail.com</span>
+              </a>
+            </div>
           </div>
         </div>
       </footer>

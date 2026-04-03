@@ -7,7 +7,7 @@ interface UpdateModalProps {
 
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   const handleClose = () => {
-    sessionStorage.setItem('lastUpdateSeen', '2025-08-16');
+    sessionStorage.setItem('lastUpdateSeen', '2026-04-04');
     onClose();
   };
 
@@ -29,18 +29,17 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
 
         <div className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <span className="badge badge-green">v2.1</span>
-            <span className="text-xs text-gray-400">August 16, 2025</span>
+            <span className="badge badge-green">v3.0</span>
+            <span className="text-xs text-gray-400">April 3–4, 2026</span>
           </div>
 
-          <h3 className="text-sm font-display font-semibold text-dlsu-green mb-3">Today's changes</h3>
+          <h3 className="text-sm font-display font-semibold text-dlsu-green mb-3">What's new</h3>
 
           <ul className="space-y-2.5">
             {[
-              'Users who sign in now stay signed in after refresh or closing the browser.',
-              'Sign-in explicitly saves the login method so the app doesn\'t lose the user session.',
-              'Anonymous (not-logged-in) data is cleared when you are not signed in so the app shows default values.',
-              'Logging out still clears your data and keeps you signed out on refresh.',
+              'Fresh new look! The entire app has been redesigned with a sleek dark mode.',
+              'Downloading your grades as an image now looks much better and matches the PDF.',
+              'Contact details have been updated — feel free to reach out to the developer!',
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                 <div className="w-1.5 h-1.5 rounded-full bg-dlsu-emerald mt-1.5 flex-shrink-0"></div>
