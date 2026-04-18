@@ -356,7 +356,6 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
       };
 
       sessionStorage.setItem('cgpa_data', JSON.stringify(cgpaData));
-      console.log('CGPA data saved to session storage:', cgpaData);
     } catch (error) {
       console.error('Error saving CGPA data to session storage:', error);
     }

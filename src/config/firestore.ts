@@ -46,12 +46,9 @@ export const saveUserData = async (userId: string, term: number, courses: Course
       nas: typeof course.nas === 'boolean' ? course.nas : false
     }));
 
-    console.log('Saving to Firestore:', { userId, term, courses: validCourses, isFlowchartExempt });
-
     const userRef = doc(db, 'users', userId);
     const termRef = doc(userRef, 'terms', term.toString());
     await setDoc(termRef, { courses: validCourses, isFlowchartExempt }, { merge: true });
-    console.log('Data saved to Firestore successfully');
     return true; // Return true on success
   } catch (error) {
     console.error('Error saving user data:', error);
@@ -72,7 +69,6 @@ export const loadUserData = async (userId: string, term: number): Promise<TermDa
 
     if (termDoc.exists()) {
       const data = termDoc.data();
-      console.log('Data loaded from Firestore:', data);
       return {
         courses: data.courses as Course[],
         isFlowchartExempt: data.isFlowchartExempt || false
@@ -97,7 +93,6 @@ export const getUserTerms = async (userId: string): Promise<number[]> => {
     const termsSnapshot = await getDocs(termsCollectionRef);
 
     if (termsSnapshot.empty) {
-      console.log('No terms found in Firestore for user:', userId);
       return [];
     }
 
@@ -108,7 +103,6 @@ export const getUserTerms = async (userId: string): Promise<number[]> => {
       return isNaN(termNumber) ? null : termNumber;
     }).filter((term): term is number => term !== null);
 
-    console.log('Terms loaded from Firestore:', termNumbers);
     return termNumbers;
   } catch (error) {
     console.error('Error getting user terms:', error);
@@ -127,7 +121,6 @@ export const deleteUserTerm = async (userId: string, term: number): Promise<bool
     const termRef = doc(userRef, 'terms', term.toString());
 
     await deleteDoc(termRef);
-    console.log(`Term ${term} deleted from Firestore for user ${userId}`);
     return true;
   } catch (error) {
     console.error(`Error deleting term ${term}:`, error);
@@ -143,11 +136,8 @@ export const saveUserProjectionSettings = async (userId: string, settings: Proje
       return false;
     }
 
-    console.log('Saving projection settings to Firestore:', { userId, settings });
-
     const userRef = doc(db, 'users', userId);
     await setDoc(doc(userRef, 'settings', 'projections'), settings, { merge: true });
-    console.log('Projection settings saved to Firestore successfully');
     return true;
   } catch (error) {
     console.error('Error saving projection settings:', error);
@@ -167,9 +157,7 @@ export const loadUserProjectionSettings = async (userId: string): Promise<Projec
     const settingsDoc = await getDoc(settingsRef);
 
     if (settingsDoc.exists()) {
-      const data = settingsDoc.data() as ProjectionSettings;
-      console.log('Projection settings loaded from Firestore:', data);
-      return data;
+      return settingsDoc.data() as ProjectionSettings;
     }
     return null;
   } catch (error) {
@@ -186,11 +174,8 @@ export const saveUserCGPASettings = async (userId: string, settings: CGPASetting
       return false;
     }
 
-    console.log('Saving CGPA settings to Firestore:', { userId, settings });
-
     const userRef = doc(db, 'users', userId);
     await setDoc(doc(userRef, 'settings', 'cgpa'), settings, { merge: true });
-    console.log('CGPA settings saved to Firestore successfully');
     return true;
   } catch (error) {
     console.error('Error saving CGPA settings:', error);
@@ -244,9 +229,7 @@ export const loadUserCGPASettings = async (userId: string): Promise<CGPASettings
     const settingsDoc = await getDoc(settingsRef);
 
     if (settingsDoc.exists()) {
-      const data = settingsDoc.data() as CGPASettings;
-      console.log('CGPA settings loaded from Firestore:', data);
-      return data;
+      return settingsDoc.data() as CGPASettings;
     }
     return null;
   } catch (error) {

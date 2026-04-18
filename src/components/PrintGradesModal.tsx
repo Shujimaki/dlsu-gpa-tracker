@@ -29,6 +29,8 @@ const PrintGradesModal = ({
   const [step, setStep] = useState<'info' | 'preview'>('info');
   const [name, setName] = useState('');
   const [degree, setDegree] = useState('');
+
+  const sanitize = (val: string) => val.replace(/[<>"']/g, '');
   const [size, setSize] = useState<'standard' | 'story'>('standard');
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
 
@@ -184,11 +186,11 @@ const PrintGradesModal = ({
               <div className="space-y-3">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-200 mb-1">Full Name (Optional)</label>
-                  <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} className="w-full p-2 border border-[#2D3B33] rounded bg-[#0A0F0D] text-white" placeholder="e.g., Juan Dela Cruz" />
+                  <input type="text" id="name" value={name} onChange={e => setName(sanitize(e.target.value))} maxLength={60} className="w-full p-2 border border-[#2D3B33] rounded bg-[#0A0F0D] text-white" placeholder="e.g., Juan Dela Cruz" />
                 </div>
                 <div>
                   <label htmlFor="degree" className="block text-sm font-medium text-gray-200 mb-1">Degree Program (Optional)</label>
-                  <input type="text" id="degree" value={degree} onChange={e => setDegree(e.target.value)} className="w-full p-2 border border-[#2D3B33] rounded bg-[#0A0F0D] text-white" placeholder="e.g., BS Computer Science" />
+                  <input type="text" id="degree" value={degree} onChange={e => setDegree(sanitize(e.target.value))} maxLength={60} className="w-full p-2 border border-[#2D3B33] rounded bg-[#0A0F0D] text-white" placeholder="e.g., BS Computer Science" />
                 </div>
               </div>
             </div>
