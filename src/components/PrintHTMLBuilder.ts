@@ -23,7 +23,7 @@ interface PrintData {
 }
 
 function formatGrade(c: Course): string {
-  if (c.nas && c.units === 0) return c.grade === 1 ? 'P' : 'F';
+  if (c.nas && c.units === 0) return c.grade > 0 ? 'P' : 'F';
   return c.grade.toFixed(1);
 }
 
