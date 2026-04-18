@@ -92,6 +92,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [inputValues, setInputValues] = useState<Record<string, string>>({});
 
   // Load user data and handle migration on login
   useEffect(() => {
@@ -656,8 +657,15 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                             <td>
                               <input
                                 type="number"
-                                value={category.weight}
-                                onChange={(e) => updateCategory(category.id, 'weight', Number(e.target.value))}
+                                value={inputValues[`${category.id}_weight`] ?? String(category.weight)}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  setInputValues(prev => ({ ...prev, [`${category.id}_weight`]: raw }));
+                                  if (raw === '' || raw === '.') return;
+                                  const num = Number(raw);
+                                  if (!isNaN(num)) updateCategory(category.id, 'weight', num);
+                                }}
+                                onBlur={() => setInputValues(prev => { const next = { ...prev }; delete next[`${category.id}_weight`]; return next; })}
                                 min="0"
                                 max="100"
                                 className="input py-1.5 text-center min-w-[80px]"
@@ -666,8 +674,15 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                             <td>
                               <input
                                 type="number"
-                                value={category.score}
-                                onChange={(e) => updateCategory(category.id, 'score', Number(e.target.value))}
+                                value={inputValues[`${category.id}_score`] ?? String(category.score)}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  setInputValues(prev => ({ ...prev, [`${category.id}_score`]: raw }));
+                                  if (raw === '' || raw === '.') return;
+                                  const num = Number(raw);
+                                  if (!isNaN(num) && num >= 0 && num <= 100) updateCategory(category.id, 'score', num);
+                                }}
+                                onBlur={() => setInputValues(prev => { const next = { ...prev }; delete next[`${category.id}_score`]; return next; })}
                                 min="0"
                                 max="100"
                                 step="0.01"
