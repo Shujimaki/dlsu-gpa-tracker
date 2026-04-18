@@ -3,7 +3,14 @@ import { getUserTerms, loadUserData, saveUserCGPASettings, loadUserCGPASettings,
 import type { Course } from '../types';
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { CGPASettings } from '../config/firestore';
-import { Edit } from 'lucide-react';
+import { Edit, PlusCircle, TrashIcon } from 'lucide-react';
+
+interface QuickTerm {
+  id: string;
+  label: string;
+  gpa: number;
+  units: number;
+}
 
 // Local implementation of loadSessionData
 function loadSessionData(key: string): unknown | null {
@@ -48,6 +55,9 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   const [creditedUnitsInput, setCreditedUnitsInput] = useState<string>("0");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [termOverrides, setTermOverrides] = useState<Record<number, boolean>>({});
+  const [mode, setMode] = useState<'full' | 'quick'>('full');
+  const [quickTerms, setQuickTerms] = useState<QuickTerm[]>([{ id: crypto.randomUUID(), label: '', gpa: 0, units: 0 }]);
+  const [quickInputValues, setQuickInputValues] = useState<Record<string, string>>({});
 
   // Load user settings and handle migration for creditedUnits
   useEffect(() => {
@@ -198,6 +208,63 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     const timeoutId = setTimeout(saveToFirestore, 1000);
     return () => clearTimeout(timeoutId);
   }, [creditedUnits, isLoading, authInitialized, user]); // Dependencies remain similar, logic inside effect filters
+
+  // Load quickTerms from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('quick_cgpa_data');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.terms && Array.isArray(parsed.terms) && parsed.terms.length > 0) {
+          setQuickTerms(parsed.terms);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Save quickTerms to sessionStorage (debounced)
+  useEffect(() => {
+    const id = setTimeout(() => {
+      try {
+        sessionStorage.setItem('quick_cgpa_data', JSON.stringify({ terms: quickTerms }));
+      } catch {}
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [quickTerms]);
+
+  // Quick mode computed values
+  const { quickCGPA, quickTotalUnits, quickTotalWithCredited, quickActiveTerms } = useMemo(() => {
+    const activeTerms = quickTerms.filter(t => t.units > 0);
+    const totalUnits = activeTerms.reduce((s, t) => s + t.units, 0);
+    const cgpaVal = totalUnits > 0
+      ? activeTerms.reduce((s, t) => s + t.gpa * t.units, 0) / totalUnits
+      : 0;
+    return {
+      quickCGPA: cgpaVal.toFixed(3),
+      quickTotalUnits: totalUnits,
+      quickTotalWithCredited: totalUnits + creditedUnits,
+      quickActiveTerms: activeTerms.length
+    };
+  }, [quickTerms, creditedUnits]);
+
+  const addQuickTerm = () => {
+    if (quickTerms.length >= 20) { alert('Maximum of 20 terms.'); return; }
+    setQuickTerms(prev => [...prev, { id: crypto.randomUUID(), label: '', gpa: 0, units: 0 }]);
+  };
+
+  const removeQuickTerm = (id: string) => {
+    setQuickTerms(prev => prev.filter(t => t.id !== id));
+  };
+
+  const updateQuickTerm = (id: string, field: 'label' | 'gpa' | 'units', value: string | number) => {
+    setQuickTerms(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
+
+  const setQInput = (key: string, val: string) =>
+    setQuickInputValues(prev => ({ ...prev, [key]: val }));
+
+  const clearQInput = (key: string) =>
+    setQuickInputValues(prev => { const n = { ...prev }; delete n[key]; return n; });
 
   // Handle credited units input change
   const handleCreditedUnitsChange = (value: string) => {
@@ -551,17 +618,39 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
     <div className="space-y-5 animate-mount">
       {/* CGPA Summary */}
       <div className="card">
-        <div className="card-header">
+        <div className="card-header flex justify-between items-center">
           <h2 className="font-display font-semibold text-base text-dlsu-slate">Cumulative GPA</h2>
+          <div className="flex rounded-lg overflow-hidden border border-[#1E2B24] text-xs">
+            <button
+              onClick={() => setMode('full')}
+              className={`px-3 py-1.5 transition-colors ${mode === 'full' ? 'bg-dlsu-green text-white' : 'text-gray-400 hover:text-gray-200'}`}
+            >
+              Full
+            </button>
+            <button
+              onClick={() => setMode('quick')}
+              className={`px-3 py-1.5 transition-colors ${mode === 'quick' ? 'bg-dlsu-green text-white' : 'text-gray-400 hover:text-gray-200'}`}
+            >
+              Quick
+            </button>
+          </div>
         </div>
         <div className="card-body">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-            {[
-              { label: 'Active Terms', value: totalTerms, large: false },
-              { label: 'Academic Units', value: totalUnits, large: false },
-              { label: 'Total Units', value: totalWithCredited, large: false },
-              { label: 'CGPA', value: cgpa, large: true },
-            ].map(({ label, value, large }) => (
+            {(mode === 'full'
+              ? [
+                  { label: 'Active Terms', value: String(totalTerms), large: false },
+                  { label: 'Academic Units', value: String(totalUnits), large: false },
+                  { label: 'Total Units', value: String(totalWithCredited), large: false },
+                  { label: 'CGPA', value: cgpa, large: true },
+                ]
+              : [
+                  { label: 'Active Terms', value: String(quickActiveTerms), large: false },
+                  { label: 'Academic Units', value: String(quickTotalUnits), large: false },
+                  { label: 'Total Units', value: String(quickTotalWithCredited), large: false },
+                  { label: 'CGPA', value: quickCGPA, large: true },
+                ]
+            ).map(({ label, value, large }) => (
               <div key={label} className="text-center">
                 <p className="stat-label mb-1">{label}</p>
                 <p className={large ? 'stat-value text-dlsu-green' : 'font-display font-bold text-xl text-dlsu-slate'}>
@@ -596,11 +685,93 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
               )}
             </div>
           </div>
+
+          {/* Quick mode term table */}
+          {mode === 'quick' && (
+            <div className="mt-4 pt-4 border-t border-[#1E2B24]">
+              <h3 className="font-display font-semibold text-sm text-dlsu-slate mb-3">Term Entries</h3>
+              <div className="overflow-x-auto rounded-lg border border-[#1E2B24]">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Term Label</th>
+                      <th className="text-center w-28">GPA (0–4)</th>
+                      <th className="text-center w-24">Units</th>
+                      <th className="w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {quickTerms.map(term => (
+                      <tr key={term.id}>
+                        <td>
+                          <input
+                            type="text"
+                            value={term.label}
+                            onChange={e => updateQuickTerm(term.id, 'label', e.target.value)}
+                            placeholder="e.g. Term 1"
+                            className="input py-1.5"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={quickInputValues[`${term.id}_gpa`] ?? String(term.gpa)}
+                            onChange={e => {
+                              const raw = e.target.value;
+                              setQInput(`${term.id}_gpa`, raw);
+                              if (raw === '' || raw === '.') return;
+                              const n = Math.min(4, Math.max(0, Number(raw)));
+                              if (!isNaN(n)) updateQuickTerm(term.id, 'gpa', n);
+                            }}
+                            onBlur={() => clearQInput(`${term.id}_gpa`)}
+                            min="0" max="4" step="0.001"
+                            className="input py-1.5 text-center"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            value={quickInputValues[`${term.id}_units`] ?? String(term.units)}
+                            onChange={e => {
+                              const raw = e.target.value;
+                              setQInput(`${term.id}_units`, raw);
+                              if (raw === '' || raw === '.') return;
+                              const n = Math.max(0, Math.round(Number(raw)));
+                              if (!isNaN(n)) updateQuickTerm(term.id, 'units', n);
+                            }}
+                            onBlur={() => clearQInput(`${term.id}_units`)}
+                            min="0"
+                            className="input py-1.5 text-center"
+                          />
+                        </td>
+                        <td className="text-center">
+                          <button
+                            onClick={() => removeQuickTerm(term.id)}
+                            className="btn-icon p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                            aria-label="Remove term"
+                          >
+                            <TrashIcon size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <button
+                onClick={addQuickTerm}
+                className="btn btn-primary btn-sm gap-1 mt-3"
+              >
+                <PlusCircle size={14} />
+                Add Term
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Terms by Year */}
-      {Object.entries(termsByYear).map(([year, terms]) => (
+      {/* Terms by Year — Full mode only */}
+      {mode === 'full' && Object.entries(termsByYear).map(([year, terms]) => {return (
         <div key={year} className="space-y-3">
           <h3 className="font-display font-semibold text-sm text-dlsu-slate px-1">{year}</h3>
 
@@ -683,7 +854,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
             ))}
           </div>
         </div>
-      ))}
+      );})}
     </div>
   );
 };
