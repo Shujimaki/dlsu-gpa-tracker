@@ -753,7 +753,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
                               </td>
                               <td className="px-2 py-1.5 text-center text-gray-500">
                                 {course.nas && course.units === 0
-                                  ? (course.grade === 1 ? 'P' : 'F')
+                                  ? (course.grade > 0 ? 'P' : 'F')
                                   : course.grade.toFixed(1)}
                               </td>
                             </tr>

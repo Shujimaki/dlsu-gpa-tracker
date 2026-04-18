@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { saveUserProjectionSettings, loadUserProjectionSettings, getUserTerms, loadUserData, loadUserCGPASettings } from '../config/firestore';
+import { saveUserProjectionSettings, loadUserProjectionSettings, getUserTerms, loadUserData, loadUserCGPASettings, loadTermToggles } from '../config/firestore';
 import type { ProjectionSettings } from '../config/firestore';
 import type { Course } from '../types';
 
@@ -152,10 +152,17 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
           // Logged-in user: load from Firestore
           try {
             const termNumbers = await getUserTerms(user.uid);
+            const overrides = await loadTermToggles(user.uid) ?? {};
 
             for (const termNum of termNumbers) {
               const termData = await loadUserData(user.uid, termNum);
               if (termData && termData.courses) {
+                const academicUnits = termData.courses
+                  .filter((c: Course) => !c.nas)
+                  .reduce((s: number, c: Course) => s + c.units, 0);
+                const isActive = overrides[termNum] ?? (academicUnits > 0);
+                if (!isActive) continue;
+
                 termData.courses.forEach((course: Course) => {
                   if (!course.nas) {
                     totalUnits += course.units;
@@ -179,13 +186,31 @@ const CGPAProjections = ({ user, authInitialized = false }: CGPAProjectionsProps
           // Anonymous user: load from sessionStorage term_* keys
           const termKeys = Object.keys(sessionStorage).filter(key => key.startsWith('term_'));
 
+          let overrides: Record<number, boolean> = {};
+          const rawToggles = sessionStorage.getItem('term_toggles');
+          if (rawToggles) {
+            try {
+              const parsed = JSON.parse(rawToggles);
+              if (parsed?.overrides) {
+                overrides = Object.fromEntries(
+                  Object.entries(parsed.overrides).map(([k, v]) => [Number(k), v as boolean])
+                );
+              }
+            } catch {}
+          }
+
           for (const key of termKeys) {
             try {
               const termDataStr = sessionStorage.getItem(key);
               if (termDataStr) {
+                const termNum = parseInt(key.replace('term_', ''));
                 const termData = JSON.parse(termDataStr);
                 const courses: Course[] = termData.courses || termData;
                 if (Array.isArray(courses)) {
+                  const academicUnits = courses.filter(c => !c.nas).reduce((s, c) => s + c.units, 0);
+                  const isActive = overrides[termNum] ?? (academicUnits > 0);
+                  if (!isActive) continue;
+
                   courses.forEach((course: Course) => {
                     if (!course.nas) {
                       totalUnits += course.units;
