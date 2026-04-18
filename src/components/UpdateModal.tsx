@@ -29,7 +29,7 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
 
         <div className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <span className="badge badge-green">v3.1</span>
+            <span className="badge badge-green">v3.2</span>
             <span className="text-xs text-gray-400">April 18, 2026</span>
           </div>
 
@@ -40,6 +40,10 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
               'You can now choose 1.5 units in the GPA Calculator.',
               'Fixed a bug in the Grade Calculator where you couldn\'t clear the default 0 to type your score.',
               'Each term now has an "In CGPA" toggle so you can control exactly which terms count toward your CGPA.',
+              'Grade Calculator now uses a Canvas-style layout — add scored items per category for more precise grade calculation.',
+              'New Quick CGPA Calculator — enter your term GPAs and units directly, no individual courses needed.',
+              'Fixed a bug where NAS courses with passing grades above 1.0 incorrectly showed as F in printed grade cards and the CGPA view.',
+              'CGPA Projections now correctly uses only your active terms when calculating your earned units.',
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                 <div className="w-1.5 h-1.5 rounded-full bg-dlsu-emerald mt-1.5 flex-shrink-0"></div>
