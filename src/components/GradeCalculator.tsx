@@ -1,14 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PlusCircle, TrashIcon, X } from 'lucide-react';
+import { PlusCircle, TrashIcon, X, ChevronDown, ChevronRight } from 'lucide-react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+
+interface GradeItem {
+  id: string;
+  name: string;
+  score: number;
+  maxScore: number;
+}
 
 interface GradeCategory {
   id: string;
   name: string;
   weight: number;
-  score: number;
+  items: GradeItem[];
 }
 
 interface Subject {
@@ -23,10 +30,8 @@ interface GradeCalculatorProps {
   authInitialized?: boolean;
 }
 
-// Preset passing grades and their corresponding transmutation tables
 const PASSING_GRADE_PRESETS = [50, 55, 60, 65, 70];
 
-// Hardcoded transmutation tables for each passing grade preset
 const TRANSMUTATION_TABLES = {
   50: [
     { range: [95, 100], grade: 4.0 },
@@ -80,50 +85,48 @@ const TRANSMUTATION_TABLES = {
   ]
 };
 
+function categoryScore(items: GradeItem[]): number {
+  if (items.length === 0) return 0;
+  const totalPoints = items.reduce((sum, i) => sum + i.score, 0);
+  const totalMax = items.reduce((sum, i) => sum + i.maxScore, 0);
+  return totalMax > 0 ? (totalPoints / totalMax) * 100 : 0;
+}
+
+function migrateCategory(raw: GradeCategory & { score?: number }): GradeCategory {
+  return {
+    id: raw.id,
+    name: raw.name,
+    weight: raw.weight,
+    items: Array.isArray(raw.items) ? raw.items : []
+  };
+}
+
 const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps) => {
   const [subjects, setSubjects] = useState<Subject[]>([
-    {
-      id: crypto.randomUUID(),
-      name: 'Subject 1',
-      passingGrade: 60,
-      categories: []
-    }
+    { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] }
   ]);
   const [activeSubjectId, setActiveSubjectId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [inputValues, setInputValues] = useState<Record<string, string>>({});
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  // Load user data and handle migration on login
   useEffect(() => {
     const loadAndMigrateData = async () => {
-      if (!authInitialized) {
-        // console.log("GradeCalc: Auth not initialized. Aborting load/migrate.");
-        return;
-      }
+      if (!authInitialized) return;
       setIsLoading(true);
-      // console.log("GradeCalc: loadAndMigrateData START. User:", user ? user.uid : 'anonymous', "AuthInitialized:", authInitialized);
 
       let anonymousData = null;
       const anonymousDataString = sessionStorage.getItem('grade_calculator_data');
       if (anonymousDataString) {
-        try {
-          anonymousData = JSON.parse(anonymousDataString);
-          // console.log("GradeCalc: Successfully parsed anonymous data:", anonymousData);
-        } catch (e) {
-          console.error("Error parsing anonymous grade_calculator_data from sessionStorage", e);
-          anonymousData = null;
-        }
+        try { anonymousData = JSON.parse(anonymousDataString); }
+        catch (e) { console.error("Error parsing anonymous grade_calculator_data", e); }
       }
 
       const newLoginSession = sessionStorage.getItem('newLogin') === 'true';
-      // console.log("GradeCalc: newLogin flag from session:", newLoginSession);
 
-      if (user) { // User is logged in
-        if (newLoginSession) {
-          // console.log("GradeCalc: New login detected. Clearing newLogin flag. Migration will be attempted.");
-          sessionStorage.removeItem('newLogin'); // Clear the flag, but still proceed to check for migration
-        }
+      if (user) {
+        if (newLoginSession) sessionStorage.removeItem('newLogin');
 
         let firestoreSubjects: Subject[] = [];
         let firestoreActiveSubjectId: string | null = null;
@@ -137,384 +140,287 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
           if (firestoreDoc.exists()) {
             firestoreDocExists = true;
             const data = firestoreDoc.data();
-            // console.log("GradeCalc: Firestore data exists:", data);
             if (data.subjects && Array.isArray(data.subjects)) {
-              firestoreSubjects = data.subjects;
+              firestoreSubjects = data.subjects.map((s: Subject) => ({
+                ...s,
+                categories: (s.categories || []).map(migrateCategory)
+              }));
             }
             if (data.activeSubjectId) {
-              const subjectExists = firestoreSubjects.some((s: Subject) => s.id === data.activeSubjectId);
-              firestoreActiveSubjectId = subjectExists ? data.activeSubjectId : (firestoreSubjects.length > 0 ? firestoreSubjects[0].id : null);
+              const exists = firestoreSubjects.some((s: Subject) => s.id === data.activeSubjectId);
+              firestoreActiveSubjectId = exists ? data.activeSubjectId : (firestoreSubjects.length > 0 ? firestoreSubjects[0].id : null);
             } else if (firestoreSubjects.length > 0) {
               firestoreActiveSubjectId = firestoreSubjects[0].id;
             }
-          } else {
-            // console.log("GradeCalc: No Firestore data document exists for gradeCalculator settings.");
           }
         } catch (error) {
           console.error("GradeCalc: Error loading Firestore data:", error);
         }
 
-        // Migration Condition - now happens even if newLoginSession was true, after flag is cleared.
-        const firestoreIsEmptyOrTrulyDefault = firestoreSubjects.length === 0;
-        const anonymousHasDataToMigrate = anonymousData && anonymousData.subjects && anonymousData.subjects.length > 0;
-        // console.log(`GradeCalc: Migration check: Firestore empty: ${firestoreIsEmptyOrTrulyDefault}, Anonymous has data: ${anonymousHasDataToMigrate}, Was new login: ${newLoginSession}`); // Log if it was new
+        const firestoreEmpty = firestoreSubjects.length === 0;
+        const anonHasData = anonymousData?.subjects?.length > 0;
 
-        if (firestoreIsEmptyOrTrulyDefault && anonymousHasDataToMigrate) {
-          // console.log("GradeCalc: MIGRATING anonymous data to Firestore.");
-          const subjectsToMigrate = anonymousData.subjects.slice(0, 8);
-          setSubjects(subjectsToMigrate);
-          let newActiveSubjectId = anonymousData.activeSubjectId;
-          const activeMigratedSubjectExists = subjectsToMigrate.some((s: Subject) => s.id === newActiveSubjectId);
-          newActiveSubjectId = activeMigratedSubjectExists ? newActiveSubjectId : (subjectsToMigrate.length > 0 ? subjectsToMigrate[0].id : null);
-          setActiveSubjectId(newActiveSubjectId);
-
+        if (firestoreEmpty && anonHasData) {
+          const toMigrate = anonymousData.subjects.slice(0, 8).map((s: Subject) => ({
+            ...s,
+            categories: (s.categories || []).map(migrateCategory)
+          }));
+          setSubjects(toMigrate);
+          const activeMigrated = toMigrate.some((s: Subject) => s.id === anonymousData.activeSubjectId);
+          const newActive = activeMigrated ? anonymousData.activeSubjectId : (toMigrate.length > 0 ? toMigrate[0].id : null);
+          setActiveSubjectId(newActive);
           try {
-            const userRef = doc(db, 'users', user.uid); // Re-declare for safety within this scope
-            await setDoc(doc(userRef, 'settings', 'gradeCalculator'), {
-              subjects: subjectsToMigrate,
-              activeSubjectId: newActiveSubjectId
-            }, { merge: true });
-            // console.log("GradeCalc: Anonymous data successfully migrated and saved to Firestore.");
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(doc(userRef, 'settings', 'gradeCalculator'), { subjects: toMigrate, activeSubjectId: newActive }, { merge: true });
             sessionStorage.removeItem('grade_calculator_data');
-          } catch (saveError) {
-            console.error("GradeCalc: Error saving migrated data to Firestore:", saveError);
-          }
+          } catch (e) { console.error("GradeCalc: Migration save error:", e); }
           setIsLoading(false);
-          // console.log("GradeCalc: Migration completed, isLoading set to false. Returning.");
-          return; // Migration done
+          return;
         }
 
-        // If not migrated, load from Firestore or set defaults
-        // This part now also handles the case where it *was* a newLoginSession but no migration occurred (e.g. no anonymous data)
-        // console.log("GradeCalc: Not migrating or migration already handled. Loading from Firestore or using default.");
         if (firestoreDocExists && firestoreSubjects.length > 0) {
-          // console.log("GradeCalc: Setting state from existing Firestore data.");
           setSubjects(firestoreSubjects);
           setActiveSubjectId(firestoreActiveSubjectId);
         } else {
-          // Firestore is effectively empty (or doc doesn't exist) and no migration happened.
-          // console.log("GradeCalc: Firestore empty/no doc and no migration. Setting to default initial state.");
-          const defaultInitialSubject = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
-          setSubjects([defaultInitialSubject]);
-          setActiveSubjectId(defaultInitialSubject.id);
-          // If it was a new login session AND Firestore doc didn't exist AND no migration happened, save default state.
-          if (newLoginSession && !firestoreDocExists && !(firestoreIsEmptyOrTrulyDefault && anonymousHasDataToMigrate) && user) {
-            // console.log("GradeCalc: New login, Firestore doc didn't exist, and no migration occurred. Saving default state to Firestore.");
+          const def = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
+          setSubjects([def]);
+          setActiveSubjectId(def.id);
+          if (newLoginSession && !firestoreDocExists) {
             try {
               const userRef = doc(db, 'users', user.uid);
-              await setDoc(doc(userRef, 'settings', 'gradeCalculator'), {
-                subjects: [defaultInitialSubject],
-                activeSubjectId: defaultInitialSubject.id
-              }, { merge: true });
-            } catch (e) { console.error("GradeCalc: Failed to save default state for new user", e); }
+              await setDoc(doc(userRef, 'settings', 'gradeCalculator'), { subjects: [def], activeSubjectId: def.id }, { merge: true });
+            } catch (e) { console.error("GradeCalc: Default save error:", e); }
           }
         }
-      } else if (!user && authInitialized) { // Anonymous user
-        // console.log("GradeCalc: Anonymous user. Loading from sessionStorage if available.");
-        if (anonymousData && anonymousData.subjects && Array.isArray(anonymousData.subjects)) {
-          setSubjects(anonymousData.subjects);
-          // Set active subject from saved data or use the first one
-          if (anonymousData.activeSubjectId) {
-            const subjectExists = anonymousData.subjects.some((s: Subject) => s.id === anonymousData.activeSubjectId);
-            if (subjectExists) {
-              setActiveSubjectId(anonymousData.activeSubjectId);
-            } else if (anonymousData.subjects.length > 0) {
-              setActiveSubjectId(anonymousData.subjects[0].id);
-            }
-          } else if (anonymousData.subjects.length > 0) {
-            setActiveSubjectId(anonymousData.subjects[0].id);
-          }
+      } else if (!user && authInitialized) {
+        if (anonymousData?.subjects && Array.isArray(anonymousData.subjects)) {
+          const migrated = anonymousData.subjects.map((s: Subject) => ({
+            ...s,
+            categories: (s.categories || []).map(migrateCategory)
+          }));
+          setSubjects(migrated);
+          const exists = migrated.some((s: Subject) => s.id === anonymousData.activeSubjectId);
+          setActiveSubjectId(exists ? anonymousData.activeSubjectId : (migrated.length > 0 ? migrated[0].id : null));
         } else {
-          // No anonymous data, or it's invalid, so set to default initial state
-          const defaultInitialSubject = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
-          setSubjects([defaultInitialSubject]);
-          setActiveSubjectId(defaultInitialSubject.id);
+          const def = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
+          setSubjects([def]);
+          setActiveSubjectId(def.id);
         }
-      } else {
-        // Auth not initialized yet, or some other state. Usually means isLoading should remain true.
-        // Or, if !authInitialized, we might not want to do anything yet.
-        // For now, this path implies we're waiting for auth.
-        // console.log("GradeCalc: Auth not initialized or user state unclear, will wait.");
       }
       setIsLoading(false);
     };
 
-    if (authInitialized) { // Only run if auth has initialized
-      loadAndMigrateData();
-    }
-  }, [user, authInitialized]); // Trigger on user or auth state change
+    if (authInitialized) loadAndMigrateData();
+  }, [user, authInitialized]);
 
-  // Save data when subjects or activeSubjectId change
   useEffect(() => {
     const saveData = async () => {
-      if (isLoading) return; // Don't save during initial load
-
+      if (isLoading) return;
       setSaveStatus('Saving...');
-
       if (user && authInitialized) {
         try {
           const userRef = doc(db, 'users', user.uid);
-          await setDoc(doc(userRef, 'settings', 'gradeCalculator'), {
-            subjects,
-            activeSubjectId
-          }, { merge: true });
+          await setDoc(doc(userRef, 'settings', 'gradeCalculator'), { subjects, activeSubjectId }, { merge: true });
           setSaveStatus('Settings saved');
           setTimeout(() => setSaveStatus(null), 2000);
-        } catch (error) {
-          setSaveStatus('Error saving');
-          setTimeout(() => setSaveStatus(null), 2000);
-        }
+        } catch { setSaveStatus('Error saving'); setTimeout(() => setSaveStatus(null), 2000); }
       } else {
-        // For anonymous users, save to session storage
         try {
-          sessionStorage.setItem('grade_calculator_data', JSON.stringify({
-            subjects,
-            activeSubjectId
-          }));
+          sessionStorage.setItem('grade_calculator_data', JSON.stringify({ subjects, activeSubjectId }));
           setSaveStatus('Settings saved');
           setTimeout(() => setSaveStatus(null), 2000);
-        } catch (error) {
-          setSaveStatus('Error saving');
-          setTimeout(() => setSaveStatus(null), 2000);
-        }
+        } catch { setSaveStatus('Error saving'); setTimeout(() => setSaveStatus(null), 2000); }
       }
     };
-
-    // Debounce save to avoid too many requests
-    const timeoutId = setTimeout(saveData, 1000);
-    return () => clearTimeout(timeoutId);
+    const id = setTimeout(saveData, 1000);
+    return () => clearTimeout(id);
   }, [subjects, activeSubjectId, user, authInitialized, isLoading]);
 
-  // Set the first subject as active by default if none is active
   useEffect(() => {
-    if (subjects.length > 0 && !activeSubjectId) {
-      setActiveSubjectId(subjects[0].id);
-    }
+    if (subjects.length > 0 && !activeSubjectId) setActiveSubjectId(subjects[0].id);
   }, [subjects, activeSubjectId]);
 
-  // Add a useEffect to reset the calculator when a user logs out
   useEffect(() => {
-    // If the auth is initialized but there's no user, this means user has logged out
     if (authInitialized && !user) {
-      // Clear data from session storage
       sessionStorage.removeItem('grade_calculator_data');
-
-      // Reset to default state
-      setSubjects([{
-        id: crypto.randomUUID(),
-        name: 'Subject 1',
-        passingGrade: 60,
-        categories: []
-      }]);
-
-      // Reset active subject ID
+      const def = { id: crypto.randomUUID(), name: 'Subject 1', passingGrade: 60, categories: [] };
+      setSubjects([def]);
       setActiveSubjectId(null);
     }
   }, [user, authInitialized]);
 
-  // Clear anonymous session marker when component unmounts
   useEffect(() => {
-    return () => {
-      // Only clear if user is not logged in
-      if (!user) {
-        sessionStorage.removeItem('anonymousSession');
-      }
-    };
+    return () => { if (!user) sessionStorage.removeItem('anonymousSession'); };
   }, [user]);
 
-  const activeSubject = useMemo(() => {
-    return subjects.find(subject => subject.id === activeSubjectId) || null;
-  }, [subjects, activeSubjectId]);
+  const activeSubject = useMemo(() =>
+    subjects.find(s => s.id === activeSubjectId) || null,
+    [subjects, activeSubjectId]
+  );
 
-  // Calculate the total weighted score for the active subject
   const { totalWeight, finalGrade } = useMemo(() => {
-    if (!activeSubject) {
-      return { totalWeight: 0, finalGrade: 0 };
-    }
-
+    if (!activeSubject) return { totalWeight: 0, finalGrade: 0 };
     let totalWeight = 0;
     let weightedScore = 0;
-
-    activeSubject.categories.forEach(category => {
-      totalWeight += category.weight;
-      weightedScore += (category.score / 100) * category.weight;
+    activeSubject.categories.forEach(cat => {
+      totalWeight += cat.weight;
+      weightedScore += (categoryScore(cat.items) / 100) * cat.weight;
     });
-
-    return {
-      totalWeight,
-      finalGrade: totalWeight > 0 ? weightedScore : 0
-    };
+    return { totalWeight, finalGrade: totalWeight > 0 ? weightedScore : 0 };
   }, [activeSubject]);
 
-  // Get the transmutation table based on the active subject's passing grade
   const transmutationTable = useMemo(() => {
     if (!activeSubject) return [];
-
-    // Find the closest preset passing grade
-    const passingGrade = activeSubject.passingGrade;
-    const closestPreset = PASSING_GRADE_PRESETS.reduce((prev, curr) =>
-      Math.abs(curr - passingGrade) < Math.abs(prev - passingGrade) ? curr : prev
-    );
-
-    // Return the corresponding transmutation table
-    return TRANSMUTATION_TABLES[closestPreset as keyof typeof TRANSMUTATION_TABLES];
+    const pg = activeSubject.passingGrade;
+    const closest = PASSING_GRADE_PRESETS.reduce((a, b) => Math.abs(b - pg) < Math.abs(a - pg) ? b : a);
+    return TRANSMUTATION_TABLES[closest as keyof typeof TRANSMUTATION_TABLES];
   }, [activeSubject]);
 
-  // Get the transmuted grade from the weighted score
   const transmutedGrade = useMemo(() => {
     if (!activeSubject || transmutationTable.length === 0) return 0;
-
-    // Find the appropriate grade from the table
-    const entry = transmutationTable.find(
-      entry => finalGrade >= entry.range[0] && finalGrade <= entry.range[1]
-    );
-
+    const entry = transmutationTable.find(e => finalGrade >= e.range[0] && finalGrade <= e.range[1]);
     return entry ? entry.grade : 0;
   }, [activeSubject, finalGrade, transmutationTable]);
 
-  // Add a new subject
+  const updateSubjects = (updater: (prev: Subject[]) => Subject[]) => setSubjects(updater);
+
   const addSubject = () => {
-    if (subjects.length >= 8) {
-      alert("Maximum of 8 subjects allowed");
-      return;
-    }
-
-    const newSubject: Subject = {
-      id: crypto.randomUUID(),
-      name: `New Subject`,
-      passingGrade: 60,
-      categories: []
-    };
-
-    setSubjects([...subjects, newSubject]);
-    setActiveSubjectId(newSubject.id);
+    if (subjects.length >= 8) { alert("Maximum of 8 subjects allowed"); return; }
+    const s: Subject = { id: crypto.randomUUID(), name: 'New Subject', passingGrade: 60, categories: [] };
+    setSubjects(prev => [...prev, s]);
+    setActiveSubjectId(s.id);
   };
 
-  // Remove a subject
   const removeSubject = (id: string) => {
-    const updatedSubjects = subjects.filter(subject => subject.id !== id);
-    setSubjects(updatedSubjects);
-
-    // If the active subject was removed, set a new active subject
-    if (activeSubjectId === id && updatedSubjects.length > 0) {
-      setActiveSubjectId(updatedSubjects[0].id);
-    } else if (updatedSubjects.length === 0) {
-      setActiveSubjectId(null);
-    }
+    const updated = subjects.filter(s => s.id !== id);
+    setSubjects(updated);
+    if (activeSubjectId === id) setActiveSubjectId(updated.length > 0 ? updated[0].id : null);
   };
 
-  // Update subject name with character limit
-  const updateSubjectName = (id: string, name: string) => {
-    // Limit to 30 characters
-    const limitedName = name.slice(0, 30);
+  const updateSubjectName = (id: string, name: string) =>
+    updateSubjects(prev => prev.map(s => s.id === id ? { ...s, name: name.slice(0, 30) } : s));
 
-    setSubjects(
-      subjects.map(subject =>
-        subject.id === id ? { ...subject, name: limitedName } : subject
-      )
-    );
+  const updatePassingGrade = (id: string, pg: number) => {
+    const closest = PASSING_GRADE_PRESETS.reduce((a, b) => Math.abs(b - pg) < Math.abs(a - pg) ? b : a);
+    updateSubjects(prev => prev.map(s => s.id === id ? { ...s, passingGrade: closest } : s));
   };
 
-  // Update passing grade
-  const updatePassingGrade = (id: string, passingGrade: number) => {
-    // Find the closest preset
-    const closestPreset = PASSING_GRADE_PRESETS.reduce((prev, curr) =>
-      Math.abs(curr - passingGrade) < Math.abs(prev - passingGrade) ? curr : prev
-    );
-
-    setSubjects(
-      subjects.map(subject =>
-        subject.id === id ? { ...subject, passingGrade: closestPreset } : subject
-      )
-    );
-  };
-
-  // Add a new category to the active subject
   const addCategory = () => {
     if (!activeSubject) return;
-
-    // Limit to 8 categories per subject
-    if (activeSubject.categories.length >= 8) {
-      alert("Maximum of 8 categories allowed per subject.");
-      return;
-    }
-
-    const newCategory: GradeCategory = {
-      id: crypto.randomUUID(),
-      name: '',
-      weight: 0,
-      score: 0
-    };
-
-    setSubjects(
-      subjects.map(subject =>
-        subject.id === activeSubject.id
-          ? { ...subject, categories: [...subject.categories, newCategory] }
-          : subject
-      )
-    );
+    if (activeSubject.categories.length >= 8) { alert("Maximum of 8 categories allowed per subject."); return; }
+    const cat: GradeCategory = { id: crypto.randomUUID(), name: '', weight: 0, items: [] };
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id ? { ...s, categories: [...s.categories, cat] } : s
+    ));
+    setExpandedCategories(prev => new Set([...prev, cat.id]));
   };
 
-  // Remove a category from the active subject
   const removeCategory = (categoryId: string) => {
     if (!activeSubject) return;
-
-    setSubjects(
-      subjects.map(subject =>
-        subject.id === activeSubject.id
-          ? {
-            ...subject,
-            categories: subject.categories.filter(c => c.id !== categoryId)
-          }
-          : subject
-      )
-    );
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id
+        ? { ...s, categories: s.categories.filter(c => c.id !== categoryId) }
+        : s
+    ));
   };
 
-  // Update a category
-  const updateCategory = (categoryId: string, field: keyof GradeCategory, value: string | number) => {
+  const updateCategoryWeight = (categoryId: string, value: number) => {
     if (!activeSubject) return;
-
-    let processedValue = value;
-
-    if (field === 'weight') {
-      const numValue = Number(value);
-      const otherCategoriesWeight = activeSubject.categories.reduce((sum, category) =>
-        category.id === categoryId ? sum : sum + category.weight, 0);
-      const newTotalWeight = otherCategoriesWeight + numValue;
-
-      if (newTotalWeight > 100) {
-        alert(`Total weight cannot exceed 100%. Current total without this category: ${otherCategoriesWeight}%. Maximum value you can enter: ${100 - otherCategoriesWeight}%`);
-        return;
-      }
-      processedValue = numValue; // Ensure weight is stored as a number
-    } else if (field === 'score') {
-      const numValue = Number(value);
-      if (numValue < 0 || numValue > 100) {
-        alert("Score must be between 0 and 100%.");
-        // Optionally, clamp the value or revert to previous instead of just returning
-        // For now, we prevent the update if out of bounds.
-        return;
-      }
-      // Round to exactly 2 decimal places to prevent precision issues
-      processedValue = Math.round((numValue + Number.EPSILON) * 100) / 100;
+    const otherTotal = activeSubject.categories.reduce((sum, c) =>
+      c.id === categoryId ? sum : sum + c.weight, 0);
+    if (otherTotal + value > 100) {
+      alert(`Total weight cannot exceed 100%. Max for this category: ${100 - otherTotal}%`);
+      return;
     }
-
-    setSubjects(
-      subjects.map(subject =>
-        subject.id === activeSubject.id
-          ? {
-            ...subject,
-            categories: subject.categories.map(category =>
-              category.id === categoryId
-                ? { ...category, [field]: processedValue } // Use processedValue
-                : category
-            )
-          }
-          : subject
-      )
-    );
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id
+        ? { ...s, categories: s.categories.map(c => c.id === categoryId ? { ...c, weight: value } : c) }
+        : s
+    ));
   };
+
+  const updateCategoryName = (categoryId: string, name: string) => {
+    if (!activeSubject) return;
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id
+        ? { ...s, categories: s.categories.map(c => c.id === categoryId ? { ...c, name } : c) }
+        : s
+    ));
+  };
+
+  const addItem = (categoryId: string) => {
+    if (!activeSubject) return;
+    const cat = activeSubject.categories.find(c => c.id === categoryId);
+    if (!cat) return;
+    if (cat.items.length >= 20) { alert("Maximum of 20 items per category."); return; }
+    const item: GradeItem = { id: crypto.randomUUID(), name: '', score: 0, maxScore: 100 };
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id
+        ? { ...s, categories: s.categories.map(c => c.id === categoryId ? { ...c, items: [...c.items, item] } : c) }
+        : s
+    ));
+  };
+
+  const removeItem = (categoryId: string, itemId: string) => {
+    if (!activeSubject) return;
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id
+        ? { ...s, categories: s.categories.map(c => c.id === categoryId ? { ...c, items: c.items.filter(i => i.id !== itemId) } : c) }
+        : s
+    ));
+  };
+
+  const updateItemName = (categoryId: string, itemId: string, name: string) => {
+    if (!activeSubject) return;
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id
+        ? { ...s, categories: s.categories.map(c => c.id === categoryId ? { ...c, items: c.items.map(i => i.id === itemId ? { ...i, name } : i) } : c) }
+        : s
+    ));
+  };
+
+  const updateItemScore = (categoryId: string, itemId: string, score: number) => {
+    if (!activeSubject) return;
+    const cat = activeSubject.categories.find(c => c.id === categoryId);
+    const item = cat?.items.find(i => i.id === itemId);
+    if (!item) return;
+    if (score < 0 || score > item.maxScore) {
+      alert(`Score must be between 0 and ${item.maxScore}.`);
+      return;
+    }
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id
+        ? { ...s, categories: s.categories.map(c => c.id === categoryId ? { ...c, items: c.items.map(i => i.id === itemId ? { ...i, score } : i) } : c) }
+        : s
+    ));
+  };
+
+  const updateItemMaxScore = (categoryId: string, itemId: string, maxScore: number) => {
+    if (!activeSubject) return;
+    if (maxScore <= 0) { alert("Max score must be greater than 0."); return; }
+    const cat = activeSubject.categories.find(c => c.id === categoryId);
+    const item = cat?.items.find(i => i.id === itemId);
+    if (!item) return;
+    const clampedScore = Math.min(item.score, maxScore);
+    updateSubjects(prev => prev.map(s =>
+      s.id === activeSubject.id
+        ? { ...s, categories: s.categories.map(c => c.id === categoryId ? { ...c, items: c.items.map(i => i.id === itemId ? { ...i, maxScore, score: clampedScore } : i) } : c) }
+        : s
+    ));
+  };
+
+  const toggleCategory = (categoryId: string) =>
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      next.has(categoryId) ? next.delete(categoryId) : next.add(categoryId);
+      return next;
+    });
+
+  const setInput = (key: string, val: string) =>
+    setInputValues(prev => ({ ...prev, [key]: val }));
+
+  const clearInput = (key: string) =>
+    setInputValues(prev => { const n = { ...prev }; delete n[key]; return n; });
 
   if (isLoading) {
     return (
@@ -530,13 +436,11 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
       <div className="card">
         <div className="card-header flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <h2 className="font-display font-semibold text-base text-dlsu-slate">Grade Calculator</h2>
-          {saveStatus && (
-            <span className="text-xs text-dlsu-green font-medium">{saveStatus}</span>
-          )}
+          {saveStatus && <span className="text-xs text-dlsu-green font-medium">{saveStatus}</span>}
         </div>
         <div className="card-body">
           <p className="text-sm text-gray-400">
-            Calculate your subject grades based on weighted components.
+            Calculate your subject grades using weighted categories and individual scored items.
           </p>
         </div>
       </div>
@@ -550,24 +454,19 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
               <button
                 key={subject.id}
                 onClick={() => setActiveSubjectId(subject.id)}
-                className={`px-3 py-1.5 rounded-lg whitespace-nowrap flex items-center justify-between min-w-[150px] max-w-[170px] h-9 flex-shrink-0 text-sm transition-colors grade-calc-subject-button ${isActive
-                  ? 'bg-dlsu-green text-white shadow-sm'
-                  : 'bg-[#111916] text-gray-300 hover:bg-white/5 border border-[#1E2B24]'
-                  }`}
+                className={`px-3 py-1.5 rounded-lg whitespace-nowrap flex items-center justify-between min-w-[150px] max-w-[170px] h-9 flex-shrink-0 text-sm transition-colors grade-calc-subject-button ${
+                  isActive ? 'bg-dlsu-green text-white shadow-sm' : 'bg-[#111916] text-gray-300 hover:bg-white/5 border border-[#1E2B24]'
+                }`}
               >
                 <span className={`flex-grow truncate mr-1 ${isActive ? 'text-[#0A0F0D]' : ''}`} title={subject.name}>
                   {subject.name}
                 </span>
                 {subjects.length > 1 && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeSubject(subject.id);
-                    }}
-                    className={`p-0.5 rounded-full flex items-center justify-center transition-colors ${isActive
-                      ? 'text-white/70 hover:text-white hover:bg-white/20'
-                      : 'text-gray-500 hover:bg-white/10 hover:text-gray-300'
-                      }`}
+                    onClick={(e) => { e.stopPropagation(); removeSubject(subject.id); }}
+                    className={`p-0.5 rounded-full flex items-center justify-center transition-colors ${
+                      isActive ? 'text-white/70 hover:text-white hover:bg-white/20' : 'text-gray-500 hover:bg-white/10 hover:text-gray-300'
+                    }`}
                     aria-label="Remove subject"
                   >
                     <X size={14} />
@@ -577,17 +476,12 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
             );
           })}
           {subjects.length < 8 ? (
-            <button
-              onClick={addSubject}
-              className="btn btn-sm text-gray-400 hover:text-dlsu-green border border-dashed border-[#2D3B33] hover:border-dlsu-green/40 gap-1 flex-shrink-0 transition-colors"
-            >
+            <button onClick={addSubject} className="btn btn-sm text-gray-400 hover:text-dlsu-green border border-dashed border-[#2D3B33] hover:border-dlsu-green/40 gap-1 flex-shrink-0 transition-colors">
               <PlusCircle size={14} />
               Add Subject
             </button>
           ) : (
-            <span className="px-3 py-1.5 text-xs text-gray-500 italic h-9 flex items-center flex-shrink-0">
-              Max 8 subjects
-            </span>
+            <span className="px-3 py-1.5 text-xs text-gray-500 italic h-9 flex items-center flex-shrink-0">Max 8 subjects</span>
           )}
         </div>
 
@@ -611,8 +505,8 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                   onChange={(e) => updatePassingGrade(activeSubject.id, Number(e.target.value))}
                   className="input"
                 >
-                  {PASSING_GRADE_PRESETS.map(preset => (
-                    <option key={preset} value={preset}>{preset}%</option>
+                  {PASSING_GRADE_PRESETS.map(p => (
+                    <option key={p} value={p}>{p}%</option>
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">Minimum score to pass (1.0)</p>
@@ -620,100 +514,166 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Grade Computations Table */}
+              {/* Categories + Items */}
               <div className="lg:col-span-2">
                 <h3 className="font-display font-semibold text-sm text-dlsu-slate mb-3">Grade Computations</h3>
 
-                <div className="overflow-x-auto rounded-lg border border-[#1E2B24]">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th className="text-center w-24">Weight (%)</th>
-                        <th className="text-center w-24">Score (%)</th>
-                        <th className="text-center w-24">Weighted</th>
-                        <th className="w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeSubject.categories.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-6 text-center text-sm text-gray-500 italic">
-                            No categories added yet
-                          </td>
-                        </tr>
-                      ) : (
-                        activeSubject.categories.map(category => (
-                          <tr key={category.id}>
-                            <td>
-                              <input
-                                type="text"
-                                value={category.name}
-                                onChange={(e) => updateCategory(category.id, 'name', e.target.value)}
-                                placeholder="Category name"
-                                className="input py-1.5"
-                              />
-                            </td>
-                            <td>
+                <div className="space-y-2">
+                  {activeSubject.categories.length === 0 ? (
+                    <div className="rounded-lg border border-[#1E2B24] py-6 text-center text-sm text-gray-500 italic">
+                      No categories added yet
+                    </div>
+                  ) : (
+                    activeSubject.categories.map(cat => {
+                      const expanded = expandedCategories.has(cat.id);
+                      const score = categoryScore(cat.items);
+                      const weighted = (score / 100) * cat.weight;
+                      return (
+                        <div key={cat.id} className="rounded-lg border border-[#1E2B24] overflow-hidden">
+                          {/* Category row */}
+                          <div className="flex items-center gap-2 px-3 py-2 bg-[#0D1410]">
+                            <button
+                              onClick={() => toggleCategory(cat.id)}
+                              className="text-gray-500 hover:text-dlsu-green transition-colors flex-shrink-0"
+                              aria-label={expanded ? 'Collapse' : 'Expand'}
+                            >
+                              {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                            </button>
+                            <input
+                              type="text"
+                              value={cat.name}
+                              onChange={(e) => updateCategoryName(cat.id, e.target.value)}
+                              placeholder="Category name"
+                              className="input py-1 flex-1 min-w-0"
+                            />
+                            <div className="flex items-center gap-1 flex-shrink-0">
                               <input
                                 type="number"
-                                value={inputValues[`${category.id}_weight`] ?? String(category.weight)}
+                                value={inputValues[`${cat.id}_weight`] ?? String(cat.weight)}
                                 onChange={(e) => {
                                   const raw = e.target.value;
-                                  setInputValues(prev => ({ ...prev, [`${category.id}_weight`]: raw }));
+                                  setInput(`${cat.id}_weight`, raw);
                                   if (raw === '' || raw === '.') return;
-                                  const num = Number(raw);
-                                  if (!isNaN(num)) updateCategory(category.id, 'weight', num);
+                                  const n = Number(raw);
+                                  if (!isNaN(n)) updateCategoryWeight(cat.id, n);
                                 }}
-                                onBlur={() => setInputValues(prev => { const next = { ...prev }; delete next[`${category.id}_weight`]; return next; })}
+                                onBlur={() => clearInput(`${cat.id}_weight`)}
                                 min="0"
                                 max="100"
-                                className="input py-1.5 text-center min-w-[80px]"
+                                placeholder="0"
+                                className="input py-1 text-center w-16"
                               />
-                            </td>
-                            <td>
-                              <input
-                                type="number"
-                                value={inputValues[`${category.id}_score`] ?? String(category.score)}
-                                onChange={(e) => {
-                                  const raw = e.target.value;
-                                  setInputValues(prev => ({ ...prev, [`${category.id}_score`]: raw }));
-                                  if (raw === '' || raw === '.') return;
-                                  const num = Number(raw);
-                                  if (!isNaN(num) && num >= 0 && num <= 100) updateCategory(category.id, 'score', num);
-                                }}
-                                onBlur={() => setInputValues(prev => { const next = { ...prev }; delete next[`${category.id}_score`]; return next; })}
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                className="input py-1.5 text-center min-w-[80px]"
-                              />
-                            </td>
-                            <td className="text-center text-sm font-medium text-gray-300">
-                              {((category.score / 100) * category.weight).toFixed(2)}
-                            </td>
-                            <td className="text-center">
-                              <button
-                                onClick={() => removeCategory(category.id)}
-                                className="btn-icon p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                                aria-label="Remove category"
-                              >
-                                <TrashIcon size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                      <tr className="!bg-[#0D1410] font-medium text-sm">
-                        <td className="text-right text-gray-400">Total</td>
-                        <td className="text-center">{totalWeight.toFixed(2)}%</td>
-                        <td></td>
-                        <td className="text-center text-dlsu-slate">{finalGrade.toFixed(2)}%</td>
-                        <td></td>
-                      </tr>
-                    </tbody>
-                  </table>
+                              <span className="text-xs text-gray-500 flex-shrink-0">%</span>
+                            </div>
+                            <div className="flex-shrink-0 text-right min-w-[90px]">
+                              <span className={`text-xs font-medium ${score > 0 ? 'text-dlsu-green' : 'text-gray-500'}`}>
+                                {score.toFixed(2)}%
+                              </span>
+                              <span className="text-gray-600 mx-1 text-xs">→</span>
+                              <span className="text-xs font-medium text-dlsu-slate">
+                                {weighted.toFixed(2)}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => removeCategory(cat.id)}
+                              className="btn-icon p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors flex-shrink-0"
+                              aria-label="Remove category"
+                            >
+                              <TrashIcon size={14} />
+                            </button>
+                          </div>
+
+                          {/* Items (expanded) */}
+                          {expanded && (
+                            <div className="border-t border-[#1E2B24]">
+                              {cat.items.length === 0 ? (
+                                <p className="px-8 py-3 text-xs text-gray-600 italic">No items yet — add one below</p>
+                              ) : (
+                                cat.items.map(item => {
+                                  const pct = item.maxScore > 0 ? (item.score / item.maxScore) * 100 : 0;
+                                  const scoreKey = `${cat.id}_${item.id}_score`;
+                                  const maxKey = `${cat.id}_${item.id}_maxScore`;
+                                  return (
+                                    <div key={item.id} className="flex items-center gap-2 px-3 py-1.5 border-b border-[#1A2420] last:border-b-0 bg-[#0A0F0C]">
+                                      <div className="w-4 flex-shrink-0" />
+                                      <input
+                                        type="text"
+                                        value={item.name}
+                                        onChange={(e) => updateItemName(cat.id, item.id, e.target.value)}
+                                        placeholder="Item name"
+                                        className="input py-1 flex-1 min-w-0 text-sm"
+                                      />
+                                      <div className="flex items-center gap-1 flex-shrink-0">
+                                        <input
+                                          type="number"
+                                          value={inputValues[scoreKey] ?? String(item.score)}
+                                          onChange={(e) => {
+                                            const raw = e.target.value;
+                                            setInput(scoreKey, raw);
+                                            if (raw === '' || raw === '.') return;
+                                            const n = Number(raw);
+                                            if (!isNaN(n)) updateItemScore(cat.id, item.id, n);
+                                          }}
+                                          onBlur={() => clearInput(scoreKey)}
+                                          min="0"
+                                          className="input py-1 text-center w-16 text-sm"
+                                        />
+                                        <span className="text-gray-600 text-xs">/</span>
+                                        <input
+                                          type="number"
+                                          value={inputValues[maxKey] ?? String(item.maxScore)}
+                                          onChange={(e) => {
+                                            const raw = e.target.value;
+                                            setInput(maxKey, raw);
+                                            if (raw === '' || raw === '.') return;
+                                            const n = Number(raw);
+                                            if (!isNaN(n) && n > 0) updateItemMaxScore(cat.id, item.id, n);
+                                          }}
+                                          onBlur={() => clearInput(maxKey)}
+                                          min="1"
+                                          className="input py-1 text-center w-16 text-sm"
+                                        />
+                                      </div>
+                                      <span className={`text-xs font-medium w-14 text-right flex-shrink-0 ${pct >= activeSubject.passingGrade ? 'text-dlsu-green' : 'text-gray-400'}`}>
+                                        {pct.toFixed(1)}%
+                                      </span>
+                                      <button
+                                        onClick={() => removeItem(cat.id, item.id)}
+                                        className="btn-icon p-1 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors flex-shrink-0"
+                                        aria-label="Remove item"
+                                      >
+                                        <TrashIcon size={13} />
+                                      </button>
+                                    </div>
+                                  );
+                                })
+                              )}
+                              <div className="px-8 py-2">
+                                <button
+                                  onClick={() => addItem(cat.id)}
+                                  className="btn btn-sm text-gray-500 hover:text-dlsu-green border border-dashed border-[#2D3B33] hover:border-dlsu-green/40 gap-1 transition-colors text-xs"
+                                >
+                                  <PlusCircle size={12} />
+                                  Add Item
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
+
+                {/* Totals row */}
+                {activeSubject.categories.length > 0 && (
+                  <div className="flex justify-between items-center px-3 py-2 mt-2 rounded-lg bg-[#0D1410] border border-[#1E2B24] text-sm">
+                    <span className="text-gray-400 font-medium">Total Weight</span>
+                    <span className="text-dlsu-slate font-semibold">{totalWeight.toFixed(2)}%</span>
+                    <span className="text-gray-400 font-medium">Weighted Score</span>
+                    <span className="text-dlsu-green font-semibold">{finalGrade.toFixed(2)}%</span>
+                  </div>
+                )}
 
                 <button
                   onClick={addCategory}
@@ -724,10 +684,9 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                 </button>
               </div>
 
-              {/* Grade Transmutation Table */}
+              {/* Grade Transmutation */}
               <div className="lg:col-span-1">
                 <h3 className="font-display font-semibold text-sm text-dlsu-slate mb-3">Grade Transmutation</h3>
-
                 <div className="overflow-x-auto rounded-lg border border-[#1E2B24]">
                   <table className="data-table">
                     <thead>
@@ -737,15 +696,13 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                       </tr>
                     </thead>
                     <tbody>
-                      {transmutationTable.map((row, index) => (
-                        <tr key={index} className={
+                      {transmutationTable.map((row, i) => (
+                        <tr key={i} className={
                           finalGrade >= row.range[0] && finalGrade <= row.range[1]
                             ? '!bg-emerald-500/10 font-medium'
                             : ''
                         }>
-                          <td className="text-xs">
-                            {row.range[0].toFixed(2)}% – {row.range[1].toFixed(2)}%
-                          </td>
+                          <td className="text-xs">{row.range[0].toFixed(2)}% – {row.range[1].toFixed(2)}%</td>
                           <td className="text-center text-xs">{row.grade.toFixed(1)}</td>
                         </tr>
                       ))}
@@ -757,12 +714,8 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                   <p className="stat-label mb-1">Final Grade</p>
                   <p className="stat-value text-dlsu-green">{transmutedGrade.toFixed(1)}</p>
                   <p className="text-sm text-gray-400 mt-1">Raw score: {finalGrade.toFixed(2)}%</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {activeSubject.passingGrade}% is the minimum to pass (1.0)
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1 italic">
-                    Note: These grades are not final. Please refer to Archers Hub.
-                  </p>
+                  <p className="text-xs text-gray-500 mt-2">{activeSubject.passingGrade}% is the minimum to pass (1.0)</p>
+                  <p className="text-xs text-gray-500 mt-1 italic">Note: These grades are not final. Please refer to Archers Hub.</p>
                 </div>
               </div>
             </div>
@@ -773,4 +726,4 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
   );
 };
 
-export default GradeCalculator; 
+export default GradeCalculator;
