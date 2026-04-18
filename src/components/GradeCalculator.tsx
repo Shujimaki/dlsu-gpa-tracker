@@ -746,7 +746,7 @@ const GradeCalculator = ({ user, authInitialized = false }: GradeCalculatorProps
                     {activeSubject.passingGrade}% is the minimum to pass (1.0)
                   </p>
                   <p className="text-xs text-gray-500 mt-1 italic">
-                    Note: These grades are not final. Please refer to MLS.
+                    Note: These grades are not final. Please refer to Archers Hub.
                   </p>
                 </div>
               </div>
