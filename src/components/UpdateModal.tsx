@@ -7,7 +7,7 @@ interface UpdateModalProps {
 
 const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
   const handleClose = () => {
-    sessionStorage.setItem('lastUpdateSeen', '2026-04-04');
+    sessionStorage.setItem('lastUpdateSeen', '2026-04-18');
     onClose();
   };
 
@@ -29,17 +29,17 @@ const UpdateModal = ({ isOpen, onClose }: UpdateModalProps) => {
 
         <div className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <span className="badge badge-green">v3.0</span>
-            <span className="text-xs text-gray-400">April 3–4, 2026</span>
+            <span className="badge badge-green">v3.1</span>
+            <span className="text-xs text-gray-400">April 18, 2026</span>
           </div>
 
           <h3 className="text-sm font-display font-semibold text-dlsu-green mb-3">What's new</h3>
 
           <ul className="space-y-2.5">
             {[
-              'Fresh new look! The entire app has been redesigned with a sleek dark mode.',
-              'Downloading your grades as an image now looks much better and matches the PDF.',
-              'Contact details have been updated — feel free to reach out to the developer!',
+              'You can now choose 1.5 units in the GPA Calculator.',
+              'Fixed a bug in the Grade Calculator where you couldn\'t clear the default 0 to type your score.',
+              'Each term now has an "In CGPA" toggle so you can control exactly which terms count toward your CGPA.',
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                 <div className="w-1.5 h-1.5 rounded-full bg-dlsu-emerald mt-1.5 flex-shrink-0"></div>

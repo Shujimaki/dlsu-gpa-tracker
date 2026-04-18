@@ -170,7 +170,7 @@ function App() {
   // Check if update modal should be hidden based on sessionStorage
   useEffect(() => {
     const lastUpdateSeen = sessionStorage.getItem('lastUpdateSeen');
-    if (lastUpdateSeen === '2026-04-04') {
+    if (lastUpdateSeen === '2026-04-18') {
       setShowUpdateModal(false);
     } else {
       console.log("Update modal should be shown");
