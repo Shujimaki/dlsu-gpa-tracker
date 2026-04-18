@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { PlusIcon, TrashIcon, Loader2, Printer, AlertTriangle } from 'lucide-react';
 import type { Course } from '../types';
 import { logGpaCalculation, logDeansListEligibility, logUserAction } from '../config/analytics';
-import { saveUserData, loadUserData, getUserTerms, deleteUserTerm } from '../config/firestore';
+import { saveUserData, loadUserData, getUserTerms, deleteUserTerm, saveTermToggles, loadTermToggles } from '../config/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
 import PrintGradesModal from './PrintGradesModal';
 
@@ -49,6 +49,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [termToDelete, setTermToDelete] = useState<number | null>(null);
+  const [termOverrides, setTermOverrides] = useState<Record<number, boolean>>({});
 
   // Handle login/logout transitions
   useEffect(() => {
@@ -207,6 +208,43 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
     }
   }, [selectedTerm, user, authInitialized]);
 
+  // Load term overrides from Firestore or sessionStorage
+  useEffect(() => {
+    const loadOverrides = async () => {
+      if (!authInitialized) return;
+      if (user) {
+        const overrides = await loadTermToggles(user.uid);
+        if (overrides) setTermOverrides(overrides);
+      } else {
+        const raw = sessionStorage.getItem('term_toggles');
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed?.overrides) {
+              setTermOverrides(Object.fromEntries(
+                Object.entries(parsed.overrides).map(([k, v]) => [Number(k), v as boolean])
+              ));
+            }
+          } catch {}
+        }
+      }
+    };
+    loadOverrides();
+  }, [user, authInitialized]);
+
+  // Save term overrides when they change
+  useEffect(() => {
+    if (isInitialLoad || !authInitialized) return;
+    const timeoutId = setTimeout(async () => {
+      if (user) {
+        await saveTermToggles(user.uid, termOverrides);
+      } else {
+        sessionStorage.setItem('term_toggles', JSON.stringify({ overrides: termOverrides }));
+      }
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [termOverrides, user, authInitialized, isInitialLoad]);
+
   // Load data for the current term
   const loadData = async () => {
     try {
@@ -310,6 +348,12 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
       isFirstHonors
     };
   }, [courses, isFlowchartExempt]);
+
+  const isCurrentTermActive = termOverrides[selectedTerm] ?? (totalUnits > 0);
+
+  const handleTermToggle = () => {
+    setTermOverrides(prev => ({ ...prev, [selectedTerm]: !isCurrentTermActive }));
+  };
 
   // Save data for the current term
   useEffect(() => {
@@ -698,6 +742,20 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                   ) : (
                     <span className="text-xs">Clear</span>
                   )}
+                </button>
+                <button
+                  onClick={handleTermToggle}
+                  className={`flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-md border transition-colors ${
+                    isCurrentTermActive
+                      ? 'border-dlsu-green/30 text-dlsu-green bg-dlsu-green/10 hover:bg-dlsu-green/20'
+                      : 'border-[#2D3B33] text-gray-500 bg-[#162019] hover:bg-[#1E2B24]'
+                  }`}
+                  title={isCurrentTermActive ? 'Exclude this term from CGPA' : 'Include this term in CGPA'}
+                >
+                  <span className={`w-7 h-3.5 rounded-full flex items-center px-0.5 transition-colors ${isCurrentTermActive ? 'bg-dlsu-green' : 'bg-gray-600'}`}>
+                    <span className={`w-2.5 h-2.5 bg-white rounded-full transition-transform duration-150 ${isCurrentTermActive ? 'translate-x-3' : 'translate-x-0'}`} />
+                  </span>
+                  <span>In CGPA</span>
                 </button>
               </div>
             </div>

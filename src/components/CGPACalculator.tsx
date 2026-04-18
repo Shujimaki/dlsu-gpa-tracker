@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getUserTerms, loadUserData, saveUserCGPASettings, loadUserCGPASettings } from '../config/firestore';
+import { getUserTerms, loadUserData, saveUserCGPASettings, loadUserCGPASettings, loadTermToggles } from '../config/firestore';
 import type { Course } from '../types';
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { CGPASettings } from '../config/firestore';
@@ -37,6 +37,7 @@ interface TermSummary {
   totalUnits: number;
   totalNASUnits: number;
   isActive: boolean;
+  isManuallyExcluded: boolean;
 }
 
 const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalculatorProps) => {
@@ -46,6 +47,7 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
   const [creditedUnits, setCreditedUnits] = useState<number>(0);
   const [creditedUnitsInput, setCreditedUnitsInput] = useState<string>("0");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [termOverrides, setTermOverrides] = useState<Record<number, boolean>>({});
 
   // Load user settings and handle migration for creditedUnits
   useEffect(() => {
@@ -353,6 +355,26 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         // Sort terms numerically
         availableTerms.sort((a, b) => a - b);
 
+        // Load term overrides
+        let overrides: Record<number, boolean> = {};
+        if (!isAnonymous && user) {
+          const loaded = await loadTermToggles(user.uid);
+          if (loaded) overrides = loaded;
+        } else {
+          const raw = sessionStorage.getItem('term_toggles');
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              if (parsed?.overrides) {
+                overrides = Object.fromEntries(
+                  Object.entries(parsed.overrides).map(([k, v]) => [Number(k), v as boolean])
+                );
+              }
+            } catch {}
+          }
+        }
+        setTermOverrides(overrides);
+
         // Load data for each term
         const termsDataPromises = availableTerms.map(async (term) => {
           let termData: TermData | null = null;
@@ -387,7 +409,10 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
 
           // If we found data and it has courses
           if (termData && termData.courses && termData.courses.length > 0) {
-            const { gpa, totalUnits, totalNASUnits, isActive } = calculateTermGPA(termData.courses);
+            const { gpa, totalUnits, totalNASUnits } = calculateTermGPA(termData.courses);
+            const autoActive = totalUnits > 0;
+            const isActive = overrides[term] ?? autoActive;
+            const isManuallyExcluded = autoActive && overrides[term] === false;
 
             return {
               term,
@@ -395,7 +420,8 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
               gpa,
               totalUnits,
               totalNASUnits,
-              isActive
+              isActive,
+              isManuallyExcluded
             };
           }
 
@@ -406,7 +432,8 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
             gpa: '0.000',
             totalUnits: 0,
             totalNASUnits: 0,
-            isActive: false
+            isActive: overrides[term] ?? false,
+            isManuallyExcluded: false
           };
         });
 
@@ -456,7 +483,8 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
         gpa: '0.000',
         totalUnits: 0,
         totalNASUnits: 0,
-        isActive: false
+        isActive: termOverrides[term] ?? false,
+        isManuallyExcluded: false
       };
     });
 
@@ -590,7 +618,9 @@ const CGPACalculator = ({ user, authInitialized = false, onEditTerm }: CGPACalcu
                   <div className="flex items-center gap-2">
                     <h4 className="font-display font-semibold text-sm text-dlsu-slate">Term {term.term}</h4>
                     {!term.isActive && (
-                      <span className="badge bg-[#162019] text-gray-500">Inactive</span>
+                      <span className={`badge ${term.isManuallyExcluded ? 'bg-amber-500/20 text-amber-400' : 'bg-[#162019] text-gray-500'}`}>
+                        {term.isManuallyExcluded ? 'Excluded' : 'Inactive'}
+                      </span>
                     )}
                   </div>
                   <button

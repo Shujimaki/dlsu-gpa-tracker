@@ -198,6 +198,40 @@ export const saveUserCGPASettings = async (userId: string, settings: CGPASetting
   }
 };
 
+export interface TermToggleSettings {
+  overrides: Record<string, boolean>;
+}
+
+export const saveTermToggles = async (userId: string, overrides: Record<number, boolean>): Promise<boolean> => {
+  try {
+    if (!userId?.trim()) return false;
+    const userRef = doc(db, 'users', userId);
+    await setDoc(doc(userRef, 'settings', 'termToggles'), { overrides }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error saving term toggles:', error);
+    return false;
+  }
+};
+
+export const loadTermToggles = async (userId: string): Promise<Record<number, boolean> | null> => {
+  try {
+    if (!userId?.trim()) return null;
+    const userRef = doc(db, 'users', userId);
+    const toggleDoc = await getDoc(doc(userRef, 'settings', 'termToggles'));
+    if (toggleDoc.exists()) {
+      const data = toggleDoc.data() as TermToggleSettings;
+      return Object.fromEntries(
+        Object.entries(data.overrides).map(([k, v]) => [Number(k), v])
+      );
+    }
+    return null;
+  } catch (error) {
+    console.error('Error loading term toggles:', error);
+    return null;
+  }
+};
+
 export const loadUserCGPASettings = async (userId: string): Promise<CGPASettings | null> => {
   try {
     if (!userId || userId.trim() === '') {
