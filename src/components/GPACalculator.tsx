@@ -854,7 +854,7 @@ const GPACalculator = ({ user, authInitialized = false, initialTerm = 1 }: GPACa
                             ? [0, 1, 2, 3].map(units => (
                               <option key={units} value={units}>({units})</option>
                             ))
-                            : [1, 1.5, 2, 3, 4, 5].map(units => (
+                            : [1, 1.5, 2, 3, 4, 5, 6].map(units => (
                               <option key={units} value={units}>{units}</option>
                             ))}
                         </select>
